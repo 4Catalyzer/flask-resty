@@ -82,16 +82,10 @@ class PutAsPatchMixin(PatchMixin):
         return self.patch(id)
 
     def get_item(self, id):
-        try:
-            item = super(PutAsPatchMixin, self).get_item(id)
-        except NoResultFound:
-            if self.create_on_put and flask.request.method == 'PUT':
-                item = self.model(id=id)
-                self.session.add(item)
-            else:
-                raise
+        if flask.request.method == 'PUT' and self.create_on_put:
+            return self.ensure_item(id)
 
-        return item
+        return super(PutAsPatchMixin, self).get_item(id)
 
 
 class DeleteMixin(JsonApiView):
