@@ -35,7 +35,20 @@ class JsonApiView(with_metaclass(JsonApiViewType, MethodView)):
         return self.model.query
 
     def get_item(self, id):
+        return self._get_item(id)
+
+    def _get_item(self, id):
+        # This base implementation should not be overridden.
         return self.query.filter_by(id=id).one()
+
+    def ensure_item(self, id):
+        try:
+            item = self._get_item(id)
+        except NoResultFound:
+            item = self.model(id=id)
+            self.session.add(item)
+
+        return item
 
     def get_item_or_404(self, id):
         # Can't use cls.query.get, because query might be filtered.
