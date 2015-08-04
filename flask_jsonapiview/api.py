@@ -3,25 +3,52 @@ import flask
 # -----------------------------------------------------------------------------
 
 
-def register_api(app, endpoint,
-                 collection_rule, collection_view,
-                 item_rule, item_view):
-    """Helper function for registering APIs
+class Api(object):
+    def __init__(self, app):
+        self._app = app
 
-    This will set up a single view function that lets us register both the
-    collection and item APIs at the same endpoint, to allow returning the
-    location for a new object after creation.
-    """
-    collection_view_func = collection_view.as_view(endpoint)
-    item_view_func = item_view.as_view(endpoint)
+    def init_app(self, app):
+        raise NotImplementedError()
 
-    def view_func(*args, **kwargs):
-        if flask.request.url_rule.rule == collection_rule:
-            return collection_view_func(*args, **kwargs)
+    def add_resource(self, base_rule, base_view,
+                     alternate_rule=None, alternate_view=None):
+        endpoint = self._get_endpoint(base_view, alternate_view)
+        base_view_func = base_view.as_view(endpoint)
+
+        if not alternate_rule:
+            self._app.add_url_rule(base_rule, view_func=base_view_func)
+            return
+
+        alternate_view_func = alternate_view.as_view(endpoint)
+
+        def view_func(*args, **kwargs):
+            if flask.request.url_rule.rule == base_rule:
+                return base_view_func(*args, **kwargs)
+            else:
+                return alternate_view_func(*args, **kwargs)
+
+        self._app.add_url_rule(
+            base_rule, view_func=view_func, endpoint=endpoint,
+            methods=base_view.methods
+        )
+        self._app.add_url_rule(
+            alternate_rule, view_func=view_func, endpoint=endpoint,
+            methods=alternate_view.methods
+        )
+
+    @staticmethod
+    def _get_endpoint(base_view, alternate_view):
+        base_view_name = base_view.__name__
+        if not alternate_view:
+            return base_view_name
+
+        alternate_view_name = alternate_view.__name__
+        if len(alternate_view_name) < len(base_view_name):
+            return alternate_view_name
         else:
-            return item_view_func(*args, **kwargs)
+            return base_view_name
 
-    app.add_url_rule(collection_rule, view_func=view_func, endpoint=endpoint,
-                     methods=collection_view.methods)
-    app.add_url_rule(item_rule, view_func=view_func, endpoint=endpoint,
-                     methods=item_view.methods)
+    def add_ping(self, rule):
+        @self._app.route(rule)
+        def ping():
+            return '', 200
