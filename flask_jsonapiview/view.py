@@ -1,30 +1,62 @@
 import flask
-from flask.views import MethodView, MethodViewType, with_metaclass
+from flask.views import MethodView
 from sqlalchemy.orm.exc import NoResultFound
 
 # -----------------------------------------------------------------------------
 
 
-class JsonApiViewType(MethodViewType):
-    def __new__(mcs, name, bases, dct):
-        cls = super(JsonApiViewType, mcs).__new__(mcs, name, bases, dct)
-
-        if 'methods' not in dct:
-            # Include methods defined by e.g. mixins.
-            methods = set(cls.methods or [])
-            for base in bases:
-                if hasattr(base, 'methods') and base.methods:
-                    methods.update(base.methods)
-            if methods:
-                cls.methods = sorted(methods)
-
-        return cls
-
-
-class JsonApiView(with_metaclass(JsonApiViewType, MethodView)):
-    model = None
+class ApiView(MethodView):
     serializer = None
     deserializer = None
+
+    def serialize(self, item, **kwargs):
+        return self.serializer.dump(item, **kwargs).data
+
+    def make_response(self, data_out, *args):
+        body = {'data': data_out}
+        meta = self.get_response_meta()
+        if meta:
+            body['meta'] = meta
+
+        return flask.make_response(flask.jsonify(**body), *args)
+
+    def get_response_meta(self):
+        return None
+
+    def make_empty_response(self):
+        return flask.make_response('', 204)
+
+    def get_request_data(self, expected_id=None, **kwargs):
+        try:
+            data_in_raw = flask.request.get_json()['data']
+        except KeyError:
+            flask.abort(400)
+        else:
+            # Validate data for endpoint before deserializing - the
+            # deserializer most likely will not include the endpoint-level
+            # fields that we need to check here.
+            self.validate_request_data(data_in_raw, expected_id)
+
+            return self.deserialize(data_in_raw, **kwargs)
+
+    def validate_request_data(self, data_in_raw, expected_id):
+        if 'type' not in data_in_raw:
+            flask.abort(400)
+        if data_in_raw['type'] != self.deserializer.opts.type:
+            flask.abort(409)
+
+        if expected_id is not None:
+            if 'id' not in data_in_raw:
+                flask.abort(400)
+            if data_in_raw['id'] != str(expected_id):
+                flask.abort(409)
+
+    def deserialize(self, data_in_raw, **kwargs):
+        return self.deserializer.load(data_in_raw, **kwargs).data
+
+
+class ModelView(ApiView):
+    model = None
 
     @property
     def session(self):
@@ -34,24 +66,7 @@ class JsonApiView(with_metaclass(JsonApiViewType, MethodView)):
     def query(self):
         return self.model.query
 
-    def get_item(self, id):
-        return self._get_item(id)
-
-    def _get_item(self, id):
-        # This base implementation should not be overridden.
-        return self.query.filter_by(id=id).one()
-
-    def ensure_item(self, id):
-        try:
-            item = self._get_item(id)
-        except NoResultFound:
-            item = self.model(id=id)
-            self.session.add(item)
-
-        return item
-
     def get_item_or_404(self, id):
-        # Can't use cls.query.get, because query might be filtered.
         try:
             item = self.get_item(id)
         except NoResultFound:
@@ -59,55 +74,87 @@ class JsonApiView(with_metaclass(JsonApiViewType, MethodView)):
         else:
             return item
 
-    def serialize(self, item, **kwargs):
-        return self.serializer.dump(item, **kwargs).data
-
-    def make_response_body(self, data, **kwargs):
-        return flask.jsonify(
-            data=self.serialize(data, **kwargs)
-        )
-
-    def deserialize(self, data, **kwargs):
-        return self.deserializer.load(data, **kwargs).data
-
-    @property
-    def resolvers(self):
-        return ()
-
-    def get_request_data(self, expected_id=None, **kwargs):
+    def get_item(self, id):
         try:
-            data = flask.request.get_json()['data']
-        except KeyError:
-            flask.abort(400)
+            # Can't use self.query.get(), because query might be filtered.
+            item = self.query.filter_by(id=id).one()
+        except NoResultFound:
+            if self.should_create_missing(id):
+                item = self.model(id=id)
+                self.session.add(item)
+            else:
+                raise
+
+        return item
+
+    def should_create_missing(self, id):
+        return False
+
+
+class GenericModelView(ModelView):
+    url_id_key = 'id'
+
+    def list(self):
+        query = self.transform_list_query(self.query)
+        collection = query.all()
+        data_out = self.serialize(collection, many=True)
+        return self.make_response(data_out)
+
+    def transform_list_query(self, query):
+        query = self.apply_sort(query)
+        query = self.apply_filters(query)
+        return query
+
+    def apply_filters(self, query):
+        return query
+
+    def apply_sort(self, query):
+        return query.order_by(self.model.id)
+
+    def retrieve(self, id):
+        item = self.get_item_or_404(id)
+        data_out = self.serialize(item)
+        return self.make_response(data_out)
+
+    def create(self):
+        data_in = self.get_request_data()
+        item = self.create_item(data_in)
+
+        self.session.add(item)
+        self.session.commit()
+
+        data_out = self.serialize(item)
+        location = flask.url_for(
+            flask.request.endpoint, **{self.url_id_key: item.id}
+        )
+        return self.make_response(data_out, 201, {'Location': location})
+
+    def create_item(self, data_in):
+        return self.model(**data_in)
+
+    def update(self, id):
+        item = self.get_item_or_404(id)
+        data_in = self.get_request_data(expected_id=id)
+
+        return_content = self.update_item(item, data_in)
+        self.session.commit()
+
+        if return_content:
+            data_out = self.serialize(item)
+            return self.make_response(data_out)
         else:
-            # Validate data for endpoint before deserializing - the
-            # deserializer most likely will not include the endpoint-level
-            # fields that we need to check here.
-            self.validate_request_data(data, expected_id)
+            return self.make_empty_response()
 
-            data_loaded = self.deserialize(data, **kwargs)
-            return self._apply_resolvers(data_loaded)
+    def update_item(self, item, data_in):
+        for key, value in data_in.items():
+            setattr(item, key, value)
 
-    def validate_request_data(self, data, expected_id):
-        if 'type' not in data:
-            flask.abort(400)
-        if data['type'] != self.deserializer.opts.type:
-            flask.abort(409)
+        return False
 
-        if expected_id is not None:
-            if 'id' not in data:
-                flask.abort(400)
-            if data['id'] != str(expected_id):
-                flask.abort(409)
+    def destroy(self, id):
+        item = self.get_item_or_404(id)
 
-    def _apply_resolvers(self, data_loaded):
-        for field, resolver in self.resolvers:
-            if field in data_loaded:
-                if self.deserializer.fields[field].many:
-                    data_loaded[field] = [
-                        resolver(value) for value in data_loaded[field]
-                    ]
-                else:
-                    data_loaded[field] = resolver(data_loaded[field])
+        self.session.delete(item)
+        self.session.commit()
 
-        return data_loaded
+        return self.make_empty_response()
