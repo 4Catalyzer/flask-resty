@@ -1,5 +1,7 @@
 import flask
 from flask.views import MethodView
+from marshmallow import ValidationError
+from sqlalchemy.exc import DataError, IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
 
 __all__ = ('ApiView', 'ModelView', 'GenericModelView')
@@ -43,18 +45,21 @@ class ApiView(MethodView):
 
     def validate_request_data(self, data_in_raw, expected_id):
         if 'type' not in data_in_raw:
-            flask.abort(400)
+            flask.abort(422)
         if data_in_raw['type'] != self.deserializer.opts.type:
             flask.abort(409)
 
         if expected_id is not None:
             if 'id' not in data_in_raw:
-                flask.abort(400)
+                flask.abort(422)
             if data_in_raw['id'] != str(expected_id):
                 flask.abort(409)
 
     def deserialize(self, data_in_raw, **kwargs):
-        return self.deserializer.load(data_in_raw, **kwargs).data
+        try:
+            return self.deserializer.load(data_in_raw, **kwargs).data
+        except ValidationError:
+            flask.abort(422)
 
 
 class ModelView(ApiView):
@@ -92,6 +97,14 @@ class ModelView(ApiView):
     def should_create_missing(self, id):
         return False
 
+    def commit(self):
+        try:
+            self.session.commit()
+        except IntegrityError:
+            flask.abort(409)
+        except DataError:
+            flask.abort(422)
+
 
 class GenericModelView(ModelView):
     url_id_key = 'id'
@@ -122,8 +135,8 @@ class GenericModelView(ModelView):
         data_in = self.get_request_data()
         item = self.create_item(data_in)
 
-        self.session.add(item)
-        self.session.commit()
+        self.add_item(item)
+        self.commit()
 
         data_out = self.serialize(item)
         location = flask.url_for(
@@ -134,12 +147,15 @@ class GenericModelView(ModelView):
     def create_item(self, data_in):
         return self.model(**data_in)
 
+    def add_item(self, item):
+        self.session.add(item)
+
     def update(self, id):
         item = self.get_item_or_404(id)
         data_in = self.get_request_data(expected_id=id)
 
         return_content = self.update_item(item, data_in)
-        self.session.commit()
+        self.commit()
 
         if return_content:
             data_out = self.serialize(item)
@@ -156,7 +172,10 @@ class GenericModelView(ModelView):
     def destroy(self, id):
         item = self.get_item_or_404(id)
 
-        self.session.delete(item)
-        self.session.commit()
+        self.delete_item(item)
+        self.commit()
 
         return self.make_empty_response()
+
+    def delete_item(self, item):
+        self.session.delete(item)
