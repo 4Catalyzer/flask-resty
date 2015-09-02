@@ -2,6 +2,8 @@ import flask
 from flask.views import MethodView
 from sqlalchemy.orm.exc import NoResultFound
 
+__all__ = ('ApiView', 'ModelView', 'GenericModelView')
+
 # -----------------------------------------------------------------------------
 
 

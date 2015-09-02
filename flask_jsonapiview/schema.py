@@ -1,5 +1,7 @@
 from marshmallow import Schema, SchemaOpts
 
+__all__ = ('JsonApiSchema',)
+
 # -----------------------------------------------------------------------------
 
 
