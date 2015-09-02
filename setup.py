@@ -7,7 +7,7 @@ setup(
     install_requires=(
         'Flask',
         'Flask-SQLAlchemy',
-        'marshmallow',
+        'marshmallow >= 2.0.0b5',
         'SQLAlchemy'
     )
 )
