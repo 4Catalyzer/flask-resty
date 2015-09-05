@@ -114,10 +114,14 @@ class ModelView(ApiView):
             if self.should_create_missing(id):
                 item = self.model(id=id)
                 self.session.add(item)
+
+                return item
             else:
                 raise
-
-        return item
+        except DataError:
+            flask.abort(400)
+        else:
+            return item
 
     def should_create_missing(self, id):
         return False
