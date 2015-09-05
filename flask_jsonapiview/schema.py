@@ -1,4 +1,7 @@
-from marshmallow import post_load, Schema, SchemaOpts
+from marshmallow import (
+    post_dump, post_load, pre_load, Schema, SchemaOpts, ValidationError
+)
+from marshmallow.compat import iteritems
 
 from .fields import Type
 
@@ -12,6 +15,7 @@ class JsonApiSchemaOpts(SchemaOpts):
         super(JsonApiSchemaOpts, self).__init__(meta)
 
         self.type = getattr(meta, 'type', None)
+        self.use_param_case = getattr(meta, 'use_param_case', True)
 
         # Always use strict validation and catch exceptions.
         if not getattr(meta, 'strict', True):
@@ -29,6 +33,40 @@ class JsonApiSchema(Schema):
 
         if not self.opts.type:
             raise ValueError("JSON API schemas must specify a type")
+
+    @post_dump
+    def keys_to_param_case(self, data):
+        if not self.opts.use_param_case:
+            return
+
+        return {
+            self.to_param_case(key): value for key, value in iteritems(data)
+        }
+
+    def to_param_case(self, key):
+        if '-' in key:
+            raise ValueError("key {} not in snake case".format(key))
+
+        return key.replace('_', '-')
+
+    @pre_load
+    def keys_from_param_case(self, data):
+        if not self.opts.use_param_case:
+            return
+
+        try:
+            items = iteritems(data)
+        except AttributeError:
+            # Let the unmarshaller handle this invalid input.
+            return
+
+        return {self.from_param_case(key): value for key, value in items}
+
+    def from_param_case(self, key):
+        if '_' in key:
+            raise ValidationError("key {} not in param case".format(key))
+
+        return key.replace('-', '_')
 
     @post_load
     def remove_type(self, data):
