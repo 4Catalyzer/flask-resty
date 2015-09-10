@@ -181,6 +181,13 @@ class ModelView(ApiView):
         except DataError:
             flask.abort(422)
 
+    def make_created_response(self, item):
+        data_out = self.serialize(item)
+        location = flask.url_for(
+            flask.request.endpoint, **{self.url_id_key: item.id}
+        )
+        return self.make_response(data_out, 201, {'Location': location})
+
 
 class GenericModelView(ModelView):
     def list(self):
@@ -212,11 +219,7 @@ class GenericModelView(ModelView):
         self.add_item(item)
         self.commit()
 
-        data_out = self.serialize(item)
-        location = flask.url_for(
-            flask.request.endpoint, **{self.url_id_key: item.id}
-        )
-        return self.make_response(data_out, 201, {'Location': location})
+        return self.make_created_response(item)
 
     def update(self, id):
         item = self.get_item_or_404(id)
