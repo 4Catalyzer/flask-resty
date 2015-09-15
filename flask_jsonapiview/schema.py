@@ -34,6 +34,9 @@ class JsonApiSchema(Schema):
         if not self.opts.type:
             raise ValueError("JSON API schemas must specify a type")
 
+        if 'id' not in self.fields:
+            raise ValueError("JSON API schemas must have an id")
+
     @post_dump
     def keys_to_param_case(self, data):
         if not self.opts.use_param_case:
