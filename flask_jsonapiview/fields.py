@@ -19,7 +19,7 @@ class Type(fields.Field):
 
     def _deserialize(self, value):
         if value != self._type:
-            raise IncorrectTypeError()
+            raise IncorrectTypeError(value, self._type)
 
 
 # -----------------------------------------------------------------------------
@@ -36,7 +36,7 @@ class StubObject(fields.Field):
     def _deserialize(self, value):
         try:
             if value['type'] != self._type:
-                raise IncorrectTypeError()
+                raise IncorrectTypeError(value['type'], self._type)
             if not isinstance(value['id'], basestring):
                 raise ValidationError("incorrect id type")
         except (TypeError, KeyError):
