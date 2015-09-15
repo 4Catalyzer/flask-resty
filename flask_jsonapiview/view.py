@@ -1,5 +1,6 @@
 import flask
 from flask.views import MethodView
+import logging
 from marshmallow import ValidationError
 from sqlalchemy.exc import DataError, IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
@@ -7,6 +8,10 @@ from sqlalchemy.orm.exc import NoResultFound
 from .exceptions import IncorrectTypeError
 
 __all__ = ('ApiView', 'ModelView', 'GenericModelView')
+
+# -----------------------------------------------------------------------------
+
+logger = logging.getLogger(__name__)
 
 # -----------------------------------------------------------------------------
 
@@ -40,6 +45,7 @@ class ApiView(MethodView):
         try:
             data_raw = flask.request.get_json()['data']
         except KeyError:
+            logging.warning("no data member in request")
             flask.abort(400)
         else:
             return self.deserialize(data_raw, **kwargs)
@@ -49,8 +55,10 @@ class ApiView(MethodView):
         try:
             data = deserializer.load(data_raw, **kwargs).data
         except IncorrectTypeError:
+            logger.warning("incorrect type in request data", exc_info=True)
             flask.abort(409)
         except ValidationError:
+            logger.warning("invalid request data", exc_info=True)
             flask.abort(422)
         else:
             self.validate_request_id(data, expected_id)
@@ -62,15 +70,21 @@ class ApiView(MethodView):
 
         if expected_id is False:
             if 'id' in data and not self.allow_client_generated_id:
+                logger.warning("client generated id not allowed")
                 flask.abort(403)
             return
 
         try:
             id = data['id']
         except KeyError:
+            logger.warning("no id in request data")
             flask.abort(422)
         else:
             if id != expected_id:
+                logger.warning(
+                    "incorrect id in request data, got {} but expected {}"
+                    .format(id, expected_id)
+                )
                 flask.abort(409)
 
     def pick(self, data, keys):
@@ -79,6 +93,7 @@ class ApiView(MethodView):
             try:
                 value = data[key]
             except KeyError:
+                logger.warning("missing field {}".format(key))
                 flask.abort(422)
             else:
                 picked[key] = value
@@ -102,6 +117,7 @@ class ModelView(ApiView):
         try:
             item = self.get_item(id)
         except NoResultFound:
+            logger.warning("no item with id {}".format(id))
             flask.abort(404)
         else:
             return item
@@ -119,6 +135,9 @@ class ModelView(ApiView):
             else:
                 raise
         except DataError:
+            logger.warning(
+                "failed to get item with id {}".format(id), exc_info=True
+            )
             flask.abort(400)
         else:
             return item
@@ -148,12 +167,14 @@ class ModelView(ApiView):
         try:
             related_id = related_data['id']
         except KeyError:
+            logger.warning("no id specified for related item")
             flask.abort(422)
         else:
             related_api = related_api_class()
             try:
                 item = related_api.get_item(related_id)
             except NoResultFound:
+                logger.warning("no related item with id {}".format(id))
                 flask.abort(422)
             else:
                 return item
@@ -177,8 +198,10 @@ class ModelView(ApiView):
         try:
             self.session.commit()
         except IntegrityError:
+            logger.warning("failed to commit change", exc_info=True)
             flask.abort(409)
         except DataError:
+            logger.warning("failed to commit change", exc_info=True)
             flask.abort(422)
 
     def make_created_response(self, item):
