@@ -17,7 +17,7 @@ class Type(fields.Field):
     def _serialize(self, value, attr, obj):
         return self._type
 
-    def _deserialize(self, value):
+    def _deserialize(self, value, attr, data):
         if value != self._type:
             raise IncorrectTypeError(value, self._type)
 
@@ -33,7 +33,7 @@ class StubObject(fields.Field):
     def _serialize(self, value, attr, obj):
         return {'type': self._type, 'id': value}
 
-    def _deserialize(self, value):
+    def _deserialize(self, value, attr, data):
         try:
             if value['type'] != self._type:
                 raise IncorrectTypeError(value['type'], self._type)
