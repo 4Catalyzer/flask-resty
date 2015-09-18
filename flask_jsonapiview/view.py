@@ -18,14 +18,15 @@ logger = logging.getLogger(__name__)
 
 class ApiView(MethodView):
     schema = None
-    serializer = None
-    deserializer = None
 
     allow_client_generated_id = False
 
     def serialize(self, item, **kwargs):
-        serializer = self.serializer or self.schema
-        return serializer.dump(item, **kwargs).data
+        return self.serializer.dump(item, **kwargs).data
+
+    @property
+    def serializer(self):
+        return self.schema
 
     def make_response(self, data_out, *args):
         body = {'data': data_out}
@@ -51,9 +52,8 @@ class ApiView(MethodView):
             return self.deserialize(data_raw, **kwargs)
 
     def deserialize(self, data_raw, expected_id=None, **kwargs):
-        deserializer = self.deserializer or self.schema
         try:
-            data = deserializer.load(data_raw, **kwargs).data
+            data = self.deserializer.load(data_raw, **kwargs).data
         except IncorrectTypeError:
             logger.warning("incorrect type in request data", exc_info=True)
             flask.abort(409)
@@ -63,6 +63,10 @@ class ApiView(MethodView):
         else:
             self.validate_request_id(data, expected_id)
             return data
+
+    @property
+    def deserializer(self):
+        return self.schema
 
     def validate_request_id(self, data, expected_id):
         if expected_id is None:
