@@ -18,7 +18,6 @@ logger = logging.getLogger(__name__)
 
 class ApiView(MethodView):
     schema = None
-
     allow_client_generated_id = False
 
     def serialize(self, item, **kwargs):
@@ -134,7 +133,6 @@ class ModelView(ApiView):
             if self.should_create_missing(id):
                 item = self.model(id=id)
                 self.session.add(item)
-
                 return item
             else:
                 raise
@@ -147,6 +145,7 @@ class ModelView(ApiView):
             return item
 
     def should_create_missing(self, id):
+        # Potentially you could do additional validation of the id here.
         return False
 
     def resolve_nested(self, data, key, api_class, many=False):
@@ -158,23 +157,26 @@ class ModelView(ApiView):
             return
 
         if many:
-            resolved = [
-                self.get_related_item(nested_datum, api_class)
-                for nested_datum in nested_data
-            ]
+            if not nested_data:
+                resolved = []
+            else:
+                api = api_class()
+                resolved = [
+                    self.get_related_item(nested_datum, api)
+                    for nested_datum in nested_data
+                ]
         else:
-            resolved = self.get_related_item(nested_data, api_class)
+            resolved = self.get_related_item(nested_data, api_class())
 
         data[key] = resolved
 
-    def get_related_item(self, related_data, related_api_class):
+    def get_related_item(self, related_data, related_api):
         try:
             related_id = related_data['id']
         except KeyError:
             logger.warning("no id specified for related item")
             flask.abort(422)
         else:
-            related_api = related_api_class()
             try:
                 item = related_api.get_item(related_id)
             except NoResultFound:
