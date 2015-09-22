@@ -6,6 +6,7 @@ from sqlalchemy.exc import DataError, IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
 
 from .exceptions import IncorrectTypeError
+from . import meta
 
 __all__ = ('ApiView', 'ModelView', 'GenericModelView')
 
@@ -18,7 +19,6 @@ logger = logging.getLogger(__name__)
 
 class ApiView(MethodView):
     schema = None
-
     allow_client_generated_id = False
 
     def serialize(self, item, **kwargs):
@@ -30,14 +30,12 @@ class ApiView(MethodView):
 
     def make_response(self, data_out, *args):
         body = {'data': data_out}
-        meta = self.get_response_meta()
-        if meta:
-            body['meta'] = meta
+
+        response_meta = meta.get_response_meta()
+        if response_meta is not None:
+            body['meta'] = response_meta
 
         return flask.make_response(flask.jsonify(**body), *args)
-
-    def get_response_meta(self):
-        return None
 
     def make_empty_response(self):
         return flask.make_response('', 204)
@@ -109,6 +107,10 @@ class ModelView(ApiView):
     model = None
     url_id_key = 'id'
 
+    sorting = None
+    pagination = None
+    filtering = None
+
     @property
     def session(self):
         return flask.current_app.extensions['sqlalchemy'].db.session
@@ -116,6 +118,33 @@ class ModelView(ApiView):
     @property
     def query(self):
         return self.model.query
+
+    def get_list(self):
+        list_query = self.query
+
+        list_query = self.sort_list_query(list_query)
+        list_query = self.filter_list_query(list_query)
+
+        # Pagination is special because it has to own executing the query.
+        return self.paginate_list_query(list_query)
+
+    def sort_list_query(self, query):
+        if not self.sorting:
+            return query
+
+        return self.sorting(query)
+
+    def filter_list_query(self, query):
+        if not self.filtering:
+            return query
+
+        return self.filtering(query, self)
+
+    def paginate_list_query(self, query):
+        if not self.pagination:
+            return query.all()
+
+        return self.pagination(query, self)
 
     def get_item_or_404(self, id):
         try:
@@ -134,7 +163,6 @@ class ModelView(ApiView):
             if self.should_create_missing(id):
                 item = self.model(id=id)
                 self.session.add(item)
-
                 return item
             else:
                 raise
@@ -147,6 +175,7 @@ class ModelView(ApiView):
             return item
 
     def should_create_missing(self, id):
+        # Potentially you could do additional validation of the id here.
         return False
 
     def resolve_nested(self, data, key, api_class, many=False):
@@ -158,23 +187,26 @@ class ModelView(ApiView):
             return
 
         if many:
-            resolved = [
-                self.get_related_item(nested_datum, api_class)
-                for nested_datum in nested_data
-            ]
+            if not nested_data:
+                resolved = []
+            else:
+                api = api_class()
+                resolved = [
+                    self.get_related_item(nested_datum, api)
+                    for nested_datum in nested_data
+                ]
         else:
-            resolved = self.get_related_item(nested_data, api_class)
+            resolved = self.get_related_item(nested_data, api_class())
 
         data[key] = resolved
 
-    def get_related_item(self, related_data, related_api_class):
+    def get_related_item(self, related_data, related_api):
         try:
             related_id = related_data['id']
         except KeyError:
             logger.warning("no id specified for related item")
             flask.abort(422)
         else:
-            related_api = related_api_class()
             try:
                 item = related_api.get_item(related_id)
             except NoResultFound:
@@ -218,21 +250,9 @@ class ModelView(ApiView):
 
 class GenericModelView(ModelView):
     def list(self):
-        query = self.transform_list_query(self.query)
-        collection = query.all()
+        collection = self.get_list()
         data_out = self.serialize(collection, many=True)
         return self.make_response(data_out)
-
-    def transform_list_query(self, query):
-        query = self.sort_list_query(query)
-        query = self.filter_list_query(query)
-        return query
-
-    def sort_list_query(self, query):
-        return query.order_by(self.model.id)
-
-    def filter_list_query(self, query):
-        return query
 
     def retrieve(self, id):
         item = self.get_item_or_404(id)
