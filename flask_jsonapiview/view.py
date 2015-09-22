@@ -6,6 +6,7 @@ from sqlalchemy.exc import DataError, IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
 
 from .exceptions import IncorrectTypeError
+from . import meta
 
 __all__ = ('ApiView', 'ModelView', 'GenericModelView')
 
@@ -29,14 +30,12 @@ class ApiView(MethodView):
 
     def make_response(self, data_out, *args):
         body = {'data': data_out}
-        meta = self.get_response_meta()
-        if meta:
-            body['meta'] = meta
+
+        response_meta = meta.get_response_meta()
+        if response_meta is not None:
+            body['meta'] = response_meta
 
         return flask.make_response(flask.jsonify(**body), *args)
-
-    def get_response_meta(self):
-        return None
 
     def make_empty_response(self):
         return flask.make_response('', 204)
@@ -108,6 +107,10 @@ class ModelView(ApiView):
     model = None
     url_id_key = 'id'
 
+    sorting = None
+    pagination = None
+    filtering = None
+
     @property
     def session(self):
         return flask.current_app.extensions['sqlalchemy'].db.session
@@ -115,6 +118,33 @@ class ModelView(ApiView):
     @property
     def query(self):
         return self.model.query
+
+    def get_list(self):
+        list_query = self.query
+
+        list_query = self.sort_list_query(list_query)
+        list_query = self.filter_list_query(list_query)
+
+        # Pagination is special because it has to own executing the query.
+        return self.paginate_list_query(list_query)
+
+    def sort_list_query(self, query):
+        if not self.sorting:
+            return query
+
+        return self.sorting(query)
+
+    def filter_list_query(self, query):
+        if not self.filtering:
+            return query
+
+        return self.filtering(query, self)
+
+    def paginate_list_query(self, query):
+        if not self.pagination:
+            return query.all()
+
+        return self.pagination(query, self)
 
     def get_item_or_404(self, id):
         try:
@@ -220,21 +250,9 @@ class ModelView(ApiView):
 
 class GenericModelView(ModelView):
     def list(self):
-        query = self.transform_list_query(self.query)
-        collection = query.all()
+        collection = self.get_list()
         data_out = self.serialize(collection, many=True)
         return self.make_response(data_out)
-
-    def transform_list_query(self, query):
-        query = self.sort_list_query(query)
-        query = self.filter_list_query(query)
-        return query
-
-    def sort_list_query(self, query):
-        return query.order_by(self.model.id)
-
-    def filter_list_query(self, query):
-        return query
 
     def retrieve(self, id):
         item = self.get_item_or_404(id)
