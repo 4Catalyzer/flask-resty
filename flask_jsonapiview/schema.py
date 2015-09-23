@@ -36,8 +36,8 @@ class JsonApiSchema(Schema):
 
     @post_dump
     def render_keys(self, data):
-        api = utils.current_api
-        return {api.render_key(key): value for key, value in data.items()}
+        render_key = utils.current_api.render_key
+        return {render_key(key): value for key, value in data.items()}
 
     @pre_load
     def parse_keys(self, data):
@@ -47,8 +47,8 @@ class JsonApiSchema(Schema):
             # Let the unmarshaller handle this invalid input.
             return
 
-        api = utils.current_api
-        return {api.parse_key(key): value for key, value in items}
+        parse_key = utils.current_api.parse_key
+        return {parse_key(key): value for key, value in items}
 
     @post_load
     def remove_type(self, data):

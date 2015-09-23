@@ -86,7 +86,7 @@ class IdCursorPagination(object):
         return column, asc
 
     def get_request_cursor(self, view, column_specs):
-        cursor = flask.request.args.get('page[cursor]', None)
+        cursor = utils.current_api.get_request_arg('page', 'cursor')
         return self.parse_cursor(view, column_specs, cursor)
 
     def parse_cursor(self, view, column_specs, cursor):
@@ -151,7 +151,7 @@ class IdCursorPagination(object):
         return sa.and_(previous_clauses, current_clause)
 
     def get_request_limit(self):
-        limit = flask.request.args.get('page[limit]', None)
+        limit = utils.current_api.get_request_arg('page', 'limit')
         return self.parse_limit(limit)
 
     def parse_limit(self, limit):

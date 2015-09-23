@@ -14,7 +14,7 @@ def get_response_meta():
 def set_response_meta(**kwargs):
     meta = getattr(flask.g, 'jsonapiview_response_meta', {})
 
-    api = utils.current_api
-    meta.update((api.render_key(key), value) for key, value in kwargs.items())
+    render_key = utils.current_api.render_key
+    meta.update((render_key(key), value) for key, value in kwargs.items())
 
     flask.g.jsonapiview_response_meta = meta
