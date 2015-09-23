@@ -90,6 +90,15 @@ class Api(object):
         def ping():
             return '', 200
 
+    def _get_request_arg_key(self, key, *args):
+        return \
+            self.render_key(key) + \
+            ''.join('[{}]'.format(self.render_key(arg)) for arg in args)
+
+    def get_request_arg(self, key, *args, **kwargs):
+        key = self._get_request_arg_key(key, *args)
+        return flask.request.args.get(key, **kwargs)
+
     @property
     def _use_param_case(self):
         return flask.current_app.config['JSONAPIVIEW_USE_PARAM_CASE']
