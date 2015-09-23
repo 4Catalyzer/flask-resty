@@ -23,6 +23,11 @@ class IdCursorPagination(object):
         self._default_limit = utils.if_none(default_limit, max_limit)
         self._max_limit = max_limit
 
+        if self._max_limit is not None:
+            assert \
+                self._default_limit <= self._max_limit, \
+                "default limit exceeds max limit"
+
     def __call__(self, query, view):
         column_specs = self.get_column_specs(query, view)
 
