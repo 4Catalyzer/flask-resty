@@ -178,7 +178,7 @@ class ModelView(ApiView):
         # Potentially you could do additional validation of the id here.
         return False
 
-    def resolve_nested(self, data, key, api_class, many=False):
+    def resolve_nested(self, data, key, view_class, many=False):
         try:
             nested_data = data[key]
         except KeyError:
@@ -190,17 +190,17 @@ class ModelView(ApiView):
             if not nested_data:
                 resolved = []
             else:
-                api = api_class()
+                view = view_class()
                 resolved = [
-                    self.get_related_item(nested_datum, api)
+                    self.get_related_item(nested_datum, view)
                     for nested_datum in nested_data
                 ]
         else:
-            resolved = self.get_related_item(nested_data, api_class())
+            resolved = self.get_related_item(nested_data, view_class())
 
         data[key] = resolved
 
-    def get_related_item(self, related_data, related_api):
+    def get_related_item(self, related_data, related_view):
         try:
             related_id = related_data['id']
         except KeyError:
@@ -208,7 +208,7 @@ class ModelView(ApiView):
             flask.abort(422)
         else:
             try:
-                item = related_api.get_item(related_id)
+                item = related_view.get_item(related_id)
             except NoResultFound:
                 logger.warning("no related item with id {}".format(id))
                 flask.abort(422)
