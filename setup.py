@@ -26,6 +26,7 @@ setup(
         'Flask',
         'Flask-SQLAlchemy',
         'marshmallow >= 2.0.0rc1',
-        'SQLAlchemy'
+        'SQLAlchemy',
+        'Werkzeug'
     )
 )

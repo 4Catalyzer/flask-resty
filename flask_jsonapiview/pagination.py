@@ -23,10 +23,10 @@ class IdCursorPagination(object):
         self._default_limit = utils.if_none(default_limit, max_limit)
         self._max_limit = max_limit
 
-    def __call__(self, query, api):
-        column_specs = self.get_column_specs(query, api)
+    def __call__(self, query, view):
+        column_specs = self.get_column_specs(query, view)
 
-        cursor_in = self.get_request_cursor(api, column_specs)
+        cursor_in = self.get_request_cursor(view, column_specs)
         if cursor_in is not None:
             query = query.filter(self.get_filter(column_specs, cursor_in))
 
@@ -43,20 +43,20 @@ class IdCursorPagination(object):
             has_next_page = False
 
         # Relay expects a cursor for each item in the collection.
-        cursors_out = self.render_cursors(api, column_specs, collection)
+        cursors_out = self.render_cursors(view, column_specs, collection)
 
         meta.set_response_meta(
-            {'has-next-page': has_next_page},
+            has_next_page=has_next_page,
             cursors=cursors_out
         )
         return collection
 
-    def get_column_specs(self, query, api):
+    def get_column_specs(self, query, view):
         column_specs = tuple(
             self.get_column_spec(expression) for expression in query._order_by
         )
 
-        id_column = api.model.__table__.c.id
+        id_column = view.model.__table__.c.id
         assert \
             id_column in (column for column, _ in column_specs), \
             "ordering does not include id"
@@ -80,11 +80,11 @@ class IdCursorPagination(object):
 
         return column, asc
 
-    def get_request_cursor(self, api, column_specs):
+    def get_request_cursor(self, view, column_specs):
         cursor = flask.request.args.get('page[cursor]', None)
-        return self.parse_cursor(api, column_specs, cursor)
+        return self.parse_cursor(view, column_specs, cursor)
 
-    def parse_cursor(self, api, column_specs, cursor):
+    def parse_cursor(self, view, column_specs, cursor):
         if not cursor:
             return None
 
@@ -97,7 +97,7 @@ class IdCursorPagination(object):
             )
             flask.abort(400)
 
-        deserializer = api.deserializer
+        deserializer = view.deserializer
         column_fields = (
             deserializer.fields[column.name] for column, _ in column_specs
         )
@@ -168,8 +168,8 @@ class IdCursorPagination(object):
 
         return limit
 
-    def render_cursors(self, api, column_specs, collection):
-        serializer = api.serializer
+    def render_cursors(self, view, column_specs, collection):
+        serializer = view.serializer
         column_fields = tuple(
             serializer.fields[column.name] for column, _ in column_specs
         )
