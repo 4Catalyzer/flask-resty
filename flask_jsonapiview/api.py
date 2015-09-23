@@ -44,7 +44,6 @@ class Api(object):
             assert id_rule is None
 
         app = self._get_app(app)
-
         endpoint = self._get_endpoint(base_view, alternate_view)
 
         base_rule_full = '{}{}'.format(self._prefix, base_rule)
@@ -72,8 +71,7 @@ class Api(object):
             methods=alternate_view.methods
         )
 
-    @staticmethod
-    def _get_endpoint(base_view, alternate_view):
+    def _get_endpoint(self, base_view, alternate_view):
         base_view_name = base_view.__name__
         if not alternate_view:
             return base_view_name
