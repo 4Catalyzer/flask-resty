@@ -26,25 +26,29 @@ class IdCursorPagination(object):
     def __call__(self, query, api):
         column_specs = self.get_column_specs(query, api)
 
-        cursor = self.load_cursor(api, column_specs)
-        if cursor is not None:
-            query = query.filter(self.get_filter(column_specs, cursor))
+        cursor_in = self.get_request_cursor(api, column_specs)
+        if cursor_in is not None:
+            query = query.filter(self.get_filter(column_specs, cursor_in))
 
-        limit = self.get_limit()
+        limit = self.get_request_limit()
         if limit is not None:
             query = query.limit(limit + 1)
 
         collection = query.all()
 
         if limit is not None and len(collection) > limit:
-            has_more = True
+            has_next_page = True
             collection = collection[:limit]
         else:
-            has_more = False
+            has_next_page = False
 
-        dumped_cursors = self.dump_cursors(api, column_specs, collection)
+        # Relay expects a cursor for each item in the collection.
+        cursors_out = self.render_cursors(api, column_specs, collection)
 
-        meta.set_response_meta({'has-more': has_more}, cursors=dumped_cursors)
+        meta.set_response_meta(
+            {'has-next-page': has_next_page},
+            cursors=cursors_out
+        )
         return collection
 
     def get_column_specs(self, query, api):
@@ -76,8 +80,11 @@ class IdCursorPagination(object):
 
         return column, asc
 
-    def load_cursor(self, api, column_specs):
+    def get_request_cursor(self, api, column_specs):
         cursor = flask.request.args.get('page[cursor]', None)
+        return self.parse_cursor(api, column_specs, cursor)
+
+    def parse_cursor(self, api, column_specs, cursor):
         if not cursor:
             return None
 
@@ -138,8 +145,11 @@ class IdCursorPagination(object):
 
         return sa.and_(previous_clauses, current_clause)
 
-    def get_limit(self):
+    def get_request_limit(self):
         limit = flask.request.args.get('page[limit]', None)
+        return self.parse_limit(limit)
+
+    def parse_limit(self, limit):
         if not limit:
             return self._default_limit
 
@@ -158,17 +168,17 @@ class IdCursorPagination(object):
 
         return limit
 
-    def dump_cursors(self, api, column_specs, collection):
+    def render_cursors(self, api, column_specs, collection):
         serializer = api.serializer
         column_fields = tuple(
             serializer.fields[column.name] for column, _ in column_specs
         )
 
         return tuple(
-            self.dump_cursor(item, column_fields) for item in collection
+            self.render_cursor(item, column_fields) for item in collection
         )
 
-    def dump_cursor(self, item, column_fields):
+    def render_cursor(self, item, column_fields):
         cursor = tuple(
             field._serialize(getattr(item, field.name), field.name, item)
             for field in column_fields
