@@ -1,4 +1,5 @@
 from marshmallow import fields, ValidationError
+from marshmallow.compat import basestring
 
 from .exceptions import IncorrectTypeError
 
