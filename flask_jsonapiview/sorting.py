@@ -1,3 +1,5 @@
+from . import utils
+
 __all__ = ('FixedSorting',)
 
 # -----------------------------------------------------------------------------
@@ -37,7 +39,8 @@ class SortingBase(object):
 
     def get_column(self, view, field_name):
         self.validate_field_name(view, field_name)
-        return getattr(view.model, field_name)
+        column_name = utils.current_api.parse_key(field_name)
+        return getattr(view.model, column_name)
 
     def validate_field_name(self, view, field_name):
         raise NotImplementedError()
