@@ -108,8 +108,8 @@ class ModelView(ApiView):
     url_id_key = 'id'
 
     sorting = None
-    pagination = None
     filtering = None
+    pagination = None
 
     @property
     def session(self):
@@ -132,7 +132,7 @@ class ModelView(ApiView):
         if not self.sorting:
             return query
 
-        return self.sorting(query)
+        return self.sorting(query, self)
 
     def filter_list_query(self, query):
         if not self.filtering:
