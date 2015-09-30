@@ -3,8 +3,6 @@ from marshmallow import post_dump, post_load, pre_load, Schema, SchemaOpts
 from .fields import Type
 from . import utils
 
-__all__ = ('JsonApiSchema',)
-
 # -----------------------------------------------------------------------------
 
 
