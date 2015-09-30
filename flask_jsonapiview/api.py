@@ -1,7 +1,5 @@
 import flask
 
-__all__ = ('Api',)
-
 # -----------------------------------------------------------------------------
 
 # Don't set default value in function so we can assert on None-ness.
