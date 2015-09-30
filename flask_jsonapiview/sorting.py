@@ -4,6 +4,9 @@ from . import utils
 
 
 class SortingBase(object):
+    def __call__(self, query, view):
+        raise NotImplementedError()
+
     def get_field_specs(self, fields):
         if not fields:
             raise ValueError("fields must not be empty")
