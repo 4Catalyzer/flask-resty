@@ -147,21 +147,21 @@ class ModelView(ApiView):
 
         return self.pagination(query, self)
 
-    def get_item_or_404(self, id):
+    def get_item_or_404(self, id, **kwargs):
         try:
-            item = self.get_item(id)
+            item = self.get_item(id, **kwargs)
         except NoResultFound:
             logger.warning("no item with id {}".format(id))
             flask.abort(404)
         else:
             return item
 
-    def get_item(self, id):
+    def get_item(self, id, create_missing=False):
         try:
             # Can't use self.query.get(), because query might be filtered.
             item = self.query.filter_by(id=id).one()
         except NoResultFound:
-            if self.should_create_missing(id):
+            if create_missing:
                 item = self.model(id=id)
                 self.session.add(item)
                 return item
@@ -174,10 +174,6 @@ class ModelView(ApiView):
             flask.abort(400)
         else:
             return item
-
-    def should_create_missing(self, id):
-        # Potentially you could do additional validation of the id here.
-        return False
 
     def resolve_nested(self, data, key, view_class, many=False):
         try:
@@ -255,8 +251,8 @@ class GenericModelView(ModelView):
         data_out = self.serialize(collection, many=True)
         return self.make_response(data_out)
 
-    def retrieve(self, id):
-        item = self.get_item_or_404(id)
+    def retrieve(self, id, create_missing=False):
+        item = self.get_item_or_404(id, create_missing=create_missing)
         data_out = self.serialize(item)
         return self.make_response(data_out)
 
@@ -269,8 +265,8 @@ class GenericModelView(ModelView):
 
         return self.make_created_response(item)
 
-    def update(self, id):
-        item = self.get_item_or_404(id)
+    def update(self, id, create_missing=False):
+        item = self.get_item_or_404(id, create_missing=create_missing)
         data_in = self.get_request_data(expected_id=id)
 
         return_content = self.update_item(item, data_in)
