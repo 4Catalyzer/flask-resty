@@ -4,6 +4,7 @@ import logging
 from marshmallow import ValidationError
 from sqlalchemy.exc import DataError, IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
+from werkzeug import ImmutableDict
 
 from .exceptions import IncorrectTypeError
 from . import meta
@@ -108,6 +109,8 @@ class ModelView(ApiView):
     model = None
     url_id_key = 'id'
 
+    nested = ImmutableDict()
+
     sorting = None
     filtering = None
     pagination = None
@@ -174,6 +177,15 @@ class ModelView(ApiView):
             flask.abort(400)
         else:
             return item
+
+    def deserialize(self, data_raw, **kwargs):
+        data = super(ModelView, self).deserialize(data_raw, **kwargs)
+
+        for key, view_class in self.nested.items():
+            many = self.deserializer.fields[key].many
+            self.resolve_nested(data, key, view_class, many=many)
+
+        return data
 
     def resolve_nested(self, data, key, view_class, many=False):
         try:
