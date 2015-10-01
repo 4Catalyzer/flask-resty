@@ -41,6 +41,9 @@ class ApiView(MethodView):
     def get_request_data(self, **kwargs):
         try:
             data_raw = flask.request.get_json()['data']
+        except TypeError:
+            logger.warning("payload is not a JSON object")
+            flask.abort(400)
         except KeyError:
             logging.warning("no data member in request")
             flask.abort(400)
