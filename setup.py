@@ -21,12 +21,15 @@ setup(
         'Topic :: Software Development :: Libraries :: Python Modules'
     ),
     keywords='rest json api flask',
-    packages=('flask_jsonapiview',),
+    packages=('flask_jsonapiview', 'flask_jsonapiview.ext'),
     install_requires=(
         'Flask',
         'Flask-SQLAlchemy',
         'marshmallow',
         'SQLAlchemy',
         'Werkzeug'
-    )
+    ),
+    extras_require={
+        'jwt': ('PyJWT',)
+    }
 )

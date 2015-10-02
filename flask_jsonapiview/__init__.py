@@ -1,4 +1,6 @@
 from .api import Api
+from .authentication import AuthenticationBase
+from .authorization import AuthorizationBase, HasAnyCredentialsAuthorization
 from .decorators import get_item_or_404
 from .fields import *
 from .pagination import IdCursorPagination

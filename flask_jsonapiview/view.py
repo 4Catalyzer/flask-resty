@@ -20,6 +20,17 @@ class ApiView(MethodView):
     schema = None
     allow_client_generated_id = False
 
+    authentication = None
+    authorization = None
+
+    def dispatch_request(self, *args, **kwargs):
+        if self.authentication:
+            self.authentication.authenticate_request()
+        if self.authorization:
+            self.authorization.authorize_request()
+
+        return super(ApiView, self).dispatch_request(*args, **kwargs)
+
     def serialize(self, item, **kwargs):
         return self.serializer.dump(item, **kwargs).data
 
@@ -121,7 +132,11 @@ class ModelView(ApiView):
 
     @property
     def query(self):
-        return self.model.query
+        query = self.model.query
+        if self.authorization:
+            query = self.authorization.filter_query(query)
+
+        return query
 
     def get_list(self):
         list_query = self.query
@@ -230,13 +245,25 @@ class ModelView(ApiView):
     def add_item(self, item):
         self.session.add(item)
 
+        if self.authorization:
+            self.authorization.authorize_save_item(item)
+
     def update_item(self, item, data):
+        if self.authorization:
+            self.authorization.authorize_update_item(item, data)
+
         for key, value in data.items():
             setattr(item, key, value)
+
+        if self.authorization:
+            self.authorization.authorize_save_item(item)
 
         return False
 
     def delete_item(self, item):
+        if self.authorization:
+            self.authorization.authorize_delete_item(item)
+
         self.session.delete(item)
 
     def commit(self):
