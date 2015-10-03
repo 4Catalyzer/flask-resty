@@ -17,7 +17,7 @@ class AuthorizationBase(object):
     def authorize_request(self):
         raise NotImplementedError()
 
-    def filter_query(self, query):
+    def filter_query(self, query, view):
         raise NotImplementedError()
 
     def authorize_save_item(self, item):
@@ -39,7 +39,7 @@ class HasAnyCredentialsAuthorization(AuthorizationBase):
             logger.warning("no request credentials")
             flask.abort(401)
 
-    def filter_query(self, query):
+    def filter_query(self, query, view):
         return query
 
     def authorize_save_item(self, item):

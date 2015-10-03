@@ -134,7 +134,7 @@ class ModelView(ApiView):
     def query(self):
         query = self.model.query
         if self.authorization:
-            query = self.authorization.filter_query(query)
+            query = self.authorization.filter_query(query, self)
 
         return query
 
