@@ -1,3 +1,5 @@
+# flake8: noqa
+
 from .api import Api
 from .authentication import AuthenticationBase
 from .authorization import AuthorizationBase, HasAnyCredentialsAuthorization
