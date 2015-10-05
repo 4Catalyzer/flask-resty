@@ -258,8 +258,6 @@ class ModelView(ApiView):
         if self.authorization:
             self.authorization.authorize_save_item(item)
 
-        return False
-
     def delete_item(self, item):
         if self.authorization:
             self.authorization.authorize_delete_item(item)
@@ -304,11 +302,11 @@ class GenericModelView(ModelView):
 
         return self.make_created_response(item)
 
-    def update(self, id, create_missing=False):
+    def update(self, id, create_missing=False, return_content=False):
         item = self.get_item_or_404(id, create_missing=create_missing)
         data_in = self.get_request_data(expected_id=id)
 
-        return_content = self.update_item(item, data_in)
+        self.update_item(item, data_in)
         self.commit()
 
         if return_content:
