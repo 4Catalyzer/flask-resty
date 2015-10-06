@@ -179,7 +179,7 @@ class ModelView(ApiView):
             item = self.query.filter_by(id=id).one()
         except NoResultFound:
             if create_missing:
-                item = self.model(id=id)
+                item = self.create_missing_item(id)
                 self.session.add(item)
                 return item
             else:
@@ -237,6 +237,9 @@ class ModelView(ApiView):
                 flask.abort(422)
             else:
                 return item
+
+    def create_missing_item(self, id):
+        return self.create_item({'id': id})
 
     def create_item(self, data):
         return self.model(**data)
