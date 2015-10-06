@@ -20,3 +20,11 @@ class AuthenticationBase(object):
 
     def get_request_credentials(self):
         raise NotImplementedError()
+
+
+# -----------------------------------------------------------------------------
+
+
+class NoOpAuthentication(AuthenticationBase):
+    def authenticate_request(self):
+        pass
