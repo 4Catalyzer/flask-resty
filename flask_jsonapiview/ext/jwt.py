@@ -6,6 +6,7 @@ from jwt import InvalidTokenError
 import logging
 
 from ..authentication import AuthenticationBase
+from .. import utils
 
 # -----------------------------------------------------------------------------
 
@@ -37,33 +38,45 @@ class JwtAuthentication(AuthenticationBase):
         }
 
     def get_request_credentials(self):
-        try:
-            authorization = flask.request.headers['Authorization']
-        except KeyError:
+        token = self.get_token()
+        if not token:
             return None
 
-        token = self.get_token(authorization)
-
         try:
-            payload = jwt.decode(token, **self.get_jwt_decode_args())
+            payload = self.decode_token(token)
         except InvalidTokenError:
             logger.warning("invalid token", exc_info=True)
             flask.abort(401)
+        else:
+            return self.get_credentials(payload)
 
-        return self.get_credentials(payload)
+    def get_token(self):
+        authorization = flask.request.headers.get('Authorization')
+        if authorization:
+            token = self.get_token_from_authorization(authorization)
+        else:
+            token = self.get_token_from_request()
 
-    def get_token(self, authorization):
+        return token
+
+    def get_token_from_authorization(self, authorization):
         try:
             scheme, token = authorization.split()
         except ValueError:
             logger.warning("malformed Authorization header", exc_info=True)
             flask.abort(401)
+        else:
+            if scheme != 'Bearer':
+                logger.warning("incorrect authentication scheme")
+                flask.abort(401)
 
-        if scheme != 'Bearer':
-            logger.warning("incorrect authentication scheme")
-            flask.abort(401)
+            return token
 
-        return token
+    def get_token_from_request(self):
+        return utils.current_api.get_request_arg('id_token')
+
+    def decode_token(self, token):
+        return jwt.decode(token, **self.get_jwt_decode_args())
 
     def get_jwt_decode_args(self):
         config = flask.current_app.config
