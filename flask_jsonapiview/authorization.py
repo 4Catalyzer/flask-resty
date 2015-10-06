@@ -33,11 +33,9 @@ class AuthorizationBase(object):
 # -----------------------------------------------------------------------------
 
 
-class HasAnyCredentialsAuthorization(AuthorizationBase):
+class NoOpAuthorization(AuthorizationBase):
     def authorize_request(self):
-        if self.get_request_credentials() is None:
-            logger.warning("no request credentials")
-            flask.abort(401)
+        pass
 
     def filter_query(self, query, view):
         return query
@@ -50,3 +48,10 @@ class HasAnyCredentialsAuthorization(AuthorizationBase):
 
     def authorize_delete_item(self, item):
         pass
+
+
+class HasAnyCredentialsAuthorization(NoOpAuthorization):
+    def authorize_request(self):
+        if self.get_request_credentials() is None:
+            logger.warning("no request credentials")
+            flask.abort(401)

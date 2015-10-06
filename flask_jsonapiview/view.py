@@ -6,6 +6,8 @@ from sqlalchemy.exc import DataError, IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
 from werkzeug import ImmutableDict
 
+from .authentication import NoOpAuthentication
+from .authorization import NoOpAuthorization
 from .exceptions import IncorrectTypeError
 from . import meta
 
@@ -20,14 +22,12 @@ class ApiView(MethodView):
     schema = None
     allow_client_generated_id = False
 
-    authentication = None
-    authorization = None
+    authentication = NoOpAuthentication()
+    authorization = NoOpAuthorization()
 
     def dispatch_request(self, *args, **kwargs):
-        if self.authentication:
-            self.authentication.authenticate_request()
-        if self.authorization:
-            self.authorization.authorize_request()
+        self.authentication.authenticate_request()
+        self.authorization.authorize_request()
 
         return super(ApiView, self).dispatch_request(*args, **kwargs)
 
@@ -133,8 +133,7 @@ class ModelView(ApiView):
     @property
     def query(self):
         query = self.model.query
-        if self.authorization:
-            query = self.authorization.filter_query(query, self)
+        query = self.authorization.filter_query(query, self)
 
         return query
 
@@ -245,22 +244,18 @@ class ModelView(ApiView):
     def add_item(self, item):
         self.session.add(item)
 
-        if self.authorization:
-            self.authorization.authorize_save_item(item)
+        self.authorization.authorize_save_item(item)
 
     def update_item(self, item, data):
-        if self.authorization:
-            self.authorization.authorize_update_item(item, data)
+        self.authorization.authorize_update_item(item, data)
 
         for key, value in data.items():
             setattr(item, key, value)
 
-        if self.authorization:
-            self.authorization.authorize_save_item(item)
+        self.authorization.authorize_save_item(item)
 
     def delete_item(self, item):
-        if self.authorization:
-            self.authorization.authorize_delete_item(item)
+        self.authorization.authorize_delete_item(item)
 
         self.session.delete(item)
 
