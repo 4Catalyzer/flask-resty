@@ -20,7 +20,6 @@ logger = logging.getLogger(__name__)
 
 class ApiView(MethodView):
     schema = None
-    allow_client_generated_id = False
 
     authentication = NoOpAuthentication()
     authorization = NoOpAuthorization()
@@ -84,7 +83,7 @@ class ApiView(MethodView):
             return
 
         if expected_id is False:
-            if 'id' in data and not self.allow_client_generated_id:
+            if 'id' in data:
                 logger.warning("client generated id not allowed")
                 flask.abort(403)
             return
@@ -291,8 +290,9 @@ class GenericModelView(ModelView):
         data_out = self.serialize(item)
         return self.make_response(data_out)
 
-    def create(self):
-        data_in = self.get_request_data(expected_id=False)
+    def create(self, allow_client_id=False):
+        expected_id = None if allow_client_id else False
+        data_in = self.get_request_data(expected_id=expected_id)
         item = self.create_item(data_in)
 
         self.add_item(item)
