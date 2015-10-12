@@ -37,17 +37,23 @@ class ApiView(MethodView):
     def serializer(self):
         return self.schema
 
-    def make_response(self, data_out, *args):
+    def make_raw_response(self, *args, **kwargs):
+        response = flask.make_response(*args)
+        for key, value in kwargs.items():
+            setattr(response, key, value)
+        return response
+
+    def make_response(self, data_out, *args, **kwargs):
         body = {'data': data_out}
 
         response_meta = meta.get_response_meta()
         if response_meta is not None:
             body['meta'] = response_meta
 
-        return flask.make_response(flask.jsonify(**body), *args)
+        return self.make_raw_response(flask.jsonify(**body), *args, **kwargs)
 
-    def make_empty_response(self):
-        return flask.make_response('', 204)
+    def make_empty_response(self, **kwargs):
+        return self.make_raw_response('', 204, **kwargs)
 
     def get_request_data(self, **kwargs):
         try:
@@ -271,24 +277,26 @@ class ModelView(ApiView):
             logger.warning("failed to commit change", exc_info=True)
             flask.abort(422)
 
-    def make_created_response(self, item):
+    def make_item_response(self, item, *args):
         data_out = self.serialize(item)
+        return self.make_response(data_out, *args, item=item)
+
+    def make_created_response(self, item):
         location = flask.url_for(
             flask.request.endpoint, **{self.url_id_key: item.id}
         )
-        return self.make_response(data_out, 201, {'Location': location})
+        return self.make_item_response(item, 201, {'Location': location})
 
 
 class GenericModelView(ModelView):
     def list(self):
-        collection = self.get_list()
-        data_out = self.serialize(collection, many=True)
-        return self.make_response(data_out)
+        items = self.get_list()
+        data_out = self.serialize(items, many=True)
+        return self.make_response(data_out, items=items)
 
     def retrieve(self, id, create_missing=False):
         item = self.get_item_or_404(id, create_missing=create_missing)
-        data_out = self.serialize(item)
-        return self.make_response(data_out)
+        return self.make_item_response(item)
 
     def create(self, allow_client_id=False):
         expected_id = None if allow_client_id else False
@@ -308,10 +316,9 @@ class GenericModelView(ModelView):
         self.commit()
 
         if return_content:
-            data_out = self.serialize(item)
-            return self.make_response(data_out)
+            return self.make_item_response(item)
         else:
-            return self.make_empty_response()
+            return self.make_empty_response(item=item)
 
     def destroy(self, id):
         item = self.get_item_or_404(id)
