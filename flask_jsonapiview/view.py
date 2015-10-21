@@ -107,19 +107,6 @@ class ApiView(MethodView):
                 )
                 flask.abort(409)
 
-    def pick(self, data, keys):
-        picked = {}
-        for key in keys:
-            try:
-                value = data[key]
-            except KeyError:
-                logger.warning("missing field {}".format(key))
-                flask.abort(422)
-            else:
-                picked[key] = value
-
-        return picked
-
 
 class ModelView(ApiView):
     model = None
