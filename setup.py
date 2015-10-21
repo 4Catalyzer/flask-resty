@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name="Flask-JSONAPIView",
-    version='0.0.15',
+    version='0.0.16',
     description="Building blocks for JSON API endpoints for Flask",
     url='https://github.com/4Catalyzer/flask-jsonapiview',
     author="Jimmy Jia",
