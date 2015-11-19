@@ -5,8 +5,12 @@ python:
 before_install:
   - pip install -U pip
 install:
-  - pip install -r requirements.txt
-  - pip install flake8
+  - pip install -U .
+  - pip install -U flake8
 
 script:
   - flake8 .
+
+branches:
+  only:
+    - master
