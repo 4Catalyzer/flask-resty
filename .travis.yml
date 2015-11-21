@@ -7,11 +7,14 @@ before_install:
   - pip install -U pip
 install:
   - pip install -Ue .
-  - pip install -U flake8 pytest
+  - pip install -U flake8 pytest pytest-cov coveralls
 
 script:
   - flake8 .
-  - py.test
+  - py.test --cov=flask_jsonapiview
+
+after_success:
+  - coveralls
 
 branches:
   only:
