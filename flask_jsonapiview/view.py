@@ -270,7 +270,7 @@ class ModelView(ApiView):
 
     def make_created_response(self, item):
         location = flask.url_for(
-            flask.request.endpoint, **{self.url_id_key: item.id}
+            flask.request.endpoint, _method='GET', **{self.url_id_key: item.id}
         )
         return self.make_item_response(item, 201, {'Location': location})
 
