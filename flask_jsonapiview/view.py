@@ -270,7 +270,7 @@ class ModelView(ApiView):
 
     def make_created_response(self, item):
         location = flask.url_for(
-            flask.request.endpoint, **{self.url_id_key: item.id}
+            flask.request.endpoint, _method='GET', **{self.url_id_key: item.id}
         )
         return self.make_item_response(item, 201, {'Location': location})
 
@@ -295,9 +295,11 @@ class GenericModelView(ModelView):
 
         return self.make_created_response(item)
 
-    def update(self, id, create_missing=False, return_content=False):
+    def update(
+            self, id, create_missing=False, partial=False,
+            return_content=False):
         item = self.get_item_or_404(id, create_missing=create_missing)
-        data_in = self.get_request_data(expected_id=id)
+        data_in = self.get_request_data(expected_id=id, partial=partial)
 
         self.update_item(item, data_in)
         self.commit()
