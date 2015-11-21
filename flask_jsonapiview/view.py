@@ -4,7 +4,6 @@ import logging
 from marshmallow import ValidationError
 from sqlalchemy.exc import DataError, IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
-from werkzeug import ImmutableDict
 
 from .authentication import NoOpAuthentication
 from .authorization import NoOpAuthorization
@@ -112,7 +111,7 @@ class ModelView(ApiView):
     model = None
     url_id_key = 'id'
 
-    nested = ImmutableDict()
+    nested = None
 
     sorting = None
     filtering = None
@@ -186,6 +185,8 @@ class ModelView(ApiView):
 
     def deserialize(self, data_raw, **kwargs):
         data = super(ModelView, self).deserialize(data_raw, **kwargs)
+        if not self.nested:
+            return data
 
         for key, view_class in self.nested.items():
             many = self.deserializer.fields[key].many
