@@ -95,7 +95,17 @@ class Api(object):
 
     def get_request_arg(self, key, *args, **kwargs):
         key = self._get_request_arg_key(key, *args)
-        return flask.request.args.get(key, **kwargs)
+        if not kwargs.pop('nested', False):
+            return flask.request.args.get(key, **kwargs)
+
+        # TODO: Support recursive nesting.
+        key_prefix = '{}['.format(key)
+        prefix_length = len(key_prefix)
+        return {
+            self.parse_key(arg_key[prefix_length:-1]): arg_value
+            for arg_key, arg_value in flask.request.args.items()
+            if arg_key[:prefix_length] == key_prefix and arg_key[-1] == ']'
+        }
 
     @property
     def _use_param_case(self):

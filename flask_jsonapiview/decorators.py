@@ -1,5 +1,7 @@
 import functools
 
+from .filtering import ModelFilterField
+
 # -----------------------------------------------------------------------------
 
 
@@ -16,3 +18,15 @@ def get_item_or_404(method=None, **decorator_kwargs):
         return method(self, item, *args, **kwargs)
 
     return wrapped
+
+
+# -----------------------------------------------------------------------------
+
+
+def filter_function(field):
+    def wrapper(function):
+        filter_field = ModelFilterField(field, function)
+        functools.update_wrapper(filter_field, function)
+        return filter_field
+
+    return wrapper

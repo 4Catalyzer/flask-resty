@@ -11,7 +11,7 @@ install:
 
 script:
   - flake8 .
-  - py.test --cov=flask_jsonapiview
+  - py.test --cov
 
 after_success:
   - coveralls
