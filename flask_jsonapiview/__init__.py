@@ -3,10 +3,13 @@
 from .api import Api
 from .authentication import AuthenticationBase, NoOpAuthentication
 from .authorization import (
-    AuthorizationBase, HasAnyCredentialsAuthorization, NoOpAuthorization
+    AuthorizationBase, HasAnyCredentialsAuthorization, NoOpAuthorization,
 )
-from .decorators import get_item_or_404
+from .decorators import filter_function, get_item_or_404
 from .fields import *
+from .filtering import (
+    ColumnFilterField, FilterFieldBase, Filtering, ModelFilterField,
+)
 from .pagination import IdCursorPagination
 from .schema import JsonApiSchema
 from .sorting import FixedSorting, SortingBase
