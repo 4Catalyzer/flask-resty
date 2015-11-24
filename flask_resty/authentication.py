@@ -4,11 +4,11 @@ import flask
 
 
 def get_request_credentials():
-    return getattr(flask.g, 'jsonapiview_request_credentials', None)
+    return getattr(flask.g, 'resty_request_credentials', None)
 
 
 def set_request_credentials(credentials):
-    flask.g.jsonapiview_request_credentials = credentials
+    flask.g.resty_request_credentials = credentials
 
 
 # -----------------------------------------------------------------------------

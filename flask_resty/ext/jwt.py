@@ -6,7 +6,6 @@ from jwt import InvalidTokenError
 import logging
 
 from ..authentication import AuthenticationBase
-from .. import utils
 
 # -----------------------------------------------------------------------------
 
@@ -17,7 +16,7 @@ JWT_DECODE_ARG_KEYS = (
     'options',
     'audience',
     'issuer',
-    'leeway'
+    'leeway',
 )
 
 # -----------------------------------------------------------------------------
@@ -28,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 
 class JwtAuthentication(AuthenticationBase):
-    CONFIG_KEY_TEMPLATE = 'JSONAPIVIEW_JWT_DECODE_{}'
+    CONFIG_KEY_TEMPLATE = 'RESTY_JWT_DECODE_{}'
 
     def __init__(self, **kwargs):
         super(JwtAuthentication, self).__init__()
@@ -73,7 +72,7 @@ class JwtAuthentication(AuthenticationBase):
             return token
 
     def get_token_from_request(self):
-        return utils.current_api.get_request_arg('id_token')
+        return flask.request.args.get('id_token')
 
     def decode_token(self, token):
         return jwt.decode(token, **self.get_jwt_decode_args())
