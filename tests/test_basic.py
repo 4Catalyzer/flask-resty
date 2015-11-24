@@ -1,4 +1,4 @@
-from flask.ext.jsonapiview import Api, GenericModelView, JsonApiSchema
+from flask.ext.resty import Api, GenericModelView, JsonApiSchema
 import json
 from marshmallow import fields
 import pytest

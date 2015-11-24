@@ -1,5 +1,5 @@
-# flask-jsonapiview [![Travis][build-badge]][build] [![PyPI][pypi-badge]][pypi]
-Building blocks for [JSON API](http://jsonapi.org/) endpoints for [Flask](http://flask.pocoo.org/).
+# Flask-RESTy [![Travis][build-badge]][build] [![PyPI][pypi-badge]][pypi]
+Building blocks for REST APIs for [Flask](http://flask.pocoo.org/).
 
 [![Coveralls][coveralls-badge]][coveralls]
 
@@ -8,7 +8,7 @@ Building blocks for [JSON API](http://jsonapi.org/) endpoints for [Flask](http:/
 Create a [SQLAlchemy](http://www.sqlalchemy.org/) model and a [marshmallow](http://marshmallow.rtfd.org/) schema, then: 
 
 ```python
-from flask.ext.jsonapiview import Api, GenericModelView
+from flask.ext.resty import Api, GenericModelView
 
 from .models import Widget
 from .schemas import WidgetSchema
@@ -42,11 +42,11 @@ api = Api(app, '/api')
 api.add_resource('/widgets', WidgetListView, WidgetView)
 ```
 
-[build-badge]: https://img.shields.io/travis/4Catalyzer/flask-jsonapiview/master.svg
-[build]: https://travis-ci.org/4Catalyzer/flask-jsonapiview
+[build-badge]: https://img.shields.io/travis/4Catalyzer/flask-resty/master.svg
+[build]: https://travis-ci.org/4Catalyzer/flask-resty
 
-[pypi-badge]: https://img.shields.io/pypi/v/Flask-JSONAPIView.svg
-[pypi]: https://pypi.python.org/pypi/Flask-JSONAPIView
+[pypi-badge]: https://img.shields.io/pypi/v/Flask-RESTy.svg
+[pypi]: https://pypi.python.org/pypi/Flask-RESTy
 
-[coveralls-badge]: https://img.shields.io/coveralls/4Catalyzer/flask-jsonapiview/master.svg
-[coveralls]: https://coveralls.io/github/4Catalyzer/flask-jsonapiview
+[coveralls-badge]: https://img.shields.io/coveralls/4Catalyzer/flask-resty/master.svg
+[coveralls]: https://coveralls.io/github/4Catalyzer/flask-resty

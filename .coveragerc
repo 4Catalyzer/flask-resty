@@ -1,5 +1,5 @@
 [run]
-source = flask_jsonapiview
+source = flask_resty
 
 [report]
 exclude_lines =
