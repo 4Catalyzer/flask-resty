@@ -1,13 +1,11 @@
 import flask
 from flask.views import MethodView
 import logging
-from marshmallow import ValidationError
 from sqlalchemy.exc import DataError, IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
 
 from .authentication import NoOpAuthentication
 from .authorization import NoOpAuthorization
-from .exceptions import IncorrectTypeError
 from . import meta
 
 # -----------------------------------------------------------------------------
@@ -67,17 +65,13 @@ class ApiView(MethodView):
             return self.deserialize(data_raw, **kwargs)
 
     def deserialize(self, data_raw, expected_id=None, **kwargs):
-        try:
-            data = self.deserializer.load(data_raw, **kwargs).data
-        except IncorrectTypeError:
-            logger.warning("incorrect type in request data", exc_info=True)
-            flask.abort(409)
-        except ValidationError:
-            logger.warning("invalid request data", exc_info=True)
+        data, errors = self.deserializer.load(data_raw, **kwargs)
+        if errors:
+            logger.warning("invalid request data\n{}".format(errors))
             flask.abort(422)
-        else:
-            self.validate_request_id(data, expected_id)
-            return data
+
+        self.validate_request_id(data, expected_id)
+        return data
 
     @property
     def deserializer(self):

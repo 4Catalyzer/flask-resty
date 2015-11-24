@@ -1,6 +1,6 @@
-from flask.ext.resty import Api, GenericModelView, JsonApiSchema
+from flask.ext.resty import Api, GenericModelView
 import json
-from marshmallow import fields
+from marshmallow import fields, Schema
 import pytest
 from sqlalchemy import Column, Integer, String
 
@@ -27,10 +27,7 @@ def models(db):
 
 @pytest.fixture
 def schemas():
-    class WidgetSchema(JsonApiSchema):
-        class Meta(object):
-            type = 'widget'
-
+    class WidgetSchema(Schema):
         id = fields.Integer(as_string=True)
         name = fields.String(required=True)
         description = fields.String()
@@ -96,19 +93,16 @@ def test_list(client):
     items = json.loads(response.data)['data']
     assert items == [
         {
-            'type': 'widget',
             'id': '1',
             'name': "Foo",
             'description': "foo widget",
         },
         {
-            'type': 'widget',
             'id': '2',
             'name': "Bar",
             'description': "bar widget",
         },
         {
-            'type': 'widget',
             'id': '3',
             'name': "Baz",
             'description': "baz widget",
@@ -123,7 +117,6 @@ def test_retrieve(client):
 
     item = json.loads(response.data)['data']
     assert item == {
-        'type': 'widget',
         'id': '1',
         'name': "Foo",
         'description': "foo widget",
@@ -136,7 +129,6 @@ def test_create(client):
         content_type='application/json',
         data=json.dumps({
             'data': {
-                'type': 'widget',
                 'name': "Qux",
                 'description': "qux widget",
             },
@@ -148,7 +140,6 @@ def test_create(client):
 
     item = json.loads(response.data)['data']
     assert item == {
-        'type': 'widget',
         'id': '4',
         'name': "Qux",
         'description': "qux widget",
@@ -161,7 +152,6 @@ def test_update(client):
         content_type='application/json',
         data=json.dumps({
             'data': {
-                'type': 'widget',
                 'id': '1',
                 'description': "updated description",
             },
@@ -175,7 +165,6 @@ def test_update(client):
 
     item = json.loads(retrieve_response.data)['data']
     assert item == {
-        'type': 'widget',
         'id': '1',
         'name': "Foo",
         'description': "updated description",

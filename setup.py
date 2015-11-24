@@ -1,6 +1,8 @@
 import os
 from setuptools import Command, setup
 
+# -----------------------------------------------------------------------------
+
 
 def system(command):
     class SystemCommand(Command):
@@ -17,6 +19,8 @@ def system(command):
 
     return SystemCommand
 
+
+# -----------------------------------------------------------------------------
 
 setup(
     name="Flask-RESTy",
@@ -45,7 +49,6 @@ setup(
         'Flask-SQLAlchemy',
         'marshmallow',
         'SQLAlchemy',
-        'Werkzeug',
     ),
     extras_require={
         'jwt': ('PyJWT',),

@@ -11,6 +11,5 @@ from .filtering import (
     ColumnFilterField, FilterFieldBase, Filtering, ModelFilterField,
 )
 from .pagination import IdCursorPagination
-from .schema import JsonApiSchema
 from .sorting import FixedSorting, SortingBase
 from .view import ApiView, GenericModelView, ModelView

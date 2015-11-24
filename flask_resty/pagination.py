@@ -50,7 +50,7 @@ class IdCursorPagination(object):
 
         meta.set_response_meta(
             has_next_page=has_next_page,
-            cursors=cursors_out
+            cursors=cursors_out,
         )
         return collection
 
@@ -84,7 +84,7 @@ class IdCursorPagination(object):
         return column, asc
 
     def get_request_cursor(self, view, column_specs):
-        cursor = utils.current_api.get_request_arg('page', 'cursor')
+        cursor = flask.request.args.get('cursor')
         return self.parse_cursor(view, column_specs, cursor)
 
     def parse_cursor(self, view, column_specs, cursor):
@@ -96,7 +96,7 @@ class IdCursorPagination(object):
         if len(cursor) != len(column_specs):
             logger.warning(
                 "incorrect cursor field count, got {} but expected {}"
-                .format(len(cursor), len(column_specs))
+                .format(len(cursor), len(column_specs)),
             )
             flask.abort(400)
 
@@ -149,8 +149,7 @@ class IdCursorPagination(object):
         return sa.and_(previous_clauses, current_clause)
 
     def get_request_limit(self):
-        limit = utils.current_api.get_request_arg('page', 'limit')
-        return self.parse_limit(limit)
+        return self.parse_limit(flask.request.args.get('limit'))
 
     def parse_limit(self, limit):
         if not limit:

@@ -17,11 +17,9 @@ class Api(object):
         self._prefix = prefix
 
     def init_app(self, app):
-        app.config.setdefault('JSONAPIVIEW_USE_PARAM_CASE', True)
-
         if not hasattr(app, 'extensions'):
             app.extensions = {}
-        app.extensions['jsonapiview'] = self
+        app.extensions['resty'] = self
 
     def _get_app(self, app):
         app = app or self._app
@@ -62,11 +60,11 @@ class Api(object):
 
         app.add_url_rule(
             base_rule_full, view_func=view_func, endpoint=endpoint,
-            methods=base_view.methods
+            methods=base_view.methods,
         )
         app.add_url_rule(
             alternate_rule_full, view_func=view_func, endpoint=endpoint,
-            methods=alternate_view.methods
+            methods=alternate_view.methods,
         )
 
     def _get_endpoint(self, base_view, alternate_view):
@@ -87,38 +85,3 @@ class Api(object):
         @app.route(rule)
         def ping():
             return '', 200
-
-    def _get_request_arg_key(self, key, *args):
-        return \
-            self.render_key(key) + \
-            ''.join('[{}]'.format(self.render_key(arg)) for arg in args)
-
-    def get_request_arg(self, key, *args, **kwargs):
-        key = self._get_request_arg_key(key, *args)
-        if not kwargs.pop('nested', False):
-            return flask.request.args.get(key, **kwargs)
-
-        # TODO: Support recursive nesting.
-        key_prefix = '{}['.format(key)
-        prefix_length = len(key_prefix)
-        return {
-            self.parse_key(arg_key[prefix_length:-1]): arg_value
-            for arg_key, arg_value in flask.request.args.items()
-            if arg_key[:prefix_length] == key_prefix and arg_key[-1] == ']'
-        }
-
-    @property
-    def _use_param_case(self):
-        return flask.current_app.config['JSONAPIVIEW_USE_PARAM_CASE']
-
-    def render_key(self, key):
-        if not self._use_param_case:
-            return key
-
-        return key.replace('_', '-')
-
-    def parse_key(self, key):
-        if not self._use_param_case:
-            return key
-
-        return key.replace('-', '_')

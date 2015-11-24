@@ -1,8 +1,6 @@
-from flask.ext.resty import (
-    Api, filter_function, Filtering, GenericModelView, JsonApiSchema,
-)
+from flask.ext.resty import Api, filter_function, Filtering, GenericModelView
 import json
-from marshmallow import fields
+from marshmallow import fields, Schema
 import operator
 import pytest
 from sqlalchemy import Column, Integer, String
@@ -30,10 +28,7 @@ def models(db):
 
 @pytest.fixture
 def schemas():
-    class WidgetSchema(JsonApiSchema):
-        class Meta(object):
-            type = 'widget'
-
+    class WidgetSchema(Schema):
         id = fields.Integer(as_string=True)
         color = fields.String()
         size = fields.Integer()
@@ -95,16 +90,14 @@ def data(db, models):
 
 
 def test_eq(client):
-    response = client.get('/api/widgets?filter[color]=red')
+    response = client.get('/api/widgets?color=red')
     assert json.loads(response.data)['data'] == [
         {
-            'type': 'widget',
             'id': '1',
             'color': 'red',
             'size': 1,
         },
         {
-            'type': 'widget',
             'id': '4',
             'color': 'red',
             'size': 6,
@@ -113,16 +106,14 @@ def test_eq(client):
 
 
 def test_eq_many(client):
-    response = client.get('/api/widgets?filter[color]=green,blue')
+    response = client.get('/api/widgets?color=green,blue')
     assert json.loads(response.data)['data'] == [
         {
-            'type': 'widget',
             'id': '2',
             'color': 'green',
             'size': 2,
         },
         {
-            'type': 'widget',
             'id': '3',
             'color': 'blue',
             'size': 3,
@@ -131,16 +122,14 @@ def test_eq_many(client):
 
 
 def test_ge(client):
-    response = client.get('/api/widgets?filter[size-min]=3')
+    response = client.get('/api/widgets?size_min=3')
     assert json.loads(response.data)['data'] == [
         {
-            'type': 'widget',
             'id': '3',
             'color': 'blue',
             'size': 3,
         },
         {
-            'type': 'widget',
             'id': '4',
             'color': 'red',
             'size': 6,
@@ -149,16 +138,14 @@ def test_ge(client):
 
 
 def test_custom_operator(client):
-    response = client.get('/api/widgets?filter[size-divides]=2')
+    response = client.get('/api/widgets?size_divides=2')
     assert json.loads(response.data)['data'] == [
         {
-            'type': 'widget',
             'id': '2',
             'color': 'green',
             'size': 2,
         },
         {
-            'type': 'widget',
             'id': '4',
             'color': 'red',
             'size': 6,
@@ -167,16 +154,14 @@ def test_custom_operator(client):
 
 
 def test_filter_field(client):
-    response = client.get('/api/widgets?filter[size-is-odd]=true')
+    response = client.get('/api/widgets?size_is_odd=true')
     assert json.loads(response.data)['data'] == [
         {
-            'type': 'widget',
             'id': '1',
             'color': 'red',
             'size': 1,
         },
         {
-            'type': 'widget',
             'id': '3',
             'color': 'blue',
             'size': 3,

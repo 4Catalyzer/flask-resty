@@ -12,9 +12,8 @@ def get_item_or_404(method=None, **decorator_kwargs):
 
     @functools.wraps(method)
     def wrapped(self, *args, **kwargs):
-        item = self.get_item_or_404(
-            kwargs.pop(self.url_id_key), **decorator_kwargs
-        )
+        id = kwargs.pop(self.url_id_key)
+        item = self.get_item_or_404(id, **decorator_kwargs)
         return method(self, item, *args, **kwargs)
 
     return wrapped

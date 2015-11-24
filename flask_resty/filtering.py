@@ -3,8 +3,6 @@ import logging
 from marshmallow import ValidationError
 import sqlalchemy as sa
 
-from . import utils
-
 # -----------------------------------------------------------------------------
 
 logger = logging.getLogger(__name__)
@@ -88,14 +86,12 @@ class Filtering(object):
             return ColumnFilterField(*value)
 
     def __call__(self, query, view):
-        filter_args = utils.current_api.get_request_arg('filter', nested=True)
-        for key, arg_value in filter_args.items():
+        for key, filter_field in self._filter_fields.items():
             try:
-                filter_field = self._filter_fields[key]
+                arg_value = flask.request.args[key]
             except KeyError:
-                logger.warning("unknown filter field", exc_info=True)
-                flask.abort(400)
-            else:
-                query = query.filter(filter_field(view, arg_value))
+                continue
+
+            query = query.filter(filter_field(view, arg_value))
 
         return query
