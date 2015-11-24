@@ -1,10 +1,10 @@
 from setuptools import setup
 
 setup(
-    name="Flask-JSONAPIView",
+    name="Flask-RESTy",
     version='0.1.0',
-    description="Building blocks for JSON API endpoints for Flask",
-    url='https://github.com/4Catalyzer/flask-jsonapiview',
+    description="Building blocks for REST APIs for Flask",
+    url='https://github.com/4Catalyzer/flask-resty',
     author="Jimmy Jia",
     author_email='tesrin@gmail.com',
     license='MIT',
@@ -20,8 +20,8 @@ setup(
         'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
         'Topic :: Software Development :: Libraries :: Python Modules'
     ),
-    keywords='rest json api flask',
-    packages=('flask_jsonapiview', 'flask_jsonapiview.ext'),
+    keywords='rest flask',
+    packages=('flask_resty', 'flask_resty.ext'),
     install_requires=(
         'Flask',
         'Flask-SQLAlchemy',

@@ -1,4 +1,4 @@
-from flask.ext.jsonapiview import (
+from flask.ext.resty import (
     Api, filter_function, Filtering, GenericModelView, JsonApiSchema,
 )
 import json
