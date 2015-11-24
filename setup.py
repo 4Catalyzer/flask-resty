@@ -1,4 +1,22 @@
-from setuptools import setup
+import os
+from setuptools import Command, setup
+
+
+def system(command):
+    class SystemCommand(Command):
+        user_options = []
+
+        def initialize_options(self):
+            pass
+
+        def finalize_options(self):
+            pass
+
+        def run(self):
+            os.system(command)
+
+    return SystemCommand
+
 
 setup(
     name="Flask-RESTy",
@@ -18,7 +36,7 @@ setup(
         'Programming Language :: Python',
         'Programming Language :: Python :: 2',
         'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
-        'Topic :: Software Development :: Libraries :: Python Modules'
+        'Topic :: Software Development :: Libraries :: Python Modules',
     ),
     keywords='rest flask',
     packages=('flask_resty', 'flask_resty.ext'),
@@ -27,9 +45,14 @@ setup(
         'Flask-SQLAlchemy',
         'marshmallow',
         'SQLAlchemy',
-        'Werkzeug'
+        'Werkzeug',
     ),
     extras_require={
-        'jwt': ('PyJWT',)
-    }
+        'jwt': ('PyJWT',),
+    },
+    cmdclass={
+        'pandoc': system('pandoc README.md -o README.rst'),
+        'release': system('python setup.py pandoc sdist upload'),
+        'test': system('flake8 . && py.test --cov'),
+    },
 )

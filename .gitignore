@@ -55,3 +55,6 @@ docs/_build/
 
 # PyBuilder
 target/
+
+# Converted README for PyPI
+README.rst
