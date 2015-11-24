@@ -15,11 +15,7 @@ def app():
 
 @pytest.fixture
 def db(app):
-    app.config.update(
-        SQLALCHEMY_DATABASE_URI='sqlite://',
-        SQLALCHEMY_TRACK_MODIFICATIONS=False,
-    )
-
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite://'
     return fsa.SQLAlchemy(app)
 
 
