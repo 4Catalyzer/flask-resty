@@ -90,8 +90,7 @@ def test_list(client):
     assert response.status_code == 200
     assert response.mimetype == 'application/json'
 
-    items = json.loads(response.data)['data']
-    assert items == [
+    assert json.loads(response.data)['data'] == [
         {
             'id': '1',
             'name': "Foo",
@@ -115,8 +114,7 @@ def test_retrieve(client):
     assert response.status_code == 200
     assert response.mimetype == 'application/json'
 
-    item = json.loads(response.data)['data']
-    assert item == {
+    assert json.loads(response.data)['data'] == {
         'id': '1',
         'name': "Foo",
         'description': "foo widget",
@@ -138,8 +136,7 @@ def test_create(client):
     assert response.mimetype == 'application/json'
     assert response.headers['Location'] == 'http://localhost/api/widgets/4'
 
-    item = json.loads(response.data)['data']
-    assert item == {
+    assert json.loads(response.data)['data'] == {
         'id': '4',
         'name': "Qux",
         'description': "qux widget",
@@ -163,8 +160,7 @@ def test_update(client):
     assert retrieve_response.status_code == 200
     assert retrieve_response.mimetype == 'application/json'
 
-    item = json.loads(retrieve_response.data)['data']
-    assert item == {
+    assert json.loads(retrieve_response.data)['data'] == {
         'id': '1',
         'name': "Foo",
         'description': "updated description",
