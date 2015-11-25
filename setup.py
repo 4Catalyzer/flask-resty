@@ -49,6 +49,7 @@ setup(
         'Flask-SQLAlchemy',
         'marshmallow',
         'SQLAlchemy',
+        'Werkzeug',
     ),
     extras_require={
         'jwt': ('PyJWT',),

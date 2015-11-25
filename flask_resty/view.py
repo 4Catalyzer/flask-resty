@@ -105,11 +105,11 @@ class ModelView(ApiView):
     model = None
     url_id_key = 'id'
 
-    nested = None
-
     sorting = None
     filtering = None
     pagination = None
+
+    related = None
 
     @property
     def session(self):
@@ -179,51 +179,10 @@ class ModelView(ApiView):
 
     def deserialize(self, data_raw, **kwargs):
         data = super(ModelView, self).deserialize(data_raw, **kwargs)
-        if not self.nested:
+        if not self.related:
             return data
 
-        for key, view_class in self.nested.items():
-            many = self.deserializer.fields[key].many
-            self.resolve_nested(data, key, view_class, many=many)
-
-        return data
-
-    def resolve_nested(self, data, key, view_class, many=False):
-        try:
-            nested_data = data[key]
-        except KeyError:
-            # If this field were required, the deserializer already would have
-            # raised an exception.
-            return
-
-        if many:
-            if not nested_data:
-                resolved = []
-            else:
-                view = view_class()
-                resolved = [
-                    self.get_related_item(nested_datum, view)
-                    for nested_datum in nested_data
-                ]
-        else:
-            resolved = self.get_related_item(nested_data, view_class())
-
-        data[key] = resolved
-
-    def get_related_item(self, related_data, related_view):
-        try:
-            related_id = related_data['id']
-        except KeyError:
-            logger.warning("no id specified for related item")
-            flask.abort(422)
-        else:
-            try:
-                item = related_view.get_item(related_id)
-            except NoResultFound:
-                logger.warning("no related item with id {}".format(id))
-                flask.abort(422)
-            else:
-                return item
+        return self.related(data, self)
 
     def create_missing_item(self, id):
         return self.create_item({'id': id})

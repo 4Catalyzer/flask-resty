@@ -1,24 +1,22 @@
-from marshmallow import ValidationError
-from marshmallow.fields import Field
-
-__all__ = ('StubObject',)
+from marshmallow import fields
+from werkzeug import cached_property
 
 # -----------------------------------------------------------------------------
 
 
-class StubObject(Field):
-    def _serialize(self, value, attr, obj):
-        if value is None:
-            return None
+class RelatedItem(fields.Nested):
+    class SchemaProxy(object):
+        def __init__(self, schema):
+            self._schema = schema
 
-        return {
-            'id': value,
-        }
+        def load(self, *args, **kwargs):
+            kwargs['partial'] = True
+            return self._schema.load(*args, **kwargs)
 
-    def _deserialize(self, value, attr, data):
-        try:
-            id = value['id']
-        except (TypeError, KeyError):
-            raise ValidationError("incorrect input shape")
-        else:
-            return id
+        def __getattr__(self, item):
+            return getattr(self._schema, item)
+
+    @cached_property
+    def schema(self):
+        # Proxy the schema to always do partial loads.
+        return self.SchemaProxy(super(RelatedItem, self).schema)
