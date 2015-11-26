@@ -19,8 +19,6 @@ class Api(object):
         self._prefix = prefix
 
     def init_app(self, app):
-        if not hasattr(app, 'extensions'):
-            app.extensions = {}
         app.extensions['resty'] = self
 
         @app.errorhandler(ApiError)
