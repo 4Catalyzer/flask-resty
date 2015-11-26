@@ -222,6 +222,9 @@ def test_many_falsy(client):
     }
 
 
+# -----------------------------------------------------------------------------
+
+
 def test_error_not_found(client):
     response = helpers.request(
         client,

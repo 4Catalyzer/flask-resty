@@ -170,6 +170,9 @@ def test_filter_field(client):
     ]
 
 
+# -----------------------------------------------------------------------------
+
+
 def test_error(client):
     response = client.get('/api/widgets?size_min=foo')
     assert response.status_code == 400
