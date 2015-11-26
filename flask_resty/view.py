@@ -32,20 +32,22 @@ class ApiView(MethodView):
     def serializer(self):
         return self.schema
 
+    def make_response(self, data, *args, **kwargs):
+        body = self.make_response_body(data, meta.get_response_meta())
+        return self.make_raw_response(flask.jsonify(**body), *args, **kwargs)
+
+    def make_response_body(self, data, response_meta):
+        body = {'data': data}
+        if response_meta is not None:
+            body['meta'] = response_meta
+
+        return body
+
     def make_raw_response(self, *args, **kwargs):
         response = flask.make_response(*args)
         for key, value in kwargs.items():
             setattr(response, key, value)
         return response
-
-    def make_response(self, data_out, *args, **kwargs):
-        body = {'data': data_out}
-
-        response_meta = meta.get_response_meta()
-        if response_meta is not None:
-            body['meta'] = response_meta
-
-        return self.make_raw_response(flask.jsonify(**body), *args, **kwargs)
 
     def make_empty_response(self, **kwargs):
         return self.make_raw_response('', 204, **kwargs)
