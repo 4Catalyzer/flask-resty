@@ -1,8 +1,9 @@
 from flask.ext.resty import Api, GenericModelView
-import json
 from marshmallow import fields, Schema
 import pytest
 from sqlalchemy import Column, Integer, String
+
+import helpers
 
 # -----------------------------------------------------------------------------
 
@@ -88,9 +89,8 @@ def data(db, models):
 def test_list(client):
     response = client.get('/api/widgets')
     assert response.status_code == 200
-    assert response.mimetype == 'application/json'
 
-    assert json.loads(response.data)['data'] == [
+    assert helpers.get_data(response) == [
         {
             'id': '1',
             'name': "Foo",
@@ -112,9 +112,8 @@ def test_list(client):
 def test_retrieve(client):
     response = client.get('/api/widgets/1')
     assert response.status_code == 200
-    assert response.mimetype == 'application/json'
 
-    assert json.loads(response.data)['data'] == {
+    assert helpers.get_data(response) == {
         'id': '1',
         'name': "Foo",
         'description': "foo widget",
@@ -122,21 +121,18 @@ def test_retrieve(client):
 
 
 def test_create(client):
-    response = client.post(
-        '/api/widgets',
-        content_type='application/json',
-        data=json.dumps({
-            'data': {
-                'name': "Qux",
-                'description': "qux widget",
-            },
-        }),
+    response = helpers.request(
+        client,
+        'POST', '/api/widgets',
+        {
+            'name': "Qux",
+            'description': "qux widget",
+        },
     )
     assert response.status_code == 201
-    assert response.mimetype == 'application/json'
     assert response.headers['Location'] == 'http://localhost/api/widgets/4'
 
-    assert json.loads(response.data)['data'] == {
+    assert helpers.get_data(response) == {
         'id': '4',
         'name': "Qux",
         'description': "qux widget",
@@ -144,23 +140,20 @@ def test_create(client):
 
 
 def test_update(client):
-    update_response = client.patch(
-        '/api/widgets/1',
-        content_type='application/json',
-        data=json.dumps({
-            'data': {
-                'id': '1',
-                'description': "updated description",
-            },
-        }),
+    update_response = helpers.request(
+        client,
+        'PATCH', '/api/widgets/1',
+        {
+            'id': '1',
+            'description': "updated description",
+        },
     )
     assert update_response.status_code == 204
 
     retrieve_response = client.get('/api/widgets/1')
     assert retrieve_response.status_code == 200
-    assert retrieve_response.mimetype == 'application/json'
 
-    assert json.loads(retrieve_response.data)['data'] == {
+    assert helpers.get_data(retrieve_response) == {
         'id': '1',
         'name': "Foo",
         'description': "updated description",

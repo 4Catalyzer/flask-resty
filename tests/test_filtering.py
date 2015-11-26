@@ -1,9 +1,10 @@
 from flask.ext.resty import Api, filter_function, Filtering, GenericModelView
-import json
 from marshmallow import fields, Schema
 import operator
 import pytest
 from sqlalchemy import Column, Integer, String
+
+import helpers
 
 # -----------------------------------------------------------------------------
 
@@ -91,7 +92,7 @@ def data(db, models):
 
 def test_eq(client):
     response = client.get('/api/widgets?color=red')
-    assert json.loads(response.data)['data'] == [
+    assert helpers.get_data(response) == [
         {
             'id': '1',
             'color': 'red',
@@ -107,7 +108,7 @@ def test_eq(client):
 
 def test_eq_many(client):
     response = client.get('/api/widgets?color=green,blue')
-    assert json.loads(response.data)['data'] == [
+    assert helpers.get_data(response) == [
         {
             'id': '2',
             'color': 'green',
@@ -123,7 +124,7 @@ def test_eq_many(client):
 
 def test_ge(client):
     response = client.get('/api/widgets?size_min=3')
-    assert json.loads(response.data)['data'] == [
+    assert helpers.get_data(response) == [
         {
             'id': '3',
             'color': 'blue',
@@ -139,7 +140,7 @@ def test_ge(client):
 
 def test_custom_operator(client):
     response = client.get('/api/widgets?size_divides=2')
-    assert json.loads(response.data)['data'] == [
+    assert helpers.get_data(response) == [
         {
             'id': '2',
             'color': 'green',
@@ -155,7 +156,7 @@ def test_custom_operator(client):
 
 def test_filter_field(client):
     response = client.get('/api/widgets?size_is_odd=true')
-    assert json.loads(response.data)['data'] == [
+    assert helpers.get_data(response) == [
         {
             'id': '1',
             'color': 'red',
@@ -167,3 +168,16 @@ def test_filter_field(client):
             'size': 3,
         },
     ]
+
+
+def test_error(client):
+    response = client.get('/api/widgets?size_min=foo')
+    assert response.status_code == 400
+
+    errors = helpers.get_errors(response)
+    for error in errors:
+        assert error.pop('detail', None) is not None
+    assert errors == [{
+        'code': 'invalid_filter',
+        'source': {'parameter': 'size_min'},
+    }]

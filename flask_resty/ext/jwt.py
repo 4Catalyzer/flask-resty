@@ -3,9 +3,9 @@ from __future__ import absolute_import
 import flask
 import jwt
 from jwt import InvalidTokenError
-import logging
 
 from ..authentication import AuthenticationBase
+from ..exceptions import ApiError
 
 # -----------------------------------------------------------------------------
 
@@ -21,13 +21,11 @@ JWT_DECODE_ARG_KEYS = (
 
 # -----------------------------------------------------------------------------
 
-logger = logging.getLogger(__name__)
-
-# -----------------------------------------------------------------------------
-
 
 class JwtAuthentication(AuthenticationBase):
     CONFIG_KEY_TEMPLATE = 'RESTY_JWT_DECODE_{}'
+
+    id_token_arg = 'id_token'
 
     def __init__(self, **kwargs):
         super(JwtAuthentication, self).__init__()
@@ -44,10 +42,9 @@ class JwtAuthentication(AuthenticationBase):
         try:
             payload = self.decode_token(token)
         except InvalidTokenError:
-            logger.warning("invalid token", exc_info=True)
-            flask.abort(401)
-        else:
-            return self.get_credentials(payload)
+            raise ApiError(401, {'code': 'invalid_token'})
+
+        return self.get_credentials(payload)
 
     def get_token(self):
         authorization = flask.request.headers.get('Authorization')
@@ -62,17 +59,15 @@ class JwtAuthentication(AuthenticationBase):
         try:
             scheme, token = authorization.split()
         except ValueError:
-            logger.warning("malformed Authorization header", exc_info=True)
-            flask.abort(401)
-        else:
-            if scheme != 'Bearer':
-                logger.warning("incorrect authentication scheme")
-                flask.abort(401)
+            raise ApiError(401, {'code': 'invalid_authorization'})
 
-            return token
+        if scheme != 'Bearer':
+            raise ApiError(401, {'code': 'invalid_authorization.scheme'})
+
+        return token
 
     def get_token_from_request(self):
-        return flask.request.args.get('id_token')
+        return flask.request.args.get(self.id_token_arg)
 
     def decode_token(self, token):
         return jwt.decode(token, **self.get_jwt_decode_args())

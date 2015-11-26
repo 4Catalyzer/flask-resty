@@ -7,7 +7,7 @@ before_install:
   - pip install -U pip
 install:
   - pip install -Ue .
-  - pip install -U flake8 pytest pytest-cov coveralls
+  - pip install -U coveralls flake8 mock pytest pytest-cov
 
 script:
   - python setup.py test
