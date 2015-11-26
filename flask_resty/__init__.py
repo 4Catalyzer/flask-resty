@@ -13,5 +13,5 @@ from .filtering import (
 )
 from .related import NestedRelated, RelatedBase
 from .pagination import IdCursorPagination
-from .sorting import FixedSorting, SortingBase
+from .sorting import FixedSorting, Sorting, SortingBase
 from .view import ApiView, GenericModelView, ModelView

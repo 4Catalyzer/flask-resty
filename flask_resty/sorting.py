@@ -1,20 +1,21 @@
+import flask
+
+from .exceptions import ApiError
+
+# -----------------------------------------------------------------------------
+
+
 class SortingBase(object):
     def __call__(self, query, view):
         raise NotImplementedError()
 
     def get_field_specs(self, fields):
-        if not fields:
-            raise ValueError("fields must not be empty")
-
         return tuple(
             self.get_field_spec(field) for field in fields.split(',')
         )
 
     def get_field_spec(self, field):
-        if not field:
-            raise ValueError("field must not be empty")
-
-        if field[0] == '-':
+        if field and field[0] == '-':
             return field[1:], False
 
         return field, True
@@ -34,11 +35,7 @@ class SortingBase(object):
         return column if asc else column.desc()
 
     def get_column(self, view, field_name):
-        self.validate_field_name(view, field_name)
         return getattr(view.model, field_name)
-
-    def validate_field_name(self, view, field_name):
-        raise NotImplementedError()
 
 
 # -----------------------------------------------------------------------------
@@ -51,5 +48,25 @@ class FixedSorting(SortingBase):
     def __call__(self, query, view):
         return self.sort_query(query, view, self._field_specs)
 
-    def validate_field_name(self, field_name, view):
-        return True
+
+class Sorting(SortingBase):
+    sort_arg = 'sort'
+
+    def __init__(self, *field_names):
+        self._field_names = frozenset(field_names)
+
+    def __call__(self, query, view):
+        sort = flask.request.args.get(self.sort_arg, None)
+        if sort is None:
+            return query
+
+        return self.sort_query(query, view, self.get_field_specs(sort))
+
+    def get_column(self, view, field_name):
+        if field_name not in self._field_names:
+            raise ApiError(400, {
+                'code': 'invalid_sort',
+                'source': {'parameter': self.sort_arg},
+            })
+
+        return super(Sorting, self).get_column(view, field_name)
