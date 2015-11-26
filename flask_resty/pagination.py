@@ -1,22 +1,21 @@
 import base64
 import flask
 import json
-import logging
 from marshmallow import ValidationError
 import sqlalchemy as sa
 from sqlalchemy import Column, sql
 
+from .exceptions import ApiError
 from . import meta
 from . import utils
 
 # -----------------------------------------------------------------------------
 
-logger = logging.getLogger(__name__)
-
-# -----------------------------------------------------------------------------
-
 
 class IdCursorPagination(object):
+    cursor_arg = 'cursor'
+    limit_arg = 'limit'
+
     def __init__(self, default_limit=None, max_limit=None):
         self._default_limit = utils.if_none(default_limit, max_limit)
         self._max_limit = max_limit
@@ -84,8 +83,11 @@ class IdCursorPagination(object):
         return column, asc
 
     def get_request_cursor(self, view, column_specs):
-        cursor = flask.request.args.get('cursor')
-        return self.parse_cursor(view, column_specs, cursor)
+        cursor = flask.request.args.get(self.cursor_arg)
+        try:
+            return self.parse_cursor(view, column_specs, cursor)
+        except ApiError as e:
+            raise e.update({'source': {'parameter': self.cursor_arg}})
 
     def parse_cursor(self, view, column_specs, cursor):
         if not cursor:
@@ -94,11 +96,7 @@ class IdCursorPagination(object):
         cursor = self.decode_cursor(cursor)
 
         if len(cursor) != len(column_specs):
-            logger.warning(
-                "incorrect cursor field count, got {} but expected {}"
-                .format(len(cursor), len(column_specs)),
-            )
-            flask.abort(400)
+            raise ApiError(400, {'code': 'invalid_cursor.field_count'})
 
         deserializer = view.deserializer
         column_fields = (
@@ -110,11 +108,20 @@ class IdCursorPagination(object):
                 field.deserialize(value)
                 for field, value in zip(column_fields, cursor)
             )
-        except ValidationError:
-            logger.warning("invalid cursor", exc_info=True)
-            flask.abort(400)
+        except ValidationError as e:
+            errors = (
+                self.format_validation_error(message)
+                for message, path in utils.iter_validation_errors(e.messages)
+            )
+            raise ApiError(400, *errors)
 
         return cursor
+
+    def format_validation_error(self, message):
+        return {
+            'code': 'invalid_cursor',
+            'detail': message,
+        }
 
     def decode_cursor(self, cursor):
         try:
@@ -123,8 +130,7 @@ class IdCursorPagination(object):
             cursor = cursor.decode('utf-8')
             cursor = json.loads(cursor)
         except (TypeError, ValueError):
-            logger.warning("incorrectly encoded cursor", exc_info=True)
-            flask.abort(400)
+            raise ApiError(400, {'code': 'invalid_cursor.encoding'})
 
         return cursor
 
@@ -149,7 +155,11 @@ class IdCursorPagination(object):
         return sa.and_(previous_clauses, current_clause)
 
     def get_request_limit(self):
-        return self.parse_limit(flask.request.args.get('limit'))
+        limit = flask.request.args.get(self.limit_arg)
+        try:
+            return self.parse_limit(limit)
+        except ApiError as e:
+            raise e.update({'source': {'parameter': self.limit_arg}})
 
     def parse_limit(self, limit):
         if not limit:
@@ -158,12 +168,10 @@ class IdCursorPagination(object):
         try:
             limit = int(limit)
         except ValueError:
-            logger.warning("invalid limit", exc_info=True)
-            flask.abort(400)
+            raise ApiError(400, {'code': 'invalid_limit'})
 
         if limit < 0:
-            logging.warning("limit must be non-negative, got {}".format(limit))
-            flask.abort(400)
+            raise ApiError(400, {'code': 'invalid_limit'})
 
         if self._max_limit is not None:
             limit = min(limit, self._max_limit)

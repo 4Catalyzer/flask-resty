@@ -1,16 +1,14 @@
 import flask
 from flask.views import MethodView
-import logging
 from sqlalchemy.exc import DataError, IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
+from werkzeug.exceptions import NotFound
 
 from .authentication import NoOpAuthentication
 from .authorization import NoOpAuthorization
+from .exceptions import ApiError
 from . import meta
-
-# -----------------------------------------------------------------------------
-
-logger = logging.getLogger(__name__)
+from . import utils
 
 # -----------------------------------------------------------------------------
 
@@ -56,19 +54,20 @@ class ApiView(MethodView):
         try:
             data_raw = flask.request.get_json()['data']
         except TypeError:
-            logger.warning("payload is not a JSON object")
-            flask.abort(400)
+            raise ApiError(400, {'code': 'invalid_body'})
         except KeyError:
-            logging.warning("no data member in request")
-            flask.abort(400)
-        else:
-            return self.deserialize(data_raw, **kwargs)
+            raise ApiError(400, {'code': 'invalid_data.missing'})
+
+        return self.deserialize(data_raw, **kwargs)
 
     def deserialize(self, data_raw, expected_id=None, **kwargs):
         data, errors = self.deserializer.load(data_raw, **kwargs)
         if errors:
-            logger.warning("invalid request data\n{}".format(errors))
-            flask.abort(422)
+            formatted_errors = (
+                self.format_validation_error(error)
+                for error in utils.iter_validation_errors(errors)
+            )
+            raise ApiError(422, *formatted_errors)
 
         self.validate_request_id(data, expected_id)
         return data
@@ -77,33 +76,37 @@ class ApiView(MethodView):
     def deserializer(self):
         return self.schema
 
+    def format_validation_error(self, error):
+        message, path = error
+        pointer = '/data/{}'.format('/'.join(path))
+
+        return {
+            'code': 'invalid_data',
+            'detail': message,
+            'source': {'pointer': pointer},
+        }
+
     def validate_request_id(self, data, expected_id):
         if expected_id is None:
             return
 
         if expected_id is False:
             if 'id' in data:
-                logger.warning("client generated id not allowed")
-                flask.abort(403)
+                raise ApiError(403, {'code': 'invalid_id.forbidden'})
             return
 
         try:
             id = data['id']
         except KeyError:
-            logger.warning("no id in request data")
-            flask.abort(422)
-        else:
-            if id != expected_id:
-                logger.warning(
-                    "incorrect id in request data, got {} but expected {}"
-                    .format(id, expected_id)
-                )
-                flask.abort(409)
+            raise ApiError(422, {'code': 'invalid_id.missing'})
+
+        if id != expected_id:
+            raise ApiError(409, {'code': 'invalid_id.mismatch'})
 
 
 class ModelView(ApiView):
     model = None
-    url_id_key = 'id'
+    url_id_key = 'id'  # FIXME: Should be url_view_arg.
 
     sorting = None
     filtering = None
@@ -153,10 +156,9 @@ class ModelView(ApiView):
         try:
             item = self.get_item(id, **kwargs)
         except NoResultFound:
-            logger.warning("no item with id {}".format(id))
-            flask.abort(404)
-        else:
-            return item
+            raise NotFound()
+
+        return item
 
     def get_item(self, id, create_missing=False):
         try:
@@ -167,15 +169,12 @@ class ModelView(ApiView):
                 item = self.create_missing_item(id)
                 self.session.add(item)
                 return item
-            else:
-                raise
+
+            raise
         except DataError:
-            logger.warning(
-                "failed to get item with id {}".format(id), exc_info=True
-            )
-            flask.abort(400)
-        else:
-            return item
+            raise ApiError(400, {'code': 'invalid_id'})
+
+        return item
 
     def deserialize(self, data_raw, **kwargs):
         data = super(ModelView, self).deserialize(data_raw, **kwargs)
@@ -212,11 +211,9 @@ class ModelView(ApiView):
         try:
             self.session.commit()
         except IntegrityError:
-            logger.warning("failed to commit change", exc_info=True)
-            flask.abort(409)
+            raise ApiError(409, {'code': 'invalid_data.conflict'})
         except DataError:
-            logger.warning("failed to commit change", exc_info=True)
-            flask.abort(422)
+            raise ApiError(422, {'code': 'invalid_data'})
 
     def make_item_response(self, item, *args):
         data_out = self.serialize(item)
@@ -260,8 +257,8 @@ class GenericModelView(ModelView):
 
         if return_content:
             return self.make_item_response(item)
-        else:
-            return self.make_empty_response(item=item)
+
+        return self.make_empty_response(item=item)
 
     def destroy(self, id):
         item = self.get_item_or_404(id)

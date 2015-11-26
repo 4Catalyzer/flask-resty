@@ -1,5 +1,7 @@
 import flask
 
+from .exceptions import ApiError
+
 # -----------------------------------------------------------------------------
 
 # Don't set default value in function so we can assert on None-ness.
@@ -20,6 +22,10 @@ class Api(object):
         if not hasattr(app, 'extensions'):
             app.extensions = {}
         app.extensions['resty'] = self
+
+        @app.errorhandler(ApiError)
+        def handle_api_error(error):
+            return flask.jsonify(**error.body), error.status_code
 
     def _get_app(self, app):
         app = app or self._app

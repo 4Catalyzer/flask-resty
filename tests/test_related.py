@@ -1,9 +1,10 @@
 from flask.ext.resty import Api, GenericModelView, NestedRelated, RelatedItem
-import json
 from marshmallow import fields, Schema
 import pytest
 from sqlalchemy import Column, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
+
+import helpers
 
 # -----------------------------------------------------------------------------
 
@@ -39,16 +40,12 @@ def schemas():
     class ParentSchema(Schema):
         id = fields.Integer(as_string=True)
         name = fields.String(required=True)
-        children = RelatedItem(
-            'ChildSchema', many=True, required=True, exclude=('parent',),
-        )
+        children = RelatedItem('ChildSchema', many=True, exclude=('parent',))
 
     class ChildSchema(Schema):
         id = fields.Integer(as_string=True)
         name = fields.String(required=True)
-        parent = RelatedItem(
-            ParentSchema, required=True, exclude=('children',),
-        )
+        parent = RelatedItem(ParentSchema, exclude=('children',))
 
     return {
         'parent': ParentSchema(),
@@ -111,21 +108,21 @@ def data(db, models):
 
 def test_baseline(client):
     parent_response = client.get('/api/parents/1')
-    assert json.loads(parent_response.data)['data'] == {
+    assert helpers.get_data(parent_response) == {
         'id': '1',
         'name': "Parent",
-        'children': []
+        'children': [],
     }
 
     child_1_response = client.get('/api/children/1')
-    assert json.loads(child_1_response.data)['data'] == {
+    assert helpers.get_data(child_1_response) == {
         'id': '1',
         'name': "Child 1",
         'parent': None,
     }
 
     child_2_response = client.get('/api/children/2')
-    assert json.loads(child_2_response.data)['data'] == {
+    assert helpers.get_data(child_2_response) == {
         'id': '2',
         'name': "Child 2",
         'parent': None,
@@ -133,19 +130,17 @@ def test_baseline(client):
 
 
 def test_single(client):
-    response = client.put(
-        '/api/children/1',
-        content_type='application/json',
-        data=json.dumps({
-            'data': {
-                'id': '1',
-                'name': "Updated Child",
-                'parent': {'id': '1'},
-            },
-        }),
+    response = helpers.request(
+        client,
+        'PUT', '/api/children/1',
+        {
+            'id': '1',
+            'name': "Updated Child",
+            'parent': {'id': '1'},
+        },
     )
 
-    assert json.loads(response.data)['data'] == {
+    assert helpers.get_data(response) == {
         'id': '1',
         'name': "Updated Child",
         'parent': {
@@ -156,22 +151,20 @@ def test_single(client):
 
 
 def test_many(client):
-    response = client.put(
-        '/api/parents/1',
-        content_type='application/json',
-        data=json.dumps({
-            'data': {
-                'id': '1',
-                'name': "Updated Parent",
-                'children': [
-                    {'id': '1'},
-                    {'id': '2'},
-                ],
-            },
-        }),
+    response = helpers.request(
+        client,
+        'PUT', '/api/parents/1',
+        {
+            'id': '1',
+            'name': "Updated Parent",
+            'children': [
+                {'id': '1'},
+                {'id': '2'},
+            ],
+        },
     )
 
-    assert json.loads(response.data)['data'] == {
+    assert helpers.get_data(response) == {
         'id': '1',
         'name': "Updated Parent",
         'children': [
@@ -185,3 +178,81 @@ def test_many(client):
             },
         ],
     }
+
+
+def test_missing(client):
+    test_single(client)
+
+    response = helpers.request(
+        client,
+        'PUT', '/api/children/1',
+        {
+            'id': '1',
+            'name': "Twice Updated Child",
+        },
+    )
+
+    assert helpers.get_data(response) == {
+        'id': '1',
+        'name': "Twice Updated Child",
+        'parent': {
+            'id': '1',
+            'name': "Parent",
+        },
+    }
+
+
+def test_many_falsy(client):
+    test_many(client)
+
+    response = helpers.request(
+        client,
+        'PUT', '/api/parents/1',
+        {
+            'id': '1',
+            'name': "Twice Updated Parent",
+            'children': [],
+        },
+    )
+
+    assert helpers.get_data(response) == {
+        'id': '1',
+        'name': "Twice Updated Parent",
+        'children': [],
+    }
+
+
+def test_error_not_found(client):
+    response = helpers.request(
+        client,
+        'PUT', '/api/children/1',
+        {
+            'id': '1',
+            'name': "Updated Child",
+            'parent': {'id': '2'},
+        },
+    )
+    assert response.status_code == 422
+
+    assert helpers.get_errors(response) == [{
+        'code': 'invalid_related.not_found',
+        'source': {'pointer': '/data/parent'},
+    }]
+
+
+def test_error_missing_id(client):
+    response = helpers.request(
+        client,
+        'PUT', '/api/children/1',
+        {
+            'id': '1',
+            'name': "Updated Child",
+            'parent': {},
+        },
+    )
+    assert response.status_code == 422
+
+    assert helpers.get_errors(response) == [{
+        'code': 'invalid_related.missing_id',
+        'source': {'pointer': '/data/parent'},
+    }]

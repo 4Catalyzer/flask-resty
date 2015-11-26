@@ -1,11 +1,5 @@
-import flask
-import logging
-
 from . import authentication
-
-# -----------------------------------------------------------------------------
-
-logger = logging.getLogger(__name__)
+from .exceptions import ApiError
 
 # -----------------------------------------------------------------------------
 
@@ -53,5 +47,4 @@ class NoOpAuthorization(AuthorizationBase):
 class HasAnyCredentialsAuthorization(NoOpAuthorization):
     def authorize_request(self):
         if self.get_request_credentials() is None:
-            logger.warning("no request credentials")
-            flask.abort(401)
+            raise ApiError(401, {'code': 'invalid_credentials.missing'})

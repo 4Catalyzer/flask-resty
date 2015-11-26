@@ -1,11 +1,9 @@
 import flask
-import logging
 from marshmallow import ValidationError
 import sqlalchemy as sa
 
-# -----------------------------------------------------------------------------
-
-logger = logging.getLogger(__name__)
+from .exceptions import ApiError
+from . import utils
 
 # -----------------------------------------------------------------------------
 
@@ -27,11 +25,20 @@ class FilterFieldBase(object):
         field = self.get_field(view)
         try:
             value = field.deserialize(arg_value)
-        except ValidationError:
-            logger.warning("invalid filter value", exc_info=True)
-            flask.abort(400)
-        else:
-            return self.get_filter_clause(view, value)
+        except ValidationError as e:
+            errors = (
+                self.format_validation_error(message)
+                for message, path in utils.iter_validation_errors(e.messages)
+            )
+            raise ApiError(400, *errors)
+
+        return self.get_filter_clause(view, value)
+
+    def format_validation_error(self, message):
+        return {
+            'code': 'invalid_filter',
+            'detail': message,
+        }
 
     def get_field(self, view):
         raise NotImplementedError()
@@ -73,25 +80,28 @@ class ModelFilterField(FilterFieldBase):
 class Filtering(object):
     def __init__(self, **kwargs):
         self._filter_fields = {
-            key: self.get_filter_field(key, value)
-            for key, value in kwargs.items()
+            arg_name: self.make_filter_field(arg_name, value)
+            for arg_name, value in kwargs.items()
         }
 
-    def get_filter_field(self, key, value):
+    def make_filter_field(self, arg_name, value):
         if isinstance(value, FilterFieldBase):
             return value
         elif callable(value):
-            return ColumnFilterField(key, value)
+            return ColumnFilterField(arg_name, value)
         else:
             return ColumnFilterField(*value)
 
     def __call__(self, query, view):
-        for key, filter_field in self._filter_fields.items():
+        for arg_name, filter_field in self._filter_fields.items():
             try:
-                arg_value = flask.request.args[key]
+                arg_value = flask.request.args[arg_name]
             except KeyError:
                 continue
 
-            query = query.filter(filter_field(view, arg_value))
+            try:
+                query = query.filter(filter_field(view, arg_value))
+            except ApiError as e:
+                raise e.update({'source': {'parameter': arg_name}})
 
         return query

@@ -3,3 +3,17 @@ def if_none(value, default):
         return default
 
     return value
+
+
+# -----------------------------------------------------------------------------
+
+
+def iter_validation_errors(errors, path=()):
+    if isinstance(errors, dict):
+        for field_name, field_errors in errors.items():
+            field_path = path + (field_name,)
+            for error in iter_validation_errors(field_errors, field_path):
+                yield error
+    else:
+        for message in errors:
+            yield (message, path)
