@@ -45,14 +45,14 @@ setup(
     keywords='rest flask',
     packages=('flask_resty', 'flask_resty.ext'),
     install_requires=(
-        'Flask',
-        'Flask-SQLAlchemy',
-        'marshmallow',
-        'SQLAlchemy',
-        'Werkzeug',
+        'Flask >= 0.10',
+        'Flask-SQLAlchemy >= 1.0',
+        'marshmallow >= 2.2.0',
+        'SQLAlchemy >= 1.0.0',
+        'Werkzeug >= 0.11',
     ),
     extras_require={
-        'jwt': ('PyJWT',),
+        'jwt': ('PyJWT >= 1.4.0',),
     },
     cmdclass={
         'pandoc': system('pandoc README.md -o README.rst'),
