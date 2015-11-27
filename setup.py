@@ -1,5 +1,5 @@
-import os
 from setuptools import Command, setup
+import subprocess
 
 # -----------------------------------------------------------------------------
 
@@ -15,7 +15,7 @@ def system(command):
             pass
 
         def run(self):
-            os.system(command)
+            subprocess.check_call(command, shell=True)
 
     return SystemCommand
 
