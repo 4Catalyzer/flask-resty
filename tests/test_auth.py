@@ -52,7 +52,7 @@ def auth():
         def filter_query(self, query, view):
             return query.filter(
                 (view.model.owner_id == self.get_request_credentials()) |
-                (view.model.owner_id == None)  # noqa
+                (view.model.owner_id == None),  # noqa
             )
 
         def authorize_save_item(self, item):

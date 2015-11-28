@@ -6,7 +6,7 @@ python:
 before_install:
   - pip install -U pip
 install:
-  - pip install -Ue .
+  - pip install -Ue .[jwt]
   - pip install -U coveralls flake8 mock pytest pytest-cov
 
 script:
