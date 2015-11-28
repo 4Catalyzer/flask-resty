@@ -52,11 +52,12 @@ class FixedSorting(SortingBase):
 class Sorting(SortingBase):
     sort_arg = 'sort'
 
-    def __init__(self, *field_names):
+    def __init__(self, *field_names, **kwargs):
         self._field_names = frozenset(field_names)
+        self._default_sort = kwargs.get('default')
 
     def __call__(self, query, view):
-        sort = flask.request.args.get(self.sort_arg, None)
+        sort = flask.request.args.get(self.sort_arg, self._default_sort)
         if sort is None:
             return query
 

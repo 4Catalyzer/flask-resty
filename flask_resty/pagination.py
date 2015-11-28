@@ -12,8 +12,7 @@ from . import utils
 # -----------------------------------------------------------------------------
 
 
-class IdCursorPagination(object):
-    cursor_arg = 'cursor'
+class LimitPagination(object):
     limit_arg = 'limit'
 
     def __init__(self, default_limit=None, max_limit=None):
@@ -26,32 +25,125 @@ class IdCursorPagination(object):
                 "default limit exceeds max limit"
 
     def __call__(self, query, view):
-        column_specs = self.get_column_specs(query, view)
-
-        cursor_in = self.get_request_cursor(view, column_specs)
-        if cursor_in is not None:
-            query = query.filter(self.get_filter(column_specs, cursor_in))
-
-        limit = self.get_request_limit()
+        limit = self.get_limit()
         if limit is not None:
             query = query.limit(limit + 1)
 
-        collection = query.all()
+        items = query.all()
 
-        if limit is not None and len(collection) > limit:
+        if limit is not None and len(items) > limit:
             has_next_page = True
-            collection = collection[:limit]
+            items = items[:limit]
         else:
             has_next_page = False
 
-        # Relay expects a cursor for each item in the collection.
-        cursors_out = self.render_cursors(view, column_specs, collection)
+        meta.set_response_meta(has_next_page=has_next_page)
+        return items
 
-        meta.set_response_meta(
-            has_next_page=has_next_page,
-            cursors=cursors_out,
-        )
-        return collection
+    def get_limit(self):
+        limit = flask.request.args.get(self.limit_arg)
+        try:
+            return self.parse_limit(limit)
+        except ApiError as e:
+            raise e.update({'source': {'parameter': self.limit_arg}})
+
+    def parse_limit(self, limit):
+        if limit is None:
+            return self._default_limit
+
+        try:
+            limit = int(limit)
+        except ValueError:
+            raise ApiError(400, {'code': 'invalid_limit'})
+        if limit < 0:
+            raise ApiError(400, {'code': 'invalid_limit'})
+
+        if self._max_limit is not None:
+            limit = min(limit, self._max_limit)
+
+        return limit
+
+
+class LimitOffsetPagination(LimitPagination):
+    offset_arg = 'offset'
+
+    def __call__(self, query, view):
+        offset = self.get_offset()
+        query = query.offset(offset)
+        return super(LimitOffsetPagination, self).__call__(query, view)
+
+    def get_offset(self):
+        offset = flask.request.args.get(self.offset_arg)
+        try:
+            return self.parse_offset(offset)
+        except ApiError as e:
+            raise e.update({'source': {'parameter': self.offset_arg}})
+
+    def parse_offset(self, offset):
+        if offset is None:
+            return 0
+
+        try:
+            offset = int(offset)
+        except ValueError:
+            raise ApiError(400, {'code': 'invalid_offset'})
+        if offset < 0:
+            raise ApiError(400, {'code': 'invalid_offset'})
+
+        return offset
+
+
+class PagePagination(LimitOffsetPagination):
+    page_arg = 'page'
+
+    def __init__(self, page_size):
+        super(PagePagination, self).__init__()
+        self._page_size = page_size
+
+    def get_offset(self):
+        return self.get_page() * self._page_size
+
+    def get_page(self):
+        page = flask.request.args.get(self.page_arg)
+        try:
+            return self.parse_page(page)
+        except ApiError as e:
+            raise e.update({'source': {'parameter': self.page_arg}})
+
+    def parse_page(self, page):
+        if page is None:
+            return 0
+
+        try:
+            page = int(page)
+        except ValueError:
+            raise ApiError(400, {'code': 'invalid_page'})
+        if page < 0:
+            raise ApiError(400, {'code': 'invalid_page'})
+
+        return page
+
+    def get_limit(self):
+        return self._page_size
+
+
+class IdCursorPagination(LimitPagination):
+    cursor_arg = 'cursor'
+
+    def __call__(self, query, view):
+        column_specs = self.get_column_specs(query, view)
+
+        cursor_in = self.get_cursor(view, column_specs)
+        if cursor_in is not None:
+            query = query.filter(self.get_filter(column_specs, cursor_in))
+
+        items = super(IdCursorPagination, self).__call__(query, view)
+
+        # Relay expects a cursor for each item.
+        cursors_out = self.render_cursors(view, column_specs, items)
+        meta.set_response_meta(cursors=cursors_out)
+
+        return items
 
     def get_column_specs(self, query, view):
         column_specs = tuple(
@@ -73,16 +165,12 @@ class IdCursorPagination(object):
         assert isinstance(column, Column), "expression is not on a column"
 
         modifier = expression.modifier
-        if modifier == sql.operators.asc_op:
-            asc = True
-        elif modifier == sql.operators.desc_op:
-            asc = False
-        else:
-            assert False, "unrecognized expression modifier"
+        assert modifier in (sql.operators.asc_op, sql.operators.desc_op)
+        asc = modifier == sql.operators.asc_op
 
         return column, asc
 
-    def get_request_cursor(self, view, column_specs):
+    def get_cursor(self, view, column_specs):
         cursor = flask.request.args.get(self.cursor_arg)
         try:
             return self.parse_cursor(view, column_specs, cursor)
@@ -96,7 +184,7 @@ class IdCursorPagination(object):
         cursor = self.decode_cursor(cursor)
 
         if len(cursor) != len(column_specs):
-            raise ApiError(400, {'code': 'invalid_cursor.field_count'})
+            raise ApiError(400, {'code': 'invalid_cursor.length'})
 
         deserializer = view.deserializer
         column_fields = (
@@ -154,38 +242,14 @@ class IdCursorPagination(object):
 
         return sa.and_(previous_clauses, current_clause)
 
-    def get_request_limit(self):
-        limit = flask.request.args.get(self.limit_arg)
-        try:
-            return self.parse_limit(limit)
-        except ApiError as e:
-            raise e.update({'source': {'parameter': self.limit_arg}})
-
-    def parse_limit(self, limit):
-        if not limit:
-            return self._default_limit
-
-        try:
-            limit = int(limit)
-        except ValueError:
-            raise ApiError(400, {'code': 'invalid_limit'})
-
-        if limit < 0:
-            raise ApiError(400, {'code': 'invalid_limit'})
-
-        if self._max_limit is not None:
-            limit = min(limit, self._max_limit)
-
-        return limit
-
-    def render_cursors(self, view, column_specs, collection):
+    def render_cursors(self, view, column_specs, items):
         serializer = view.serializer
         column_fields = tuple(
             serializer.fields[column.name] for column, _ in column_specs
         )
 
         return tuple(
-            self.render_cursor(item, column_fields) for item in collection
+            self.render_cursor(item, column_fields) for item in items
         )
 
     def render_cursor(self, item, column_fields):
