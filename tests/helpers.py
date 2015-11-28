@@ -25,5 +25,9 @@ def get_data(response):
     return get_body(response)['data']
 
 
+def get_meta(response):
+    return get_body(response)['meta']
+
+
 def get_errors(response):
     return get_body(response)['errors']
