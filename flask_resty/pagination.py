@@ -223,7 +223,7 @@ class IdCursorPagination(LimitPagination):
         return cursor
 
     def get_filter(self, column_specs, cursor):
-        filter_specs = zip(column_specs, cursor)
+        filter_specs = tuple(zip(column_specs, cursor))
         return sa.or_(
             self.get_filter_clause(filter_specs[:i + 1])
             for i in range(len(filter_specs))

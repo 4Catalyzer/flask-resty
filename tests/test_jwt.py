@@ -1,7 +1,6 @@
 from flask.ext.resty import (
-    Api, GenericModelView, HasAnyCredentialsAuthorization,
+    Api, GenericModelView, HasAnyCredentialsAuthorization, JwtAuthentication,
 )
-from flask.ext.resty.ext.jwt import JwtAuthentication
 from marshmallow import fields, Schema
 import pytest
 from sqlalchemy import Column, Integer, String

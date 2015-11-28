@@ -50,13 +50,13 @@ def data(db, models):
 def test_get_item(client):
     response = client.get('/widgets/1')
     assert response.status_code == 200
-    assert response.data == '1'
+    assert response.get_data(as_text=True) == '1'
 
 
 def test_get_item_create_missing(client):
     response = client.put('/widgets/2')
     assert response.status_code == 200
-    assert response.data == '2'
+    assert response.get_data(as_text=True) == '2'
 
 
 # -----------------------------------------------------------------------------

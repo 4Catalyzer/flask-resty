@@ -4,8 +4,8 @@ import flask
 import jwt
 from jwt import InvalidTokenError
 
-from ..authentication import AuthenticationBase
-from ..exceptions import ApiError
+from .authentication import AuthenticationBase
+from .exceptions import ApiError
 
 # -----------------------------------------------------------------------------
 

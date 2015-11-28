@@ -17,3 +17,8 @@ from .pagination import (
 )
 from .sorting import FixedSorting, Sorting, SortingBase
 from .view import ApiView, GenericModelView, ModelView
+
+try:
+    from .jwt import JwtAuthentication
+except ImportError:
+    pass
