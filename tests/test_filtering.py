@@ -66,7 +66,7 @@ def routes(app, models, schemas, filter_fields):
         def get(self):
             return self.list()
 
-    api = Api(app, '/api')
+    api = Api(app)
     api.add_resource('/widgets', WidgetListView)
 
 
@@ -91,7 +91,7 @@ def data(db, models):
 
 
 def test_eq(client):
-    response = client.get('/api/widgets?color=red')
+    response = client.get('/widgets?color=red')
     assert helpers.get_data(response) == [
         {
             'id': '1',
@@ -107,7 +107,7 @@ def test_eq(client):
 
 
 def test_eq_many(client):
-    response = client.get('/api/widgets?color=green,blue')
+    response = client.get('/widgets?color=green,blue')
     assert helpers.get_data(response) == [
         {
             'id': '2',
@@ -123,7 +123,7 @@ def test_eq_many(client):
 
 
 def test_ge(client):
-    response = client.get('/api/widgets?size_min=3')
+    response = client.get('/widgets?size_min=3')
     assert helpers.get_data(response) == [
         {
             'id': '3',
@@ -139,7 +139,7 @@ def test_ge(client):
 
 
 def test_custom_operator(client):
-    response = client.get('/api/widgets?size_divides=2')
+    response = client.get('/widgets?size_divides=2')
     assert helpers.get_data(response) == [
         {
             'id': '2',
@@ -155,7 +155,7 @@ def test_custom_operator(client):
 
 
 def test_filter_field(client):
-    response = client.get('/api/widgets?size_is_odd=true')
+    response = client.get('/widgets?size_is_odd=true')
     assert helpers.get_data(response) == [
         {
             'id': '1',
@@ -173,8 +173,8 @@ def test_filter_field(client):
 # -----------------------------------------------------------------------------
 
 
-def test_error(client):
-    response = client.get('/api/widgets?size_min=foo')
+def test_error_invalid_field(client):
+    response = client.get('/widgets?size_min=foo')
     assert response.status_code == 400
 
     errors = helpers.get_errors(response)

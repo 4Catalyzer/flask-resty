@@ -55,7 +55,7 @@ def routes(app, models, schemas):
         def get(self):
             return self.list()
 
-    api = Api(app, '/api')
+    api = Api(app)
     api.add_resource('/widgets', WidgetListView)
     api.add_resource('/fixed_widgets', FixedWidgetListView)
 
@@ -80,7 +80,7 @@ def data(db, models):
 
 
 def test_single(client):
-    response = client.get('/api/widgets?sort=size')
+    response = client.get('/widgets?sort=size')
 
     assert helpers.get_data(response) == [
         {
@@ -102,7 +102,7 @@ def test_single(client):
 
 
 def test_many(client):
-    response = client.get('/api/widgets?sort=name,-size')
+    response = client.get('/widgets?sort=name,-size')
 
     assert helpers.get_data(response) == [
         {
@@ -124,7 +124,7 @@ def test_many(client):
 
 
 def test_no_sort(client):
-    response = client.get('/api/widgets')
+    response = client.get('/widgets')
 
     assert helpers.get_data(response) == [
         {
@@ -146,7 +146,7 @@ def test_no_sort(client):
 
 
 def test_fixed(client):
-    response = client.get('/api/fixed_widgets')
+    response = client.get('/fixed_widgets')
 
     assert helpers.get_data(response) == [
         {
@@ -170,8 +170,8 @@ def test_fixed(client):
 # -----------------------------------------------------------------------------
 
 
-def test_invalid_field(client):
-    response = client.get('/api/widgets?sort=id')
+def test_error_invalid_field(client):
+    response = client.get('/widgets?sort=id')
     assert response.status_code == 400
 
     assert helpers.get_errors(response) == [{
@@ -180,8 +180,8 @@ def test_invalid_field(client):
     }]
 
 
-def test_empty_sort(client):
-    response = client.get('/api/widgets?sort=')
+def test_error_empty(client):
+    response = client.get('/widgets?sort=')
     assert response.status_code == 400
 
     assert helpers.get_errors(response) == [{

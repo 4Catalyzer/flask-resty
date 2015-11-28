@@ -100,7 +100,7 @@ def routes(app, models, schemas, auth):
         def delete(self, id):
             return self.destroy(id)
 
-    api = Api(app, '/api')
+    api = Api(app)
     api.add_resource(
         '/widgets', WidgetListView, WidgetView, id_rule='<int:id>'
     )
@@ -126,7 +126,7 @@ def data(db, models):
 
 
 def test_list(client):
-    response = client.get('/api/widgets?user_id=foo')
+    response = client.get('/widgets?user_id=foo')
     assert helpers.get_data(response) == [
         {
             'id': '1',
@@ -142,14 +142,14 @@ def test_list(client):
 
 
 def test_retrieve(client):
-    response = client.get('/api/widgets/1?user_id=foo')
+    response = client.get('/widgets/1?user_id=foo')
     assert response.status_code == 200
 
 
 def test_create(client):
     response = helpers.request(
         client,
-        'POST', '/api/widgets?user_id=foo',
+        'POST', '/widgets?user_id=foo',
         {
             'owner_id': 'foo',
             'name': "Created",
@@ -161,7 +161,7 @@ def test_create(client):
 def test_update(client):
     response = helpers.request(
         client,
-        'PATCH', '/api/widgets/1?user_id=foo',
+        'PATCH', '/widgets/1?user_id=foo',
         {
             'id': '1',
             'owner_id': 'foo',
@@ -172,7 +172,7 @@ def test_update(client):
 
 
 def test_delete(client):
-    response = client.delete('/api/widgets/1?user_id=foo')
+    response = client.delete('/widgets/1?user_id=foo')
     assert response.status_code == 204
 
 
@@ -180,7 +180,7 @@ def test_delete(client):
 
 
 def test_error_unauthenticated(client):
-    response = client.get('/api/widgets')
+    response = client.get('/widgets')
     assert response.status_code == 401
 
     assert helpers.get_errors(response) == [{
@@ -189,14 +189,14 @@ def test_error_unauthenticated(client):
 
 
 def test_error_retrieve_unauthorized(client):
-    response = client.get('/api/widgets/1?user_id=bar')
+    response = client.get('/widgets/1?user_id=bar')
     assert response.status_code == 404
 
 
 def test_error_create_unauthorized(client):
     response = helpers.request(
         client,
-        'POST', '/api/widgets?user_id=bar',
+        'POST', '/widgets?user_id=bar',
         {
             'owner_id': 'foo',
             'name': "Created",
@@ -212,7 +212,7 @@ def test_error_create_unauthorized(client):
 def test_error_update_unauthorized(client):
     not_found_response = helpers.request(
         client,
-        'PATCH', '/api/widgets/1?user_id=bar',
+        'PATCH', '/widgets/1?user_id=bar',
         {
             'id': '1',
             'owner_id': 'bar',
@@ -223,7 +223,7 @@ def test_error_update_unauthorized(client):
 
     forbidden_response = helpers.request(
         client,
-        'PATCH', '/api/widgets/3?user_id=bar',
+        'PATCH', '/widgets/3?user_id=bar',
         {
             'id': '3',
             'owner_id': 'bar',
@@ -238,10 +238,10 @@ def test_error_update_unauthorized(client):
 
 
 def test_error_delete_unauthorized(client):
-    not_found_response = client.delete('/api/widgets/1?user_id=bar')
+    not_found_response = client.delete('/widgets/1?user_id=bar')
     assert not_found_response.status_code == 404
 
-    forbidden_response = client.delete('/api/widgets/3?user_id=bar')
+    forbidden_response = client.delete('/widgets/3?user_id=bar')
     assert forbidden_response.status_code == 403
 
     assert helpers.get_errors(forbidden_response) == [{
