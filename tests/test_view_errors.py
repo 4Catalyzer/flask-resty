@@ -67,7 +67,7 @@ def views(models, schemas):
 
 @pytest.fixture(autouse=True)
 def routes(app, views):
-    api = Api(app, '/api')
+    api = Api(app)
     api.add_resource(
         '/widgets', views['widget_list'], views['widget'], id_rule='<int:id>'
     )
@@ -87,7 +87,7 @@ def data(db, models):
 
 def test_invalid_body(client):
     response = client.post(
-        '/api/widgets',
+        '/widgets',
         data='foo',
     )
     assert response.status_code == 400
@@ -99,7 +99,7 @@ def test_invalid_body(client):
 
 def test_data_missing(client):
     response = client.post(
-        '/api/widgets',
+        '/widgets',
         content_type='application/json',
         data='{}',
     )
@@ -113,7 +113,7 @@ def test_data_missing(client):
 def test_deserializer_errors(client):
     response = helpers.request(
         client,
-        'POST', '/api/widgets',
+        'POST', '/widgets',
         {
             'nested': {'value': 'three'},
         },
@@ -140,7 +140,7 @@ def test_deserializer_errors(client):
 def test_id_forbidden(client):
     response = helpers.request(
         client,
-        'POST', '/api/widgets',
+        'POST', '/widgets',
         {
             'id': '2',
             'name': "Bar",
@@ -156,7 +156,7 @@ def test_id_forbidden(client):
 def test_id_missing(client):
     response = helpers.request(
         client,
-        'PATCH', '/api/widgets/1',
+        'PATCH', '/widgets/1',
         {
             'name': "Bar",
         },
@@ -171,7 +171,7 @@ def test_id_missing(client):
 def test_id_mismatch(client):
     response = helpers.request(
         client,
-        'PATCH', '/api/widgets/1',
+        'PATCH', '/widgets/1',
         {
             'id': '2',
             'name': "Bar",
@@ -191,14 +191,14 @@ def test_invalid_id(views, client):
         side_effect=DataError(None, None, None),
     )
 
-    response = client.get('/api/widgets/1')
+    response = client.get('/widgets/1')
     assert response.status_code == 400
 
 
 def test_commit_integrity_error(client):
     response = helpers.request(
         client,
-        'POST', '/api/widgets',
+        'POST', '/widgets',
         {
             'name': "Foo",
         },
@@ -219,7 +219,7 @@ def test_commit_data_error(views, client):
 
     response = helpers.request(
         client,
-        'PATCH', '/api/widgets/1',
+        'PATCH', '/widgets/1',
         {
             'id': '1',
             'name': "Bar",
@@ -234,7 +234,7 @@ def test_commit_data_error(views, client):
 
 def test_debug(app, client):
     production_response = client.post(
-        '/api/widgets',
+        '/widgets',
         data='foo',
     )
     assert production_response.status_code == 400
@@ -242,7 +242,7 @@ def test_debug(app, client):
 
     app.debug = True
     debug_response = client.post(
-        '/api/widgets',
+        '/widgets',
         data='foo',
     )
     assert debug_response.status_code == 400

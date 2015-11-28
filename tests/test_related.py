@@ -83,7 +83,7 @@ def routes(app, models, schemas):
         def put(self, id):
             return self.update(id, return_content=True)
 
-    api = Api(app, '/api')
+    api = Api(app)
     api.add_resource('/parents/<int:id>', ParentView)
     api.add_resource('/children/<int:id>', ChildView)
 
@@ -107,21 +107,21 @@ def data(db, models):
 
 
 def test_baseline(client):
-    parent_response = client.get('/api/parents/1')
+    parent_response = client.get('/parents/1')
     assert helpers.get_data(parent_response) == {
         'id': '1',
         'name': "Parent",
         'children': [],
     }
 
-    child_1_response = client.get('/api/children/1')
+    child_1_response = client.get('/children/1')
     assert helpers.get_data(child_1_response) == {
         'id': '1',
         'name': "Child 1",
         'parent': None,
     }
 
-    child_2_response = client.get('/api/children/2')
+    child_2_response = client.get('/children/2')
     assert helpers.get_data(child_2_response) == {
         'id': '2',
         'name': "Child 2",
@@ -132,7 +132,7 @@ def test_baseline(client):
 def test_single(client):
     response = helpers.request(
         client,
-        'PUT', '/api/children/1',
+        'PUT', '/children/1',
         {
             'id': '1',
             'name': "Updated Child",
@@ -153,7 +153,7 @@ def test_single(client):
 def test_many(client):
     response = helpers.request(
         client,
-        'PUT', '/api/parents/1',
+        'PUT', '/parents/1',
         {
             'id': '1',
             'name': "Updated Parent",
@@ -185,7 +185,7 @@ def test_missing(client):
 
     response = helpers.request(
         client,
-        'PUT', '/api/children/1',
+        'PUT', '/children/1',
         {
             'id': '1',
             'name': "Twice Updated Child",
@@ -207,7 +207,7 @@ def test_many_falsy(client):
 
     response = helpers.request(
         client,
-        'PUT', '/api/parents/1',
+        'PUT', '/parents/1',
         {
             'id': '1',
             'name': "Twice Updated Parent",
@@ -228,7 +228,7 @@ def test_many_falsy(client):
 def test_error_not_found(client):
     response = helpers.request(
         client,
-        'PUT', '/api/children/1',
+        'PUT', '/children/1',
         {
             'id': '1',
             'name': "Updated Child",
@@ -246,7 +246,7 @@ def test_error_not_found(client):
 def test_error_missing_id(client):
     response = helpers.request(
         client,
-        'PUT', '/api/children/1',
+        'PUT', '/children/1',
         {
             'id': '1',
             'name': "Updated Child",

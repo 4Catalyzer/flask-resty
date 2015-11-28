@@ -61,7 +61,7 @@ def routes(app, models, schemas):
         def delete(self, id):
             return self.destroy(id)
 
-    api = Api(app, '/api')
+    api = Api(app)
     api.add_resource(
         '/widgets', WidgetListView, WidgetView, id_rule='<int:id>'
     )
@@ -87,7 +87,7 @@ def data(db, models):
 
 
 def test_list(client):
-    response = client.get('/api/widgets')
+    response = client.get('/widgets')
     assert response.status_code == 200
 
     assert helpers.get_data(response) == [
@@ -110,7 +110,7 @@ def test_list(client):
 
 
 def test_retrieve(client):
-    response = client.get('/api/widgets/1')
+    response = client.get('/widgets/1')
     assert response.status_code == 200
 
     assert helpers.get_data(response) == {
@@ -123,14 +123,14 @@ def test_retrieve(client):
 def test_create(client):
     response = helpers.request(
         client,
-        'POST', '/api/widgets',
+        'POST', '/widgets',
         {
             'name': "Qux",
             'description': "qux widget",
         },
     )
     assert response.status_code == 201
-    assert response.headers['Location'] == 'http://localhost/api/widgets/4'
+    assert response.headers['Location'] == 'http://localhost/widgets/4'
 
     assert helpers.get_data(response) == {
         'id': '4',
@@ -142,7 +142,7 @@ def test_create(client):
 def test_update(client):
     update_response = helpers.request(
         client,
-        'PATCH', '/api/widgets/1',
+        'PATCH', '/widgets/1',
         {
             'id': '1',
             'description': "updated description",
@@ -150,7 +150,7 @@ def test_update(client):
     )
     assert update_response.status_code == 204
 
-    retrieve_response = client.get('/api/widgets/1')
+    retrieve_response = client.get('/widgets/1')
     assert retrieve_response.status_code == 200
 
     assert helpers.get_data(retrieve_response) == {
@@ -161,8 +161,8 @@ def test_update(client):
 
 
 def test_destroy(client):
-    destroy_response = client.delete('/api/widgets/1')
+    destroy_response = client.delete('/widgets/1')
     assert destroy_response.status_code == 204
 
-    retrieve_response = client.get('/api/widgets/1')
+    retrieve_response = client.get('/widgets/1')
     assert retrieve_response.status_code == 404

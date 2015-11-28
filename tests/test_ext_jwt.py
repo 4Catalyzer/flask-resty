@@ -71,7 +71,7 @@ def routes(app, models, schemas, auth):
         def get(self):
             return self.list()
 
-    api = Api(app, '/api')
+    api = Api(app)
     api.add_resource('/widgets', WidgetListView)
 
 
@@ -115,7 +115,7 @@ def invalid_token(request):
 
 def test_header(client, token):
     response = client.get(
-        '/api/widgets',
+        '/widgets',
         headers={
             'Authorization': 'Bearer {}'.format(token),
         },
@@ -130,7 +130,7 @@ def test_header(client, token):
 
 
 def test_arg(client, token):
-    response = client.get('/api/widgets?id_token={}'.format(token))
+    response = client.get('/widgets?id_token={}'.format(token))
 
     assert helpers.get_data(response) == [
         {
@@ -144,7 +144,7 @@ def test_arg(client, token):
 
 
 def test_error_unauthenticated(client):
-    response = client.get('/api/widgets')
+    response = client.get('/widgets')
     assert response.status_code == 401
 
     assert helpers.get_errors(response) == [{
@@ -154,7 +154,7 @@ def test_error_unauthenticated(client):
 
 def test_error_invalid_authorization(client):
     response = client.get(
-        '/api/widgets',
+        '/widgets',
         headers={
             'Authorization': 'foo',
         },
@@ -168,7 +168,7 @@ def test_error_invalid_authorization(client):
 
 def test_error_invalid_authorization_scheme(client):
     response = client.get(
-        '/api/widgets',
+        '/widgets',
         headers={
             'Authorization': 'foo bar',
         },
@@ -182,7 +182,7 @@ def test_error_invalid_authorization_scheme(client):
 
 def test_error_invalid_token(client, invalid_token):
     response = client.get(
-        '/api/widgets',
+        '/widgets',
         headers={
             'Authorization': 'Bearer {}'.format(invalid_token),
         },

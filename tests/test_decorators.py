@@ -34,7 +34,7 @@ def routes(app, models):
         def put(self, item):
             return str(item.id)
 
-    api = Api(app, '/api')
+    api = Api(app)
     api.add_resource('/widgets/<int:id>', WidgetView)
 
 
@@ -48,17 +48,20 @@ def data(db, models):
 
 
 def test_get_item(client):
-    response = client.get('/api/widgets/1')
+    response = client.get('/widgets/1')
     assert response.status_code == 200
     assert response.data == '1'
 
 
-def test_get_item_404(client):
-    response = client.get('/api/widgets/2')
-    assert response.status_code == 404
-
-
 def test_get_item_create_missing(client):
-    response = client.put('/api/widgets/2')
+    response = client.put('/widgets/2')
     assert response.status_code == 200
     assert response.data == '2'
+
+
+# -----------------------------------------------------------------------------
+
+
+def test_error_not_found(client):
+    response = client.get('/widgets/2')
+    assert response.status_code == 404
