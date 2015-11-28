@@ -58,6 +58,6 @@ setup(
     cmdclass={
         'pandoc': system('pandoc README.md -o README.rst'),
         'release': system('python setup.py pandoc sdist upload'),
-        'test': system('flake8 . && py.test --cov'),
+        'test': system('tox'),
     },
 )
