@@ -57,7 +57,7 @@ setup(
     },
     cmdclass={
         'pandoc': system('pandoc README.md -o README.rst'),
-        'release': system('python setup.py pandoc sdist upload'),
+        'release': system('python setup.py pandoc sdist bdist_wheel upload'),
         'test': system('tox'),
     },
 )
