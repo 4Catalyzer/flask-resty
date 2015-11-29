@@ -56,8 +56,11 @@ setup(
         'jwt': ('PyJWT >= 1.4.0',),
     },
     cmdclass={
+        'clean': system('rm -rf build dist *.egg-info'),
+        'package': system('python setup.py pandoc sdist bdist_wheel'),
         'pandoc': system('pandoc README.md -o README.rst'),
-        'release': system('python setup.py pandoc sdist bdist_wheel upload'),
+        'publish': system('twine upload dist/*'),
+        'release': system('python setup.py clean package publish'),
         'test': system('tox'),
     },
 )
