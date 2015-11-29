@@ -1,4 +1,4 @@
-from flask.ext.resty import Api, get_item_or_404, ModelView
+from flask_resty import Api, get_item_or_404, ModelView
 import pytest
 from sqlalchemy import Column, Integer
 

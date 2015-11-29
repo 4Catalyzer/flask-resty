@@ -1,4 +1,4 @@
-from flask.ext.resty import Api, FixedSorting, GenericModelView, Sorting
+from flask_resty import Api, FixedSorting, GenericModelView, Sorting
 from marshmallow import fields, Schema
 import pytest
 from sqlalchemy import Column, Integer, String

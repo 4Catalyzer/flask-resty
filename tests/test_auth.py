@@ -1,5 +1,5 @@
 import flask
-from flask.ext.resty import (
+from flask_resty import (
     Api, ApiError, AuthenticationBase, GenericModelView,
     HasAnyCredentialsAuthorization,
 )
