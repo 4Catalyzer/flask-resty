@@ -1,4 +1,4 @@
-from flask.ext.resty import (
+from flask_resty import (
     Api, Filtering, GenericModelView, IdCursorPagination,
     LimitOffsetPagination, PagePagination, Sorting
 )

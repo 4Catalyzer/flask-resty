@@ -8,7 +8,7 @@ Building blocks for REST APIs for [Flask](http://flask.pocoo.org/).
 Create a [SQLAlchemy](http://www.sqlalchemy.org/) model and a [marshmallow](http://marshmallow.rtfd.org/) schema, then: 
 
 ```python
-from flask.ext.resty import Api, GenericModelView
+from flask_resty import Api, GenericModelView
 
 from .models import Widget
 from .schemas import WidgetSchema

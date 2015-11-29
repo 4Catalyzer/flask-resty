@@ -1,4 +1,4 @@
-from flask.ext.resty import Api, GenericModelView
+from flask_resty import Api, GenericModelView
 from marshmallow import fields, Schema
 import pytest
 from sqlalchemy import Column, Integer

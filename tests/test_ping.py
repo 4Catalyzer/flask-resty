@@ -1,4 +1,4 @@
-from flask.ext.resty import Api
+from flask_resty import Api
 import pytest
 
 # -----------------------------------------------------------------------------

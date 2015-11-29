@@ -1,4 +1,4 @@
-from flask.ext.resty import Api, filter_function, Filtering, GenericModelView
+from flask_resty import Api, filter_function, Filtering, GenericModelView
 from marshmallow import fields, Schema
 import operator
 import pytest

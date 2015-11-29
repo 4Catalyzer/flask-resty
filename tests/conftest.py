@@ -1,5 +1,5 @@
 from flask import Flask
-import flask.ext.sqlalchemy as fsa
+import flask_sqlalchemy as fsa
 import pytest
 
 # -----------------------------------------------------------------------------
