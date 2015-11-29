@@ -39,11 +39,12 @@ setup(
         'Operating System :: OS Independent',
         'Programming Language :: Python',
         'Programming Language :: Python :: 2',
+        'Programming Language :: Python :: 3',
         'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
         'Topic :: Software Development :: Libraries :: Python Modules',
     ),
     keywords='rest flask',
-    packages=('flask_resty', 'flask_resty.ext'),
+    packages=('flask_resty',),
     install_requires=(
         'Flask >= 0.10',
         'Flask-SQLAlchemy >= 1.0',
@@ -57,6 +58,6 @@ setup(
     cmdclass={
         'pandoc': system('pandoc README.md -o README.rst'),
         'release': system('python setup.py pandoc sdist upload'),
-        'test': system('flake8 . && py.test --cov'),
+        'test': system('tox'),
     },
 )

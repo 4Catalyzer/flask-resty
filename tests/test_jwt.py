@@ -1,12 +1,18 @@
 from flask.ext.resty import (
     Api, GenericModelView, HasAnyCredentialsAuthorization,
 )
-from flask.ext.resty.ext.jwt import JwtAuthentication
 from marshmallow import fields, Schema
 import pytest
 from sqlalchemy import Column, Integer, String
 
 import helpers
+
+# -----------------------------------------------------------------------------
+
+try:
+    from flask.ext.resty import JwtAuthentication
+except ImportError:
+    pytestmark = pytest.mark.skipif(True, reason="JWT support not installed")
 
 # -----------------------------------------------------------------------------
 

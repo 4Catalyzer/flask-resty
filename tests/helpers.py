@@ -18,7 +18,7 @@ def request(client, method, path, data, **kwargs):
 
 def get_body(response):
     assert response.mimetype == 'application/json'
-    return json.loads(response.data)
+    return json.loads(response.get_data(as_text=True))
 
 
 def get_data(response):
