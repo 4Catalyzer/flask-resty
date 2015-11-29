@@ -31,7 +31,7 @@ setup(
     author_email='tesrin@gmail.com',
     license='MIT',
     classifiers=(
-        'Development Status :: 2 - Pre-Alpha',
+        'Development Status :: 3 - Alpha',
         'Framework :: Flask',
         'Environment :: Web Environment',
         'Intended Audience :: Developers',
@@ -57,7 +57,7 @@ setup(
     },
     cmdclass={
         'pandoc': system('pandoc README.md -o README.rst'),
-        'release': system('python setup.py pandoc sdist upload'),
+        'release': system('python setup.py pandoc sdist bdist_wheel upload'),
         'test': system('tox'),
     },
 )
