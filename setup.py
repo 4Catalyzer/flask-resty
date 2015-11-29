@@ -31,7 +31,7 @@ setup(
     author_email='tesrin@gmail.com',
     license='MIT',
     classifiers=(
-        'Development Status :: 2 - Pre-Alpha',
+        'Development Status :: 3 - Alpha',
         'Framework :: Flask',
         'Environment :: Web Environment',
         'Intended Audience :: Developers',
