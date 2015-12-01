@@ -62,16 +62,10 @@ def routes(app, models, schemas):
 
 @pytest.fixture(autouse=True)
 def data(db, models):
-    def create_widget(name, size):
-        widget = models['widget']()
-        widget.name = name
-        widget.size = size
-        return widget
-
     db.session.add_all((
-        create_widget("Foo", 1),
-        create_widget("Foo", 5),
-        create_widget("Baz", 3),
+        models['widget'](name="Foo", size=1),
+        models['widget'](name="Foo", size=5),
+        models['widget'](name="Baz", size=3),
     ))
     db.session.commit()
 

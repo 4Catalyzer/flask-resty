@@ -108,16 +108,10 @@ def routes(app, models, schemas, auth):
 
 @pytest.fixture(autouse=True)
 def data(db, models):
-    def create_widget(owner_id, name):
-        widget = models['widget']()
-        widget.owner_id = owner_id
-        widget.name = name
-        return widget
-
     db.session.add_all((
-        create_widget('foo', "Foo"),
-        create_widget('bar', "Bar"),
-        create_widget(None, "Public"),
+        models['widget'](owner_id='foo', name="Foo"),
+        models['widget'](owner_id='bar', name="Bar"),
+        models['widget'](owner_id=None, name="Public"),
     ))
     db.session.commit()
 

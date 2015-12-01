@@ -72,17 +72,11 @@ def routes(app, models, schemas, filter_fields):
 
 @pytest.fixture(autouse=True)
 def data(db, models):
-    def create_widget(color, size):
-        widget = models['widget']()
-        widget.color = color
-        widget.size = size
-        return widget
-
     db.session.add_all((
-        create_widget('red', 1),
-        create_widget('green', 2),
-        create_widget('blue', 3),
-        create_widget('red', 6),
+        models['widget'](color='red', size=1),
+        models['widget'](color='green', size=2),
+        models['widget'](color='blue', size=3),
+        models['widget'](color='red', size=6),
     ))
     db.session.commit()
 

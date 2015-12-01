@@ -76,10 +76,7 @@ def routes(app, views):
 
 @pytest.fixture(autouse=True)
 def data(db, models):
-    widget = models['widget']()
-    widget.name = "Foo"
-
-    db.session.add(widget)
+    db.session.add(models['widget'](name="Foo"))
     db.session.commit()
 
 
