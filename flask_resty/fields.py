@@ -1,22 +1,21 @@
-from marshmallow import fields
-from werkzeug import cached_property
+from marshmallow import fields, ValidationError
+import marshmallow.utils
 
 # -----------------------------------------------------------------------------
 
 
 class RelatedItem(fields.Nested):
-    class SchemaProxy(object):
-        def __init__(self, schema):
-            self._schema = schema
+    def _deserialize(self, value, attr, data):
+        if self.many and not marshmallow.utils.is_collection(value):
+            self.fail('type', input=value, type=value.__class__.__name__)
 
-        def load(self, *args, **kwargs):
-            kwargs['partial'] = True
-            return self._schema.load(*args, **kwargs)
+        # Do partial load of related item, as we only need the id.
+        data, errors = self.schema.load(value, partial=True)
+        if errors:
+            raise ValidationError(errors, data=data)
+        return data
 
-        def __getattr__(self, item):
-            return getattr(self._schema, item)
-
-    @cached_property
-    def schema(self):
-        # Proxy the schema to always do partial loads.
-        return self.SchemaProxy(super(RelatedItem, self).schema)
+    def _validate_missing(self, value):
+        # Do not display detailed error data on required fields in nested
+        # schema - in this context, they're actually not required.
+        super(fields.Nested, self)._validate_missing(value)
