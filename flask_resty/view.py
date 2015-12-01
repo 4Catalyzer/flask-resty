@@ -80,7 +80,9 @@ class ApiView(MethodView):
 
     def format_validation_error(self, error):
         message, path = error
-        pointer = '/data/{}'.format('/'.join(path))
+        pointer = '/data/{}'.format(
+            '/'.join(str(field_key) for field_key in path),
+        )
 
         return {
             'code': 'invalid_data',

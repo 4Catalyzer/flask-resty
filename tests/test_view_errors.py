@@ -36,6 +36,7 @@ def schemas():
         id = fields.Integer(as_string=True)
         name = fields.String(required=True)
         nested = fields.Nested(NestedSchema)
+        nested_many = fields.Nested(NestedSchema, many=True)
 
     return {
         'widget': WidgetSchema(),
@@ -116,6 +117,11 @@ def test_deserializer_errors(client):
         'POST', '/widgets',
         {
             'nested': {'value': 'three'},
+            'nested_many': [
+                {'value': 'four'},
+                {'value': 5},
+                {'value': 'six'},
+            ],
         },
     )
     assert response.status_code == 422
@@ -133,6 +139,14 @@ def test_deserializer_errors(client):
         {
             'code': 'invalid_data',
             'source': {'pointer': '/data/nested/value'},
+        },
+        {
+            'code': 'invalid_data',
+            'source': {'pointer': '/data/nested_many/0/value'},
+        },
+        {
+            'code': 'invalid_data',
+            'source': {'pointer': '/data/nested_many/2/value'},
         },
     ]
 
