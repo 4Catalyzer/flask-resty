@@ -90,15 +90,10 @@ def routes(app, models, schemas):
 
 @pytest.fixture(autouse=True)
 def data(db, models):
-    def create_item(type, name):
-        item = models[type]()
-        item.name = name
-        return item
-
     db.session.add_all((
-        create_item('parent', "Parent"),
-        create_item('child', "Child 1"),
-        create_item('child', "Child 2"),
+        models['parent'](name="Parent"),
+        models['child'](name="Child 1"),
+        models['child'](name="Child 2"),
     ))
     db.session.commit()
 
