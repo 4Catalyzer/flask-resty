@@ -1,6 +1,6 @@
 import flask
 from flask.views import MethodView
-from sqlalchemy.exc import DataError, IntegrityError
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
 from werkzeug.exceptions import NotFound
 
@@ -175,8 +175,6 @@ class ModelView(ApiView):
                 return item
 
             raise
-        except DataError:
-            raise ApiError(400, {'code': 'invalid_id'})
 
         return item
 
@@ -216,8 +214,6 @@ class ModelView(ApiView):
             self.session.commit()
         except IntegrityError:
             raise ApiError(409, {'code': 'invalid_data.conflict'})
-        except DataError:
-            raise ApiError(422, {'code': 'invalid_data'})
 
     def make_item_response(self, item, *args):
         data_out = self.serialize(item)
