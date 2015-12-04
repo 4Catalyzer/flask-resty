@@ -1,9 +1,7 @@
 from flask_resty import Api, GenericModelView
 from marshmallow import fields, Schema
-from mock import PropertyMock
 import pytest
 from sqlalchemy import Column, Integer, String
-from sqlalchemy.exc import DataError
 
 import helpers
 
@@ -195,18 +193,7 @@ def test_id_mismatch(client):
     }]
 
 
-def test_invalid_id(views, client):
-    # Normally the DataError might come from a type error, but SQLite is
-    # dynamically typed, so it's easier to trigger one with a mock.
-    views['widget'].query = PropertyMock(
-        side_effect=DataError(None, None, None),
-    )
-
-    response = client.get('/widgets/1')
-    assert response.status_code == 400
-
-
-def test_commit_integrity_error(client):
+def test_commit_conflict(client):
     response = helpers.request(
         client,
         'POST', '/widgets',
@@ -218,28 +205,6 @@ def test_commit_integrity_error(client):
 
     assert helpers.get_errors(response) == [{
         'code': 'invalid_data.conflict',
-    }]
-
-
-def test_commit_data_error(views, client):
-    # Normally the DataError might come from a type error, but SQLite is
-    # dynamically typed, so it's easier to trigger one with a mock.
-    views['widget'].session = PropertyMock(
-        side_effect=DataError(None, None, None),
-    )
-
-    response = helpers.request(
-        client,
-        'PATCH', '/widgets/1',
-        {
-            'id': '1',
-            'name': "Bar",
-        },
-    )
-    assert response.status_code == 422
-
-    assert helpers.get_errors(response) == [{
-        'code': 'invalid_data',
     }]
 
 
