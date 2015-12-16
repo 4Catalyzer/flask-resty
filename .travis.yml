@@ -11,6 +11,10 @@ env:
   - TOXENV=py-base
   - TOXENV=py-jwt
 
+cache:
+  directories:
+    - $HOME/.cache/pip
+
 before_install:
   - pip install -U pip
 install:
