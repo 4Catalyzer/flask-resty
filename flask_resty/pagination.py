@@ -5,9 +5,10 @@ from marshmallow import ValidationError
 import sqlalchemy as sa
 from sqlalchemy import Column, sql
 
-from .exceptions import ApiError
 from . import meta
 from . import utils
+from .exceptions import ApiError
+
 
 # -----------------------------------------------------------------------------
 
@@ -63,6 +64,18 @@ class LimitPagination(object):
 
         return limit
 
+    def spec_declaration(self, path, spec, **kwargs):
+        path['get'].add_parameter(name='limit',
+                                  type='int',
+                                  description='pagination limit')
+        path['get'].add_property_to_response(
+            prop_name='meta',
+            type='object',
+            properties={
+                'has_next_page': {'type': 'boolean'}
+            }
+        )
+
 
 class LimitOffsetPagination(LimitPagination):
     offset_arg = 'offset'
@@ -91,6 +104,13 @@ class LimitOffsetPagination(LimitPagination):
             raise ApiError(400, {'code': 'invalid_offset'})
 
         return offset
+
+    def spec_declaration(self, path, spec, **kwargs):
+        super(LimitOffsetPagination, self).spec_declaration(path, spec)
+        path['get'].add_parameter(
+            name='offset',
+            type='int',
+            description='pagination offset')
 
 
 class PagePagination(LimitOffsetPagination):
@@ -125,6 +145,13 @@ class PagePagination(LimitOffsetPagination):
 
     def get_limit(self):
         return self._page_size
+
+    def spec_declaration(self, path, spec, **kwargs):
+        super(PagePagination, self).spec_declaration(path, spec)
+        path['get'].add_parameter(
+            name='page',
+            type='int',
+            description='page number')
 
 
 class IdCursorPagination(LimitPagination):
@@ -265,3 +292,10 @@ class IdCursorPagination(LimitPagination):
         cursor = cursor.encode('utf-8')
         cursor = base64.urlsafe_b64encode(cursor)
         return cursor.decode('ascii')
+
+    def spec_declaration(self, path, spec, **kwargs):
+        super(IdCursorPagination, self).spec_declaration(path, spec)
+        path['get'].add_parameter(
+            name='cursor',
+            type='string',
+            description='pagination cursor')

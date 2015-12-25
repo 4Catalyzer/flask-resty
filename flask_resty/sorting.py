@@ -71,3 +71,9 @@ class Sorting(SortingBase):
             })
 
         return super(Sorting, self).get_column(view, field_name)
+
+    def spec_declaration(self, path, spec, **kwargs):
+        path['get'].add_parameter(
+            name='sort',
+            type='string',
+            description='field to sort by')
