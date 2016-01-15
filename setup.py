@@ -1,4 +1,4 @@
-from setuptools import Command, setup
+from setuptools import Command, setup, find_packages
 import subprocess
 
 # -----------------------------------------------------------------------------
@@ -44,7 +44,7 @@ setup(
         'Topic :: Software Development :: Libraries :: Python Modules',
     ),
     keywords='rest flask',
-    packages=('flask_resty',),
+    packages=find_packages(exclude='tests'),
     install_requires=(
         'Flask >= 0.10',
         'Flask-SQLAlchemy >= 1.0',

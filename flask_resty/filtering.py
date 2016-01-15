@@ -105,3 +105,7 @@ class Filtering(object):
                 raise e.update({'source': {'parameter': arg_name}})
 
         return query
+
+    def spec_declaration(self, path, spec, **kwargs):
+        for arg_name, filter_field in self._filter_fields.items():
+            path['get'].add_parameter(name=arg_name)

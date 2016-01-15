@@ -9,6 +9,7 @@ from .authorization import NoOpAuthorization
 from .exceptions import ApiError
 from . import meta
 from . import utils
+from .spec import ApiViewDeclaration, ModelViewDeclaration
 
 # -----------------------------------------------------------------------------
 
@@ -18,6 +19,8 @@ class ApiView(MethodView):
 
     authentication = NoOpAuthentication()
     authorization = NoOpAuthorization()
+
+    spec_declaration = ApiViewDeclaration()
 
     def dispatch_request(self, *args, **kwargs):
         self.authentication.authenticate_request()
@@ -117,6 +120,8 @@ class ModelView(ApiView):
     pagination = None
 
     related = None
+
+    spec_declaration = ModelViewDeclaration()
 
     @property
     def session(self):
