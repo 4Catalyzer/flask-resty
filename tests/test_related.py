@@ -1,4 +1,4 @@
-from flask_resty import Api, GenericModelView, NestedRelated, RelatedItem
+from flask_resty import Api, GenericModelView, Related, RelatedItem
 from marshmallow import fields, Schema
 import pytest
 from sqlalchemy import Column, ForeignKey, Integer, String
@@ -59,7 +59,7 @@ def routes(app, models, schemas):
         model = models['parent']
         schema = schemas['parent']
 
-        related = NestedRelated(
+        related = Related(
             children=lambda: ChildView(),
         )
 
@@ -73,7 +73,7 @@ def routes(app, models, schemas):
         model = models['child']
         schema = schemas['child']
 
-        related = NestedRelated(
+        related = Related(
             parent=ParentView,
         )
 

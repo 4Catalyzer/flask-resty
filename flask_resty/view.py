@@ -190,6 +190,19 @@ class ModelView(ApiView):
 
         return self.related(data, self)
 
+    def resolve_related_item(self, data):
+        try:
+            id = data['id']
+        except KeyError:
+            raise ApiError(422, {'code': 'invalid_related.missing_id'})
+
+        try:
+            item = self.get_item(id)
+        except NoResultFound:
+            raise ApiError(422, {'code': 'invalid_related.not_found'})
+
+        return item
+
     def create_missing_item(self, id):
         return self.create_item({'id': id})
 

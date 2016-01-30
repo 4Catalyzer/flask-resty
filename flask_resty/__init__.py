@@ -11,10 +11,10 @@ from .fields import RelatedItem
 from .filtering import (
     ColumnFilterField, FilterFieldBase, Filtering, ModelFilterField,
 )
-from .related import NestedRelated, RelatedBase
 from .pagination import (
     IdCursorPagination, LimitOffsetPagination, LimitPagination, PagePagination,
 )
+from .related import Related
 from .sorting import FixedSorting, Sorting, SortingBase
 from .view import ApiView, GenericModelView, ModelView
 
