@@ -1,11 +1,9 @@
-from sqlalchemy.orm.exc import NoResultFound
-
 from .exceptions import ApiError
 
 # -----------------------------------------------------------------------------
 
 
-class RelatedBase(object):
+class Related(object):
     def __init__(self, **kwargs):
         self._view_classes = kwargs
 
@@ -31,36 +29,13 @@ class RelatedBase(object):
                 else:
                     view = view_class()
                     resolved = [
-                        self.get_related_item(nested_datum, view)
+                        view.resolve_related_item(nested_datum)
                         for nested_datum in nested_data
                     ]
             else:
-                resolved = self.get_related_item(nested_data, view_class())
+                resolved = view_class().resolve_related_item(nested_data)
         except ApiError as e:
             pointer = '/data/{}'.format(field_name)
             raise e.update({'source': {'pointer': pointer}})
 
         data[field_name] = resolved
-
-    def get_related_item(self, related_data, related_view):
-        related_id = self.get_related_id(related_data, related_view)
-
-        try:
-            related_item = related_view.get_item(related_id)
-        except NoResultFound:
-            raise ApiError(422, {'code': 'invalid_related.not_found'})
-
-        return related_item
-
-    def get_related_id(self, related_data, related_view):
-        raise NotImplementedError()
-
-
-class NestedRelated(RelatedBase):
-    def get_related_id(self, related_data, related_view):
-        try:
-            related_id = related_data['id']
-        except KeyError:
-            raise ApiError(422, {'code': 'invalid_related.missing_id'})
-
-        return related_id
