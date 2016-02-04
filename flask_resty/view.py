@@ -8,14 +8,15 @@ from .authentication import NoOpAuthentication
 from .authorization import NoOpAuthorization
 from .exceptions import ApiError
 from . import meta
-from . import utils
 from .spec import ApiViewDeclaration, ModelViewDeclaration
+from . import utils
 
 # -----------------------------------------------------------------------------
 
 
 class ApiView(MethodView):
     schema = None
+    id_fields = ('id',)
 
     authentication = NoOpAuthentication()
     authorization = NoOpAuthorization()
@@ -98,22 +99,34 @@ class ApiView(MethodView):
             return
 
         if expected_id is False:
-            if 'id' in data:
-                raise ApiError(403, {'code': 'invalid_id.forbidden'})
+            for id_field in self.id_fields:
+                if id_field in data:
+                    raise ApiError(403, {'code': 'invalid_id.forbidden'})
             return
 
         try:
-            id = data['id']
+            id = self.get_data_id(data)
         except KeyError:
             raise ApiError(422, {'code': 'invalid_id.missing'})
 
         if id != expected_id:
             raise ApiError(409, {'code': 'invalid_id.mismatch'})
 
+    def get_data_id(self, data):
+        if len(self.id_fields) == 1:
+            return data[self.id_fields[0]]
+
+        return tuple(data[id_field] for id_field in self.id_fields)
+
+    def get_id_dict(self, id):
+        if len(self.id_fields) == 1:
+            id = (id,)
+
+        return dict(zip(self.id_fields, id))
+
 
 class ModelView(ApiView):
     model = None
-    id_view_arg = 'id'
 
     sorting = None
     filtering = None
@@ -172,7 +185,7 @@ class ModelView(ApiView):
     def get_item(self, id, create_missing=False):
         try:
             # Can't use self.query.get(), because query might be filtered.
-            item = self.query.filter_by(id=id).one()
+            item = self.query.filter_by(**self.get_id_dict(id)).one()
         except NoResultFound:
             if create_missing:
                 item = self.create_missing_item(id)
@@ -192,7 +205,7 @@ class ModelView(ApiView):
 
     def resolve_related_item(self, data):
         try:
-            id = data['id']
+            id = self.get_data_id(data)
         except KeyError:
             raise ApiError(422, {'code': 'invalid_related.missing_id'})
 
@@ -204,7 +217,7 @@ class ModelView(ApiView):
         return item
 
     def create_missing_item(self, id):
-        return self.create_item({'id': id})
+        return self.create_item(self.get_id_dict(id))
 
     def create_item(self, data):
         return self.model(**data)
@@ -238,11 +251,15 @@ class ModelView(ApiView):
         return self.make_response(data_out, *args, item=item)
 
     def make_created_response(self, item):
-        location = flask.url_for(
-            flask.request.endpoint, _method='GET',
-            **{self.id_view_arg: item.id}
+        return self.make_item_response(
+            item, 201, {'Location': self.get_location(item)},
         )
-        return self.make_item_response(item, 201, {'Location': location})
+
+    def get_location(self, item):
+        id_dict = {
+            id_field: getattr(item, id_field) for id_field in self.id_fields
+        }
+        return flask.url_for(flask.request.endpoint, _method='GET', **id_dict)
 
 
 class GenericModelView(ModelView):

@@ -5,10 +5,9 @@ from marshmallow import ValidationError
 import sqlalchemy as sa
 from sqlalchemy import Column, sql
 
+from .exceptions import ApiError
 from . import meta
 from . import utils
-from .exceptions import ApiError
-
 
 # -----------------------------------------------------------------------------
 
@@ -177,10 +176,11 @@ class IdCursorPagination(LimitPagination):
             self.get_column_spec(expression) for expression in query._order_by
         )
 
-        id_column = view.model.__table__.c.id
-        assert \
-            id_column in (column for column, _ in column_specs), \
-            "ordering does not include id"
+        for id_field in view.id_fields:
+            id_column = view.model.__table__.c[id_field]
+            assert \
+                id_column in (column for column, _ in column_specs), \
+                "ordering does not include {}".format(id_field)
 
         return column_specs
 

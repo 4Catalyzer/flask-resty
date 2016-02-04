@@ -12,8 +12,13 @@ def get_item_or_404(method=None, **decorator_kwargs):
 
     @functools.wraps(method)
     def wrapped(self, *args, **kwargs):
-        id = kwargs.pop(self.id_view_arg)
+        id = self.get_data_id(kwargs)
         item = self.get_item_or_404(id, **decorator_kwargs)
+
+        # No longer need these; just the item is enough.
+        for id_field in self.id_fields:
+            del kwargs[id_field]
+
         return method(self, item, *args, **kwargs)
 
     return wrapped
