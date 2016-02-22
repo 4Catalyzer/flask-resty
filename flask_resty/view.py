@@ -187,7 +187,7 @@ class ModelView(ApiView):
             # Can't use self.query.get(), because query might be filtered.
             item = self.query.filter_by(**self.get_id_dict(id)).one()
         except NoResultFound:
-            if create_missing:
+            if create_missing && self.model.query.filter_by(**self.get_id_dict(id)).one_or_none():
                 item = self.create_missing_item(id)
                 self.session.add(item)
                 return item
