@@ -22,6 +22,12 @@ class Related(object):
             # raised an exception.
             return
 
+        if nested_data is None:
+            # If this field were non-nullable, the deserializer already would
+            # have raised an exception.
+            data[field_name] = None
+            return
+
         try:
             if many:
                 if not nested_data:
