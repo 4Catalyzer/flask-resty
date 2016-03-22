@@ -143,6 +143,7 @@ def test_invalid_kwargs():
 
 def test_schema_definitions(spec):
     assert spec['definitions']['Foo'] == {
+        'type': 'object',
         'required': ['name'],
         'properties': {
             'id': {'type': 'integer', 'format': 'int32'},
