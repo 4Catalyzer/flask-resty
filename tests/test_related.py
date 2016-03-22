@@ -16,6 +16,7 @@ def models(db):
 
         id = Column(Integer, primary_key=True)
         name = Column(String)
+
         children = relationship('Child', backref='parent')
 
     class Child(db.Model):
@@ -23,6 +24,7 @@ def models(db):
 
         id = Column(Integer, primary_key=True)
         name = Column(String)
+
         parent_id = Column(ForeignKey(Parent.id))
 
     db.create_all()
@@ -40,12 +42,16 @@ def schemas():
     class ParentSchema(Schema):
         id = fields.Integer(as_string=True)
         name = fields.String(required=True)
+
         children = RelatedItem('ChildSchema', many=True, exclude=('parent',))
 
     class ChildSchema(Schema):
         id = fields.Integer(as_string=True)
         name = fields.String(required=True)
-        parent = RelatedItem(ParentSchema, exclude=('children',))
+
+        parent = RelatedItem(
+            ParentSchema, exclude=('children',), allow_none=True,
+        )
 
     return {
         'parent': ParentSchema(),
@@ -194,6 +200,26 @@ def test_missing(client):
             'id': '1',
             'name': "Parent",
         },
+    }
+
+
+def test_null(client):
+    test_single(client)
+
+    response = helpers.request(
+        client,
+        'PUT', '/children/1',
+        {
+            'id': '1',
+            'name': "Twice Updated Child",
+            'parent': None,
+        },
+    )
+
+    assert helpers.get_data(response) == {
+        'id': '1',
+        'name': "Twice Updated Child",
+        'parent': None,
     }
 
 
