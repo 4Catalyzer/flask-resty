@@ -201,7 +201,7 @@ class ModelView(ApiView):
         if not self.related:
             return data
 
-        return self.related(data, self)
+        return self.related(data)
 
     def resolve_related_item(self, data):
         try:

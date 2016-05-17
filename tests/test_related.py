@@ -17,7 +17,7 @@ def models(db):
         id = Column(Integer, primary_key=True)
         name = Column(String)
 
-        children = relationship('Child', backref='parent')
+        children = relationship('Child', backref='parent', cascade='all')
 
     class Child(db.Model):
         __tablename__ = 'children'
@@ -75,6 +75,17 @@ def routes(app, models, schemas):
         def put(self, id):
             return self.update(id, return_content=True)
 
+    class NestedParentView(ParentView):
+        related = Related(
+            children=Related(models['child']),
+        )
+
+        def get(self, id):
+            return self.retrieve(id)
+
+        def put(self, id):
+            return self.update(id, return_content=True)
+
     class ChildView(GenericModelView):
         model = models['child']
         schema = schemas['child']
@@ -91,6 +102,7 @@ def routes(app, models, schemas):
 
     api = Api(app)
     api.add_resource('/parents/<int:id>', ParentView)
+    api.add_resource('/nested_parents/<int:id>', NestedParentView)
     api.add_resource('/children/<int:id>', ChildView)
 
 
@@ -176,6 +188,36 @@ def test_many(client):
             {
                 'id': '2',
                 'name': "Child 2",
+            },
+        ],
+    }
+
+
+def test_many_nested(client):
+    response = helpers.request(
+        client,
+        'PUT', '/nested_parents/1',
+        {
+            'id': '1',
+            'name': "Updated Parent",
+            'children': [
+                {'name': "Child 3"},
+                {'name': "Child 4"},
+            ],
+        },
+    )
+
+    assert helpers.get_data(response) == {
+        'id': '1',
+        'name': "Updated Parent",
+        'children': [
+            {
+                'id': '3',
+                'name': "Child 3",
+            },
+            {
+                'id': '4',
+                'name': "Child 4",
             },
         ],
     }
