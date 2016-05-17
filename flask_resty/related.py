@@ -4,44 +4,45 @@ from .exceptions import ApiError
 
 
 class Related(object):
-    def __init__(self, **kwargs):
+    def __init__(self, item_class=None, **kwargs):
+        self._item_class = item_class
         self._view_classes = kwargs
 
-    def __call__(self, data, view):
+    def __call__(self, data):
         for field_name, view_class in self._view_classes.items():
-            many = view.deserializer.fields[field_name].many
-            self.resolve_nested(data, field_name, view_class, many=many)
+            value = data.get(field_name, None)
+            if value is None:
+                # If this field were required or non-nullable, the deserializer
+                # would already have raised an exception.
+                continue
+
+            try:
+                resolved = self.resolve_field(value, view_class)
+            except ApiError as e:
+                pointer = '/data/{}'.format(field_name)
+                raise e.update({'source': {'pointer': pointer}})
+
+            data[field_name] = resolved
+
+        if self._item_class:
+            return self._item_class(**data)
 
         return data
 
-    def resolve_nested(self, data, field_name, view_class, many=False):
-        try:
-            nested_data = data[field_name]
-        except KeyError:
-            # If this field were required, the deserializer already would have
-            # raised an exception.
-            return
+    def resolve_field(self, value, view_class):
+        # marshmallow always uses lists here.
+        many = isinstance(value, list)
+        if many and not value:
+            # As a tiny optimization, there's no need to resolve an empty list.
+            return value
 
-        if nested_data is None:
-            # If this field were non-nullable, the deserializer already would
-            # have raised an exception.
-            data[field_name] = None
-            return
+        if isinstance(view_class, Related):
+            # This is not actually a view class.
+            resolver = view_class
+        else:
+            resolver = view_class().resolve_related_item
 
-        try:
-            if many:
-                if not nested_data:
-                    resolved = []
-                else:
-                    view = view_class()
-                    resolved = [
-                        view.resolve_related_item(nested_datum)
-                        for nested_datum in nested_data
-                    ]
-            else:
-                resolved = view_class().resolve_related_item(nested_data)
-        except ApiError as e:
-            pointer = '/data/{}'.format(field_name)
-            raise e.update({'source': {'pointer': pointer}})
+        if many:
+            return [resolver(item) for item in value]
 
-        data[field_name] = resolved
+        return resolver(value)
