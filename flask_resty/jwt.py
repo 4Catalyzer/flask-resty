@@ -25,6 +25,7 @@ JWT_DECODE_ARG_KEYS = (
 class JwtAuthentication(AuthenticationBase):
     CONFIG_KEY_TEMPLATE = 'RESTY_JWT_DECODE_{}'
 
+    header_scheme = 'Bearer'
     id_token_arg = 'id_token'
 
     def __init__(self, **kwargs):
@@ -61,7 +62,7 @@ class JwtAuthentication(AuthenticationBase):
         except ValueError:
             raise ApiError(401, {'code': 'invalid_authorization'})
 
-        if scheme != 'Bearer':
+        if scheme != self.header_scheme:
             raise ApiError(401, {'code': 'invalid_authorization.scheme'})
 
         return token
