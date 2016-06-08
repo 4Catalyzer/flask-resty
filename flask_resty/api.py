@@ -1,3 +1,5 @@
+import posixpath
+
 import flask
 
 from .exceptions import ApiError
@@ -39,12 +41,7 @@ class Api(object):
         if alternate_view:
             if not alternate_rule:
                 id_rule = id_rule or DEFAULT_ID_RULE
-                if base_rule.endswith('/'):
-                    alternate_rule_template = '{}{}'
-                else:
-                    alternate_rule_template = '{}/{}'
-                alternate_rule = alternate_rule_template.format(
-                    base_rule, id_rule)
+                alternate_rule = posixpath.join(base_rule, id_rule)
             else:
                 assert id_rule is None
         else:

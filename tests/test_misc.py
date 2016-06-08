@@ -99,7 +99,8 @@ def test_create_client_id(app, views, client):
 
 def test_training_slash(app, views, client):
     api = Api(app)
-    api.add_resource('/widgets/', views['widget_list'], views['widget'])
+    api.add_resource(
+        '/widgets/', views['widget_list'], views['widget'], id_rule='<id>/')
 
     response = helpers.request(
         client,
@@ -109,12 +110,12 @@ def test_training_slash(app, views, client):
         },
     )
     assert response.status_code == 201
-    assert response.headers['Location'] == 'http://localhost/widgets/100'
+    assert response.headers['Location'] == 'http://localhost/widgets/100/'
 
     assert helpers.get_data(response) == {
         'id': '100',
     }
-    response = client.get('/widgets/100')
+    response = client.get('/widgets/100/')
     assert response.status_code == 200
 
 
