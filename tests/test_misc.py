@@ -114,6 +114,8 @@ def test_training_slash(app, views, client):
     assert helpers.get_data(response) == {
         'id': '100',
     }
+    response = client.get('/widgets/100')
+    assert response.status_code == 200
 
 
 def test_resource_rules(app, views, client):
