@@ -97,6 +97,25 @@ def test_create_client_id(app, views, client):
     }
 
 
+def test_training_slash(app, views, client):
+    api = Api(app)
+    api.add_resource('/widgets/', views['widget_list'], views['widget'])
+
+    response = helpers.request(
+        client,
+        'POST', '/widgets/',
+        {
+            'id': '100',
+        },
+    )
+    assert response.status_code == 201
+    assert response.headers['Location'] == 'http://localhost/widgets/100'
+
+    assert helpers.get_data(response) == {
+        'id': '100',
+    }
+
+
 def test_resource_rules(app, views, client):
     api = Api(app)
     api.add_resource(
