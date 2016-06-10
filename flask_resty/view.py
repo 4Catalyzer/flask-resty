@@ -187,7 +187,7 @@ class ModelView(ApiView):
         try:
             # Can't use self.query.get(), because query might be filtered.
             clauses = [getattr(self.model, k) == v
-                       for k, v in self.get_id_dict(id).iteritems()]
+                       for k, v in self.get_id_dict(id).items()]
             item = self.query.filter(and_(*clauses)).one()
         except NoResultFound:
             if create_missing:
