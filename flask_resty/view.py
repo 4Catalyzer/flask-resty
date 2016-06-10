@@ -1,5 +1,6 @@
 import flask
 from flask.views import MethodView
+from sqlalchemy import and_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
 from werkzeug.exceptions import NotFound
@@ -185,7 +186,13 @@ class ModelView(ApiView):
     def get_item(self, id, create_missing=False):
         try:
             # Can't use self.query.get(), because query might be filtered.
-            item = self.query.filter_by(**self.get_id_dict(id)).one()
+            id_dict = self.get_id_dict(id)
+            if all([isinstance(x, basestring)
+                    for x in id_dict.keys()]):
+                item = self.query.filter_by(**id_dict).one()
+            else:
+                item = self.query.filter(
+                    and_(*[(k == v) for k, v in id_dict.iteritems()])).one()
         except NoResultFound:
             if create_missing:
                 item = self.create_missing_item(id)
