@@ -238,6 +238,7 @@ def test_body_params(spec):
         'required': True,
         'schema': {
             'type': 'object',
+            'required': ['data'],
             'properties': {
                 'data': {'$ref': '#/definitions/Foo'}
             }

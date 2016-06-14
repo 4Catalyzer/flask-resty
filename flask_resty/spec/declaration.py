@@ -52,6 +52,7 @@ class ApiViewDeclaration(object):
 
         payload_schema = {
             'type': 'object',
+            'required': ['data'],
             'properties': {'data': schema_ref}
         }
         if 'post' in view_methods:
