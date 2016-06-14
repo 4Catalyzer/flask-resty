@@ -236,7 +236,12 @@ def test_body_params(spec):
         'in': 'body',
         'name': 'body',
         'required': True,
-        'schema': {'$ref': '#/definitions/Foo'}
+        'schema': {
+            'type': 'object',
+            'properties': {
+                'data': {'$ref': '#/definitions/Foo'}
+            }
+        }
     }
     assert body in foo_post['parameters']
 
