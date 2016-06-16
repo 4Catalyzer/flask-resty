@@ -185,11 +185,16 @@ class ModelView(ApiView):
 
     def get_item(self, id, create_missing=False, for_update=False):
         try:
-            # Can't use self.query.get(), because query might be filtered.
-            item = self.query.filter(and_(
+            # Can't use query.get(), because query might be filtered.
+            query = self.query.filter(and_(
                 getattr(self.model, field) == value
                 for field, value in self.get_id_dict(id).items()
-            )).one()
+            ))
+
+            if for_update:
+                query = query.with_for_update()
+
+            item = query.one()
         except NoResultFound as e:
             if create_missing:
                 item = self.create_missing_item(id)
