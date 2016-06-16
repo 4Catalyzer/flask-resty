@@ -100,9 +100,22 @@ def routes(app, models, schemas, auth):
         def delete(self, id):
             return self.destroy(id)
 
+    class WidgetCreateMissingView(WidgetViewBase):
+        def create_missing_item(self, id):
+            return self.model(id=id, owner_id=flask.request.args['owner_id'])
+
+        def get(self, id):
+            return self.retrieve(id, create_missing=True)
+
+        def put(self, id):
+            return self.update(id, create_missing=True)
+
     api = Api(app)
     api.add_resource(
         '/widgets', WidgetListView, WidgetView, id_rule='<int:id>'
+    )
+    api.add_resource(
+        '/widgets_create_missing/<int:id>', WidgetCreateMissingView,
     )
 
 
@@ -167,6 +180,27 @@ def test_update(client):
 
 def test_delete(client):
     response = client.delete('/widgets/1?user_id=foo')
+    assert response.status_code == 204
+
+
+def test_retrieve_create_missing(client):
+    response = client.get('/widgets_create_missing/4?user_id=foo&owner_id=foo')
+    assert helpers.get_data(response) == {
+        'id': '4',
+        'owner_id': 'foo',
+        'name': None,
+    }
+
+
+def test_update_update_missing(client):
+    response = helpers.request(
+        client,
+        'PUT', '/widgets_create_missing/4?user_id=foo&owner_id=foo',
+        {
+            'id': '4',
+            'name': "Created",
+        }
+    )
     assert response.status_code == 204
 
 
@@ -241,3 +275,20 @@ def test_error_delete_unauthorized(client):
     assert helpers.get_errors(forbidden_response) == [{
         'code': 'invalid_user'
     }]
+
+
+def test_error_retrieve_create_missing_unauthorized(client):
+    response = client.get('/widgets_create_missing/4?user_id=bar&owner_id=foo')
+    assert response.status_code == 404
+
+
+def test_error_update_create_missing_unauthorized(client):
+    response = helpers.request(
+        client,
+        'PUT', '/widgets_create_missing/4?user_id=bar&owner_id=foo',
+        {
+            'id': '4',
+            'name': "Created",
+        }
+    )
+    assert response.status_code == 403

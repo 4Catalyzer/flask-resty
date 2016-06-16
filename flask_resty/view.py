@@ -183,16 +183,28 @@ class ModelView(ApiView):
 
         return item
 
-    def get_item(self, id, create_missing=False):
+    def get_item(self, id, create_missing=False, for_update=False):
         try:
             # Can't use self.query.get(), because query might be filtered.
-            clauses = (getattr(self.model, k) == v
-                       for k, v in self.get_id_dict(id).items())
-            item = self.query.filter(and_(*clauses)).one()
-        except NoResultFound:
+            item = self.query.filter(and_(
+                getattr(self.model, field) == value
+                for field, value in self.get_id_dict(id).items()
+            )).one()
+        except NoResultFound as e:
             if create_missing:
                 item = self.create_missing_item(id)
-                self.session.add(item)
+                if for_update:
+                    # Bypass authorizating the save if we are getting the item
+                    # for update, as
+                    self.session.add(item)
+                else:
+                    try:
+                        self.add_item(item)
+                    except ApiError:
+                        # Raise the original not found error instead of the
+                        # authorization error.
+                        raise e
+
                 return item
 
             raise
@@ -286,9 +298,13 @@ class GenericModelView(ModelView):
         return self.make_created_response(item)
 
     def update(
-            self, id, create_missing=False, partial=False,
-            return_content=False):
-        item = self.get_item_or_404(id, create_missing=create_missing)
+        self, id, create_missing=False, partial=False, return_content=False,
+    ):
+        # No need to authorize creating the missing item, as we will authorize
+        # before saving to database below.
+        item = self.get_item_or_404(
+            id, create_missing=create_missing, for_update=True,
+        )
         data_in = self.get_request_data(expected_id=id, partial=partial)
 
         self.update_item(item, data_in)
