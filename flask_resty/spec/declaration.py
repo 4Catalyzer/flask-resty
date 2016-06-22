@@ -53,7 +53,7 @@ class ApiViewDeclaration(object):
         body_params = {
             'name': '{}Payload'.format(schema),
             'required': True,
-            schema: {
+            'schema': {
                 'type': 'object',
                 'required': ['data'],
                 'properties': {'data': schema_ref}
