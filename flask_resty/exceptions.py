@@ -1,5 +1,6 @@
-import flask
 import traceback
+
+import flask
 
 # -----------------------------------------------------------------------------
 
@@ -11,7 +12,7 @@ class ApiError(Exception):
             'errors': errors
         }
 
-        if flask.current_app.debug:
+        if flask.current_app.debug or flask.current_app.testing:
             self.body['debug'] = traceback.format_exc()
 
     def update(self, additional):

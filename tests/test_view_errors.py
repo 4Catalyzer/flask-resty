@@ -209,6 +209,9 @@ def test_commit_conflict(client):
 
 
 def test_debug(app, client):
+    app.debug = False
+    app.testing = False
+
     production_response = client.post(
         '/widgets',
         data='foo',
@@ -217,9 +220,21 @@ def test_debug(app, client):
     assert 'debug' not in helpers.get_body(production_response)
 
     app.debug = True
+    app.testing = False
+
     debug_response = client.post(
         '/widgets',
         data='foo',
     )
     assert debug_response.status_code == 400
     assert 'debug' in helpers.get_body(debug_response)
+
+    app.debug = False
+    app.testing = True
+
+    testing_response = client.post(
+        '/widgets',
+        data='foo',
+    )
+    assert testing_response.status_code == 400
+    assert 'debug' in helpers.get_body(testing_response)
