@@ -50,30 +50,26 @@ class ApiViewDeclaration(object):
                 }
             path['get'].add_property_to_response(prop_name='data', **data)
 
-        payload_schema = {
-            'type': 'object',
-            'required': ['data'],
-            'properties': {'data': schema_ref}
+        body_params = {
+            'name': '{}Payload'.format(schema),
+            'required': True,
+            'schema': {
+                'type': 'object',
+                'required': ['data'],
+                'properties': {'data': schema_ref}
+            }
         }
+
         if 'post' in view_methods:
-            path['post'].add_parameter('body',
-                                       name='body',
-                                       required=True,
-                                       schema=payload_schema)
+            path['post'].add_parameter('body', **body_params)
             path['post'].declare_response(201)
 
         if 'put' in view_methods:
-            path['put'].add_parameter('body',
-                                      name='body',
-                                      required=True,
-                                      schema=payload_schema)
+            path['put'].add_parameter('body', **body_params)
             path['put'].declare_response(204)
 
         if 'patch' in view_methods:
-            path['patch'].add_parameter('body',
-                                        name='body',
-                                        required=True,
-                                        schema=payload_schema)
+            path['patch'].add_parameter('body', **body_params)
             path['patch'].add_property_to_response(prop_name='data',
                                                    **schema_ref)
 

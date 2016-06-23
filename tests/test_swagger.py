@@ -234,7 +234,7 @@ def test_body_params(spec):
     foo_post = spec['paths']['/foos']['post']
     body = {
         'in': 'body',
-        'name': 'body',
+        'name': 'FooPayload',
         'required': True,
         'schema': {
             'type': 'object',
