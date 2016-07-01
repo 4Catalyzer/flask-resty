@@ -92,7 +92,7 @@ class Filtering(object):
         else:
             return ColumnFilterField(*value)
 
-    def __call__(self, query, view):
+    def filter_query(self, query, view):
         for arg_name, filter_field in self._filter_fields.items():
             try:
                 arg_value = flask.request.args[arg_name]

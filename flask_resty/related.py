@@ -8,7 +8,7 @@ class Related(object):
         self._item_class = item_class
         self._view_classes = kwargs
 
-    def __call__(self, data):
+    def resolve_related(self, data):
         for field_name, view_class in self._view_classes.items():
             value = data.get(field_name, None)
             if value is None:
@@ -38,7 +38,7 @@ class Related(object):
 
         if isinstance(view_class, Related):
             # This is not actually a view class.
-            resolver = view_class
+            resolver = view_class.resolve_related
         else:
             resolver = view_class().resolve_related_item
 
