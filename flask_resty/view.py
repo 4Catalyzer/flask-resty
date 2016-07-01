@@ -149,31 +149,31 @@ class ModelView(ApiView):
         return query
 
     def get_list(self):
-        list_query = self.query
+        query = self.query
 
-        list_query = self.sort_list_query(list_query)
-        list_query = self.filter_list_query(list_query)
+        query = self.sort_list_query(query)
+        query = self.filter_list_query(query)
 
         # Pagination is special because it has to own executing the query.
-        return self.paginate_list_query(list_query)
+        return self.paginate_list_query(query)
 
     def sort_list_query(self, query):
         if not self.sorting:
             return query
 
-        return self.sorting(query, self)
+        return self.sorting.sort_query(query, self)
 
     def filter_list_query(self, query):
         if not self.filtering:
             return query
 
-        return self.filtering(query, self)
+        return self.filtering.filter_query(query, self)
 
     def paginate_list_query(self, query):
         if not self.pagination:
             return query.all()
 
-        return self.pagination(query, self)
+        return self.pagination.get_page(query, self)
 
     def get_item_or_404(self, id, **kwargs):
         try:
@@ -216,7 +216,7 @@ class ModelView(ApiView):
         if not self.related:
             return data
 
-        return self.related(data)
+        return self.related.resolve_related(data)
 
     def resolve_related_item(self, data):
         try:
