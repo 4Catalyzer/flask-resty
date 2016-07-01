@@ -5,8 +5,8 @@ from marshmallow import fields, Schema
 import pytest
 
 from flask_resty import (
-    Api, Filtering, GenericModelView, PagePagination, Sorting,
-    IdCursorPagination,
+    Api, CursorPagination, Filtering, GenericModelView, PagePagination,
+    Sorting,
 )
 from flask_resty.spec import ModelViewDeclaration
 
@@ -61,7 +61,7 @@ def routes(app, schemas):
             pass
 
     class BarView(GenericModelView):
-        pagination = IdCursorPagination(2)
+        pagination = CursorPagination(2)
 
         spec_declaration = ModelViewDeclaration(
             post={'204': {'description': 'request the creation of a new bar'}},

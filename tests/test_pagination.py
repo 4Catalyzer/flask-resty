@@ -1,6 +1,6 @@
 from flask_resty import (
-    Api, Filtering, GenericModelView, IdCursorPagination,
-    LimitOffsetPagination, PagePagination, Sorting
+    Api, CursorPagination, Filtering, GenericModelView, LimitOffsetPagination,
+    PagePagination, Sorting
 )
 from marshmallow import fields, Schema
 import operator
@@ -61,12 +61,12 @@ def routes(app, models, schemas):
         def get(self):
             return self.list()
 
-    class IdCursorListView(WidgetViewBase):
+    class CursorListView(WidgetViewBase):
         sorting = Sorting(
             'id', 'size',
             default='id',
         )
-        pagination = IdCursorPagination(2)
+        pagination = CursorPagination(2)
 
         def get(self):
             return self.list()
@@ -74,7 +74,7 @@ def routes(app, models, schemas):
     api = Api(app)
     api.add_resource('/limit_offset_widgets', LimitOffsetWidgetListView)
     api.add_resource('/page_widgets', PageWidgetListView)
-    api.add_resource('/id_cursor_widgets', IdCursorListView)
+    api.add_resource('/cursor_widgets', CursorListView)
 
 
 @pytest.fixture(autouse=True)
@@ -295,8 +295,8 @@ def test_page_default(client):
     }
 
 
-def test_id_cursor(client):
-    response = client.get('/id_cursor_widgets?cursor=WzFd')
+def test_cursor(client):
+    response = client.get('/cursor_widgets?cursor=WzFd')
 
     assert helpers.get_data(response) == [
         {
@@ -317,8 +317,8 @@ def test_id_cursor(client):
     }
 
 
-def test_id_cursor_default(client):
-    response = client.get('/id_cursor_widgets')
+def test_cursor_default(client):
+    response = client.get('/cursor_widgets')
 
     assert helpers.get_data(response) == [
         {
@@ -339,8 +339,8 @@ def test_id_cursor_default(client):
     }
 
 
-def test_id_cursor_sorted(client):
-    response = client.get('/id_cursor_widgets?sort=size,-id&cursor=WzEsIDRd')
+def test_cursor_sorted(client):
+    response = client.get('/cursor_widgets?sort=size,-id&cursor=WzEsIDRd')
 
     assert helpers.get_data(response) == [
         {
@@ -361,8 +361,8 @@ def test_id_cursor_sorted(client):
     }
 
 
-def test_id_cursor_sorted_default(client):
-    response = client.get('/id_cursor_widgets?sort=size,-id')
+def test_cursor_sorted_default(client):
+    response = client.get('/cursor_widgets?sort=size,-id')
 
     assert helpers.get_data(response) == [
         {
@@ -447,7 +447,7 @@ def test_error_invalid_page_value(client):
 
 
 def test_error_invalid_cursor_encoding(client):
-    response = client.get('/id_cursor_widgets?cursor=foo')
+    response = client.get('/cursor_widgets?cursor=foo')
     assert response.status_code == 400
 
     assert helpers.get_errors(response) == [{
@@ -457,7 +457,7 @@ def test_error_invalid_cursor_encoding(client):
 
 
 def test_error_invalid_cursor_length(client):
-    response = client.get('/id_cursor_widgets?cursor=WzEsIDFd')
+    response = client.get('/cursor_widgets?cursor=WzEsIDFd')
     assert response.status_code == 400
 
     assert helpers.get_errors(response) == [{
@@ -467,7 +467,7 @@ def test_error_invalid_cursor_length(client):
 
 
 def test_error_invalid_cursor_field(client):
-    response = client.get('/id_cursor_widgets?cursor=WyJmb28iXQ%3D%3D')
+    response = client.get('/cursor_widgets?cursor=WyJmb28iXQ%3D%3D')
     assert response.status_code == 400
 
     errors = helpers.get_errors(response)

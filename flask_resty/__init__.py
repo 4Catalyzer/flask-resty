@@ -12,7 +12,7 @@ from .filtering import (
     ColumnFilterField, FilterFieldBase, Filtering, ModelFilterField,
 )
 from .pagination import (
-    IdCursorPagination, LimitOffsetPagination, LimitPagination, PagePagination,
+    CursorPagination, LimitOffsetPagination, LimitPagination, PagePagination,
 )
 from .related import Related
 from .sorting import FixedSorting, Sorting, SortingBase

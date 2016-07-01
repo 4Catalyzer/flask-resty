@@ -153,7 +153,7 @@ class PagePagination(LimitOffsetPagination):
             description='page number')
 
 
-class IdCursorPagination(LimitPagination):
+class CursorPagination(LimitPagination):
     cursor_arg = 'cursor'
 
     def __call__(self, query, view):
@@ -163,7 +163,7 @@ class IdCursorPagination(LimitPagination):
         if cursor_in is not None:
             query = query.filter(self.get_filter(column_specs, cursor_in))
 
-        items = super(IdCursorPagination, self).__call__(query, view)
+        items = super(CursorPagination, self).__call__(query, view)
 
         # Relay expects a cursor for each item.
         cursors_out = self.render_cursors(view, column_specs, items)
@@ -294,7 +294,7 @@ class IdCursorPagination(LimitPagination):
         return cursor.decode('ascii')
 
     def spec_declaration(self, path, spec, **kwargs):
-        super(IdCursorPagination, self).spec_declaration(path, spec)
+        super(CursorPagination, self).spec_declaration(path, spec)
         path['get'].add_parameter(
             name='cursor',
             type='string',
