@@ -12,7 +12,18 @@ from . import utils
 # -----------------------------------------------------------------------------
 
 
-class LimitPagination(object):
+class PaginationBase(object):
+    def get_page(self, query, view):
+        raise NotImplementedError()
+
+    def get_item_meta(self, item, view):
+        return None
+
+
+# -----------------------------------------------------------------------------
+
+
+class LimitPagination(PaginationBase):
     limit_arg = 'limit'
 
     def __init__(self, default_limit=None, max_limit=None):
@@ -159,17 +170,24 @@ class CursorPagination(LimitPagination):
     def get_page(self, query, view):
         column_orderings = self.get_column_orderings(query, view)
 
-        cursor_in = self.get_cursor(view, column_orderings)
+        cursor_in = self.get_request_cursor(view, column_orderings)
         if cursor_in is not None:
             query = query.filter(self.get_filter(column_orderings, cursor_in))
 
         items = super(CursorPagination, self).get_page(query, view)
 
         # Relay expects a cursor for each item.
-        cursors_out = self.render_cursors(view, column_orderings, items)
+        cursors_out = self.make_cursors(items, view, column_orderings)
         meta.set_response_meta(cursors=cursors_out)
 
         return items
+
+    def get_item_meta(self, item, view):
+        query = view.sort_list_query(view.query)
+        column_orderings = self.get_column_orderings(query, view)
+
+        cursor = self.make_cursor(item, view, column_orderings)
+        return {'cursor': cursor}
 
     def get_column_orderings(self, query, view):
         column_orderings = tuple(
@@ -198,17 +216,17 @@ class CursorPagination(LimitPagination):
 
         return column, asc
 
-    def get_cursor(self, view, column_orderings):
+    def get_request_cursor(self, view, column_orderings):
         cursor = flask.request.args.get(self.cursor_arg)
-        try:
-            return self.parse_cursor(view, column_orderings, cursor)
-        except ApiError as e:
-            raise e.update({'source': {'parameter': self.cursor_arg}})
-
-    def parse_cursor(self, view, column_orderings, cursor):
         if not cursor:
             return None
 
+        try:
+            return self.parse_cursor(cursor, view, column_orderings)
+        except ApiError as e:
+            raise e.update({'source': {'parameter': self.cursor_arg}})
+
+    def parse_cursor(self, cursor, view, column_orderings):
         cursor = self.decode_cursor(cursor)
 
         if len(cursor) != len(column_orderings):
@@ -233,12 +251,6 @@ class CursorPagination(LimitPagination):
 
         return cursor
 
-    def format_validation_error(self, message):
-        return {
-            'code': 'invalid_cursor',
-            'detail': message,
-        }
-
     def decode_cursor(self, cursor):
         try:
             cursor = cursor.encode('ascii')
@@ -249,6 +261,12 @@ class CursorPagination(LimitPagination):
             raise ApiError(400, {'code': 'invalid_cursor.encoding'})
 
         return cursor
+
+    def format_validation_error(self, message):
+        return {
+            'code': 'invalid_cursor',
+            'detail': message,
+        }
 
     def get_filter(self, column_orderings, cursor):
         column_cursors = tuple(zip(column_orderings, cursor))
@@ -270,14 +288,20 @@ class CursorPagination(LimitPagination):
 
         return sa.and_(previous_clauses, current_clause)
 
-    def render_cursors(self, view, column_orderings, items):
-        serializer = view.serializer
-        column_fields = tuple(
-            serializer.fields[column.name] for column, _ in column_orderings
-        )
-
+    def make_cursors(self, items, view, column_orderings):
+        column_fields = self.get_column_fields(view, column_orderings)
         return tuple(
             self.render_cursor(item, column_fields) for item in items
+        )
+
+    def make_cursor(self, item, view, column_orderings):
+        column_fields = self.get_column_fields(view, column_orderings)
+        return self.render_cursor(item, column_fields)
+
+    def get_column_fields(self, view, column_orderings):
+        serializer = view.serializer
+        return tuple(
+            serializer.fields[column.name] for column, _ in column_orderings
         )
 
     def render_cursor(self, item, column_fields):

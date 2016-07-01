@@ -55,11 +55,17 @@ def routes(app, models, schemas):
         def get(self):
             return self.list()
 
+        def post(self):
+            return self.create()
+
     class PageWidgetListView(WidgetViewBase):
         pagination = PagePagination(2)
 
         def get(self):
             return self.list()
+
+        def post(self):
+            return self.create()
 
     class CursorListView(WidgetViewBase):
         sorting = Sorting(
@@ -70,6 +76,9 @@ def routes(app, models, schemas):
 
         def get(self):
             return self.list()
+
+        def post(self):
+            return self.create()
 
     api = Api(app)
     api.add_resource('/limit_offset_widgets', LimitOffsetWidgetListView)
@@ -259,6 +268,18 @@ def test_limit_offset_filtered_offset(client):
     }
 
 
+def test_limit_offset_create(client):
+    response = helpers.request(
+        client,
+        'POST', '/limit_offset_widgets',
+        {
+            'size': 1,
+        },
+    )
+
+    assert 'meta' not in helpers.get_body(response)
+
+
 def test_page(client):
     response = client.get('/page_widgets?page=1')
 
@@ -293,6 +314,18 @@ def test_page_default(client):
     assert helpers.get_meta(response) == {
         'has_next_page': True
     }
+
+
+def test_page_create(client):
+    response = helpers.request(
+        client,
+        'POST', '/page_widgets',
+        {
+            'size': 1,
+        },
+    )
+
+    assert 'meta' not in helpers.get_body(response)
 
 
 def test_cursor(client):
@@ -380,6 +413,34 @@ def test_cursor_sorted_default(client):
             'WzEsIDRd',
             'WzEsIDFd',
         ],
+    }
+
+
+def test_cursor_create(client):
+    response = helpers.request(
+        client,
+        'POST', '/cursor_widgets',
+        {
+            'size': 1,
+        },
+    )
+
+    assert helpers.get_meta(response) == {
+        'cursor': 'Wzdd',
+    }
+
+
+def test_cursor_create_sorted(client):
+    response = helpers.request(
+        client,
+        'POST', '/cursor_widgets?sort=size,-id',
+        {
+            'size': 1,
+        },
+    )
+
+    assert helpers.get_meta(response) == {
+        'cursor': 'WzEsIDdd',
     }
 
 

@@ -266,7 +266,19 @@ class ModelView(ApiView):
 
     def make_item_response(self, item, *args):
         data_out = self.serialize(item)
+        self.set_item_meta(item)
         return self.make_response(data_out, *args, item=item)
+
+    def set_item_meta(self, item):
+        self.set_item_pagination_meta(item)
+
+    def set_item_pagination_meta(self, item):
+        if not self.pagination:
+            return
+
+        pagination_meta = self.pagination.get_item_meta(item, self)
+        if pagination_meta is not None:
+            meta.set_response_meta(**pagination_meta)
 
     def make_created_response(self, item):
         return self.make_item_response(
