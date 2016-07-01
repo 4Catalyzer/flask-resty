@@ -213,6 +213,9 @@ class ModelView(ApiView):
 
     def deserialize(self, data_raw, **kwargs):
         data = super(ModelView, self).deserialize(data_raw, **kwargs)
+        return self.resolve_related(data)
+
+    def resolve_related(self, data):
         if not self.related:
             return data
 
