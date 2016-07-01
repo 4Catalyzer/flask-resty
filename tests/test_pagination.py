@@ -1,6 +1,6 @@
 from flask_resty import (
-    Api, CursorPagination, Filtering, GenericModelView, LimitOffsetPagination,
-    PagePagination, Sorting
+    Api, Filtering, GenericModelView, LimitOffsetPagination, PagePagination,
+    RelayCursorPagination, Sorting
 )
 from marshmallow import fields, Schema
 import operator
@@ -67,12 +67,12 @@ def routes(app, models, schemas):
         def post(self):
             return self.create()
 
-    class CursorListView(WidgetViewBase):
+    class RelayCursorListView(WidgetViewBase):
         sorting = Sorting(
             'id', 'size',
             default='id',
         )
-        pagination = CursorPagination(2)
+        pagination = RelayCursorPagination(2)
 
         def get(self):
             return self.list()
@@ -83,7 +83,7 @@ def routes(app, models, schemas):
     api = Api(app)
     api.add_resource('/limit_offset_widgets', LimitOffsetWidgetListView)
     api.add_resource('/page_widgets', PageWidgetListView)
-    api.add_resource('/cursor_widgets', CursorListView)
+    api.add_resource('/relay_cursor_widgets', RelayCursorListView)
 
 
 @pytest.fixture(autouse=True)
@@ -328,8 +328,8 @@ def test_page_create(client):
     assert 'meta' not in helpers.get_body(response)
 
 
-def test_cursor(client):
-    response = client.get('/cursor_widgets?cursor=MQ')
+def test_relay_cursor(client):
+    response = client.get('/relay_cursor_widgets?cursor=MQ')
 
     assert helpers.get_data(response) == [
         {
@@ -350,8 +350,8 @@ def test_cursor(client):
     }
 
 
-def test_cursor_default(client):
-    response = client.get('/cursor_widgets')
+def test_relay_cursor_default(client):
+    response = client.get('/relay_cursor_widgets')
 
     assert helpers.get_data(response) == [
         {
@@ -372,8 +372,8 @@ def test_cursor_default(client):
     }
 
 
-def test_cursor_sorted(client):
-    response = client.get('/cursor_widgets?sort=size,-id&cursor=MQ.NA')
+def test_relay_cursor_sorted(client):
+    response = client.get('/relay_cursor_widgets?sort=size,-id&cursor=MQ.NA')
 
     assert helpers.get_data(response) == [
         {
@@ -394,8 +394,8 @@ def test_cursor_sorted(client):
     }
 
 
-def test_cursor_sorted_default(client):
-    response = client.get('/cursor_widgets?sort=size,-id')
+def test_relay_cursor_sorted_default(client):
+    response = client.get('/relay_cursor_widgets?sort=size,-id')
 
     assert helpers.get_data(response) == [
         {
@@ -416,10 +416,10 @@ def test_cursor_sorted_default(client):
     }
 
 
-def test_cursor_create(client):
+def test_relay_cursor_create(client):
     response = helpers.request(
         client,
-        'POST', '/cursor_widgets',
+        'POST', '/relay_cursor_widgets',
         {
             'size': 1,
         },
@@ -430,10 +430,10 @@ def test_cursor_create(client):
     }
 
 
-def test_cursor_create_sorted(client):
+def test_relay_cursor_create_sorted(client):
     response = helpers.request(
         client,
-        'POST', '/cursor_widgets?sort=size,-id',
+        'POST', '/relay_cursor_widgets?sort=size,-id',
         {
             'size': 1,
         },
@@ -507,8 +507,8 @@ def test_error_invalid_page_value(client):
     }]
 
 
-def test_error_invalid_cursor_encoding(client):
-    response = client.get('/cursor_widgets?cursor=_')
+def test_error_invalid_relay_cursor_encoding(client):
+    response = client.get('/relay_cursor_widgets?cursor=_')
     assert response.status_code == 400
 
     assert helpers.get_errors(response) == [{
@@ -517,8 +517,8 @@ def test_error_invalid_cursor_encoding(client):
     }]
 
 
-def test_error_invalid_cursor_length(client):
-    response = client.get('/cursor_widgets?cursor=MQ.MQ')
+def test_error_invalid_relay_cursor_length(client):
+    response = client.get('/relay_cursor_widgets?cursor=MQ.MQ')
     assert response.status_code == 400
 
     assert helpers.get_errors(response) == [{
@@ -527,8 +527,8 @@ def test_error_invalid_cursor_length(client):
     }]
 
 
-def test_error_invalid_cursor_field(client):
-    response = client.get('/cursor_widgets?cursor=Zm9v')
+def test_error_invalid_relay_cursor_field(client):
+    response = client.get('/relay_cursor_widgets?cursor=Zm9v')
     assert response.status_code == 400
 
     errors = helpers.get_errors(response)
