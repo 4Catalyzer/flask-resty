@@ -55,11 +55,17 @@ def routes(app, models, schemas):
         def get(self):
             return self.list()
 
+        def post(self):
+            return self.create()
+
     class PageWidgetListView(WidgetViewBase):
         pagination = PagePagination(2)
 
         def get(self):
             return self.list()
+
+        def post(self):
+            return self.create()
 
     class CursorListView(WidgetViewBase):
         sorting = Sorting(
@@ -70,6 +76,9 @@ def routes(app, models, schemas):
 
         def get(self):
             return self.list()
+
+        def post(self):
+            return self.create()
 
     api = Api(app)
     api.add_resource('/limit_offset_widgets', LimitOffsetWidgetListView)
@@ -259,6 +268,18 @@ def test_limit_offset_filtered_offset(client):
     }
 
 
+def test_limit_offset_create(client):
+    response = helpers.request(
+        client,
+        'POST', '/limit_offset_widgets',
+        {
+            'size': 1,
+        },
+    )
+
+    assert 'meta' not in helpers.get_body(response)
+
+
 def test_page(client):
     response = client.get('/page_widgets?page=1')
 
@@ -295,8 +316,20 @@ def test_page_default(client):
     }
 
 
+def test_page_create(client):
+    response = helpers.request(
+        client,
+        'POST', '/page_widgets',
+        {
+            'size': 1,
+        },
+    )
+
+    assert 'meta' not in helpers.get_body(response)
+
+
 def test_cursor(client):
-    response = client.get('/cursor_widgets?cursor=WzFd')
+    response = client.get('/cursor_widgets?cursor=MQ')
 
     assert helpers.get_data(response) == [
         {
@@ -311,8 +344,8 @@ def test_cursor(client):
     assert helpers.get_meta(response) == {
         'has_next_page': True,
         'cursors': [
-            'WzJd',
-            'WzNd',
+            'Mg',
+            'Mw',
         ],
     }
 
@@ -333,14 +366,14 @@ def test_cursor_default(client):
     assert helpers.get_meta(response) == {
         'has_next_page': True,
         'cursors': [
-            'WzFd',
-            'WzJd',
+            'MQ',
+            'Mg',
         ],
     }
 
 
 def test_cursor_sorted(client):
-    response = client.get('/cursor_widgets?sort=size,-id&cursor=WzEsIDRd')
+    response = client.get('/cursor_widgets?sort=size,-id&cursor=MQ.NA')
 
     assert helpers.get_data(response) == [
         {
@@ -355,8 +388,8 @@ def test_cursor_sorted(client):
     assert helpers.get_meta(response) == {
         'has_next_page': True,
         'cursors': [
-            'WzEsIDFd',
-            'WzIsIDVd',
+            'MQ.MQ',
+            'Mg.NQ',
         ],
     }
 
@@ -377,9 +410,37 @@ def test_cursor_sorted_default(client):
     assert helpers.get_meta(response) == {
         'has_next_page': True,
         'cursors': [
-            'WzEsIDRd',
-            'WzEsIDFd',
+            'MQ.NA',
+            'MQ.MQ',
         ],
+    }
+
+
+def test_cursor_create(client):
+    response = helpers.request(
+        client,
+        'POST', '/cursor_widgets',
+        {
+            'size': 1,
+        },
+    )
+
+    assert helpers.get_meta(response) == {
+        'cursor': 'Nw',
+    }
+
+
+def test_cursor_create_sorted(client):
+    response = helpers.request(
+        client,
+        'POST', '/cursor_widgets?sort=size,-id',
+        {
+            'size': 1,
+        },
+    )
+
+    assert helpers.get_meta(response) == {
+        'cursor': 'MQ.Nw',
     }
 
 
@@ -447,7 +508,7 @@ def test_error_invalid_page_value(client):
 
 
 def test_error_invalid_cursor_encoding(client):
-    response = client.get('/cursor_widgets?cursor=foo')
+    response = client.get('/cursor_widgets?cursor=_')
     assert response.status_code == 400
 
     assert helpers.get_errors(response) == [{
@@ -457,7 +518,7 @@ def test_error_invalid_cursor_encoding(client):
 
 
 def test_error_invalid_cursor_length(client):
-    response = client.get('/cursor_widgets?cursor=WzEsIDFd')
+    response = client.get('/cursor_widgets?cursor=MQ.MQ')
     assert response.status_code == 400
 
     assert helpers.get_errors(response) == [{
@@ -467,7 +528,7 @@ def test_error_invalid_cursor_length(client):
 
 
 def test_error_invalid_cursor_field(client):
-    response = client.get('/cursor_widgets?cursor=WyJmb28iXQ%3D%3D')
+    response = client.get('/cursor_widgets?cursor=Zm9v')
     assert response.status_code == 400
 
     errors = helpers.get_errors(response)
