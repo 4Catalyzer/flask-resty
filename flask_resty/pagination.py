@@ -163,30 +163,11 @@ class PagePagination(LimitOffsetPagination):
             description='page number')
 
 
-class CursorPagination(LimitPagination):
+# -----------------------------------------------------------------------------
+
+
+class CursorPaginationBase(LimitPagination):
     cursor_arg = 'cursor'
-
-    def get_page(self, query, view):
-        column_orderings = self.get_column_orderings(query, view)
-
-        cursor_in = self.get_request_cursor(view, column_orderings)
-        if cursor_in is not None:
-            query = query.filter(self.get_filter(column_orderings, cursor_in))
-
-        items = super(CursorPagination, self).get_page(query, view)
-
-        # Relay expects a cursor for each item.
-        cursors_out = self.make_cursors(items, view, column_orderings)
-        meta.set_response_meta(cursors=cursors_out)
-
-        return items
-
-    def get_item_meta(self, item, view):
-        query = view.sort_list_query(view.query)
-        column_orderings = self.get_column_orderings(query, view)
-
-        cursor = self.make_cursor(item, view, column_orderings)
-        return {'cursor': cursor}
 
     def get_column_orderings(self, query, view):
         column_orderings = tuple(
@@ -326,8 +307,32 @@ class CursorPagination(LimitPagination):
         return value.decode('ascii')
 
     def spec_declaration(self, path, spec, **kwargs):
-        super(CursorPagination, self).spec_declaration(path, spec)
+        super(CursorPaginationBase, self).spec_declaration(path, spec)
         path['get'].add_parameter(
             name='cursor',
             type='string',
             description='pagination cursor')
+
+
+class RelayCursorPagination(CursorPaginationBase):
+    def get_page(self, query, view):
+        column_orderings = self.get_column_orderings(query, view)
+
+        cursor_in = self.get_request_cursor(view, column_orderings)
+        if cursor_in is not None:
+            query = query.filter(self.get_filter(column_orderings, cursor_in))
+
+        items = super(RelayCursorPagination, self).get_page(query, view)
+
+        # Relay expects a cursor for each item.
+        cursors_out = self.make_cursors(items, view, column_orderings)
+        meta.set_response_meta(cursors=cursors_out)
+
+        return items
+
+    def get_item_meta(self, item, view):
+        query = view.sort_list_query(view.query)
+        column_orderings = self.get_column_orderings(query, view)
+
+        cursor = self.make_cursor(item, view, column_orderings)
+        return {'cursor': cursor}
