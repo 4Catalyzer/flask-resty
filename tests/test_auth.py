@@ -1,7 +1,7 @@
 import flask
 from flask_resty import (
     Api, ApiError, AuthenticationBase, GenericModelView,
-    HasAnyCredentialsAuthorization,
+    HasAnyCredentialsAuthorization, HasCredentialsAuthorizationBase,
 )
 from marshmallow import fields, Schema
 import pytest
@@ -48,7 +48,7 @@ def auth():
         def get_request_credentials(self):
             return flask.request.args.get('user_id')
 
-    class UserAuthorization(HasAnyCredentialsAuthorization):
+    class UserAuthorization(HasCredentialsAuthorizationBase):
         def filter_query(self, query, view):
             return query.filter(
                 (view.model.owner_id == self.get_request_credentials()) |
@@ -100,6 +100,12 @@ def routes(app, models, schemas, auth):
         def delete(self, id):
             return self.destroy(id)
 
+    class WidgetAnyCredentialsView(WidgetViewBase):
+        authorization = HasAnyCredentialsAuthorization()
+
+        def get(self, id):
+            return self.retrieve(id)
+
     class WidgetCreateMissingView(WidgetViewBase):
         def create_missing_item(self, id):
             return self.model(id=id, owner_id=flask.request.args['owner_id'])
@@ -113,6 +119,9 @@ def routes(app, models, schemas, auth):
     api = Api(app)
     api.add_resource(
         '/widgets', WidgetListView, WidgetView, id_rule='<int:id>'
+    )
+    api.add_resource(
+        '/widgets_any_credentials/<int:id>', WidgetAnyCredentialsView,
     )
     api.add_resource(
         '/widgets_create_missing/<int:id>', WidgetCreateMissingView,
@@ -181,6 +190,11 @@ def test_update(client):
 def test_delete(client):
     response = client.delete('/widgets/1?user_id=foo')
     assert response.status_code == 204
+
+
+def test_retrieve_any_credentials(client):
+    response = client.get('/widgets_any_credentials/1?user_id=bar')
+    assert response.status_code == 200
 
 
 def test_retrieve_create_missing(client):
@@ -275,6 +289,11 @@ def test_error_delete_unauthorized(client):
     assert helpers.get_errors(forbidden_response) == [{
         'code': 'invalid_user'
     }]
+
+
+def test_error_any_credentials_unauthenticated(client):
+    response = client.get('/widgets_any_credentials/1')
+    assert response.status_code == 401
 
 
 def test_error_retrieve_create_missing_unauthorized(client):
