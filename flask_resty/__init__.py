@@ -3,7 +3,8 @@
 from .api import Api
 from .authentication import AuthenticationBase, NoOpAuthentication
 from .authorization import (
-    AuthorizationBase, HasAnyCredentialsAuthorization, NoOpAuthorization,
+    AuthorizationBase, HasAnyCredentialsAuthorization,
+    HasCredentialsAuthorizationBase, NoOpAuthorization,
 )
 from .decorators import filter_function, get_item_or_404
 from .exceptions import ApiError

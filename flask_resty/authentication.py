@@ -25,6 +25,6 @@ class AuthenticationBase(object):
 # -----------------------------------------------------------------------------
 
 
-class NoOpAuthentication(AuthenticationBase):
+class NoOpAuthentication(object):
     def authenticate_request(self):
         pass

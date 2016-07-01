@@ -27,7 +27,7 @@ class AuthorizationBase(object):
 # -----------------------------------------------------------------------------
 
 
-class NoOpAuthorization(AuthorizationBase):
+class NoOpAuthorization(object):
     def authorize_request(self):
         pass
 
@@ -44,7 +44,16 @@ class NoOpAuthorization(AuthorizationBase):
         pass
 
 
-class HasAnyCredentialsAuthorization(NoOpAuthorization):
+# -----------------------------------------------------------------------------
+
+
+class HasCredentialsAuthorizationBase(AuthorizationBase):
     def authorize_request(self):
         if self.get_request_credentials() is None:
             raise ApiError(401, {'code': 'invalid_credentials.missing'})
+
+
+class HasAnyCredentialsAuthorization(
+    HasCredentialsAuthorizationBase, NoOpAuthorization, AuthorizationBase,
+):
+    pass
