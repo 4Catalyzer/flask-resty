@@ -329,7 +329,7 @@ def test_page_create(client):
 
 
 def test_cursor(client):
-    response = client.get('/cursor_widgets?cursor=WzFd')
+    response = client.get('/cursor_widgets?cursor=MQ')
 
     assert helpers.get_data(response) == [
         {
@@ -344,8 +344,8 @@ def test_cursor(client):
     assert helpers.get_meta(response) == {
         'has_next_page': True,
         'cursors': [
-            'WzJd',
-            'WzNd',
+            'Mg',
+            'Mw',
         ],
     }
 
@@ -366,14 +366,14 @@ def test_cursor_default(client):
     assert helpers.get_meta(response) == {
         'has_next_page': True,
         'cursors': [
-            'WzFd',
-            'WzJd',
+            'MQ',
+            'Mg',
         ],
     }
 
 
 def test_cursor_sorted(client):
-    response = client.get('/cursor_widgets?sort=size,-id&cursor=WzEsIDRd')
+    response = client.get('/cursor_widgets?sort=size,-id&cursor=MQ.NA')
 
     assert helpers.get_data(response) == [
         {
@@ -388,8 +388,8 @@ def test_cursor_sorted(client):
     assert helpers.get_meta(response) == {
         'has_next_page': True,
         'cursors': [
-            'WzEsIDFd',
-            'WzIsIDVd',
+            'MQ.MQ',
+            'Mg.NQ',
         ],
     }
 
@@ -410,8 +410,8 @@ def test_cursor_sorted_default(client):
     assert helpers.get_meta(response) == {
         'has_next_page': True,
         'cursors': [
-            'WzEsIDRd',
-            'WzEsIDFd',
+            'MQ.NA',
+            'MQ.MQ',
         ],
     }
 
@@ -426,7 +426,7 @@ def test_cursor_create(client):
     )
 
     assert helpers.get_meta(response) == {
-        'cursor': 'Wzdd',
+        'cursor': 'Nw',
     }
 
 
@@ -440,7 +440,7 @@ def test_cursor_create_sorted(client):
     )
 
     assert helpers.get_meta(response) == {
-        'cursor': 'WzEsIDdd',
+        'cursor': 'MQ.Nw',
     }
 
 
@@ -508,7 +508,7 @@ def test_error_invalid_page_value(client):
 
 
 def test_error_invalid_cursor_encoding(client):
-    response = client.get('/cursor_widgets?cursor=foo')
+    response = client.get('/cursor_widgets?cursor=_')
     assert response.status_code == 400
 
     assert helpers.get_errors(response) == [{
@@ -518,7 +518,7 @@ def test_error_invalid_cursor_encoding(client):
 
 
 def test_error_invalid_cursor_length(client):
-    response = client.get('/cursor_widgets?cursor=WzEsIDFd')
+    response = client.get('/cursor_widgets?cursor=MQ.MQ')
     assert response.status_code == 400
 
     assert helpers.get_errors(response) == [{
@@ -528,7 +528,7 @@ def test_error_invalid_cursor_length(client):
 
 
 def test_error_invalid_cursor_field(client):
-    response = client.get('/cursor_widgets?cursor=WyJmb28iXQ%3D%3D')
+    response = client.get('/cursor_widgets?cursor=Zm9v')
     assert response.status_code == 400
 
     errors = helpers.get_errors(response)

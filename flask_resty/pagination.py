@@ -1,6 +1,5 @@
 import base64
 import flask
-import json
 from marshmallow import ValidationError
 import sqlalchemy as sa
 from sqlalchemy import Column, sql
@@ -253,14 +252,18 @@ class CursorPagination(LimitPagination):
 
     def decode_cursor(self, cursor):
         try:
-            cursor = cursor.encode('ascii')
-            cursor = base64.urlsafe_b64decode(cursor)
-            cursor = cursor.decode('utf-8')
-            cursor = json.loads(cursor)
+            cursor = cursor.split('.')
+            cursor = tuple(self.decode_value(value) for value in cursor)
         except (TypeError, ValueError):
             raise ApiError(400, {'code': 'invalid_cursor.encoding'})
 
         return cursor
+
+    def decode_value(self, value):
+        value = value.encode('ascii')
+        value += (3 - ((len(value) + 3) % 4)) * b'='  # Add back padding.
+        value = base64.urlsafe_b64decode(value)
+        return value.decode()
 
     def format_validation_error(self, message):
         return {
@@ -313,10 +316,14 @@ class CursorPagination(LimitPagination):
         return self.encode_cursor(cursor)
 
     def encode_cursor(self, cursor):
-        cursor = json.dumps(cursor)
-        cursor = cursor.encode('utf-8')
-        cursor = base64.urlsafe_b64encode(cursor)
-        return cursor.decode('ascii')
+        return '.'.join(self.encode_value(value) for value in cursor)
+
+    def encode_value(self, value):
+        value = str(value)
+        value = value.encode()
+        value = base64.urlsafe_b64encode(value)
+        value = value.rstrip(b'=')  # Strip padding.
+        return value.decode('ascii')
 
     def spec_declaration(self, path, spec, **kwargs):
         super(CursorPagination, self).spec_declaration(path, spec)
