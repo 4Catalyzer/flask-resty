@@ -149,13 +149,13 @@ class ModelView(ApiView):
         return query
 
     def get_list(self):
-        query = self.query
+        return self.paginate_list_query(self.get_list_query())
 
+    def get_list_query(self):
+        query = self.query
         query = self.sort_list_query(query)
         query = self.filter_list_query(query)
-
-        # Pagination is special because it has to own executing the query.
-        return self.paginate_list_query(query)
+        return query
 
     def sort_list_query(self, query):
         if not self.sorting:
