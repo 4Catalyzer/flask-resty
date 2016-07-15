@@ -331,7 +331,7 @@ class RelayCursorPagination(CursorPaginationBase):
         return items
 
     def get_item_meta(self, item, view):
-        query = view.sort_list_query(view.query)
+        query = view.get_list_query()
         column_orderings = self.get_column_orderings(query, view)
 
         cursor = self.make_cursor(item, view, column_orderings)
