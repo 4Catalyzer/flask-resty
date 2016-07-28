@@ -5,7 +5,7 @@ Building blocks for REST APIs for [Flask](http://flask.pocoo.org/).
 
 ## Usage
 
-Create a [SQLAlchemy](http://www.sqlalchemy.org/) model and a [marshmallow](http://marshmallow.rtfd.org/) schema, then: 
+Create a [SQLAlchemy](http://www.sqlalchemy.org/) model, and a [marshmallow](http://marshmallow.rtfd.org/) schema, then: 
 
 ```python
 from flask_resty import Api, GenericModelView
