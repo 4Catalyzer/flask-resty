@@ -21,13 +21,13 @@ cache:
 before_install:
   - pip install -U pip
 install:
-  - pip install -U coveralls tox
+  - pip install -U codecov tox
 
 script:
   - python setup.py test
 
 after_success:
-  - coveralls
+  - codecov
 
 branches:
   only:
