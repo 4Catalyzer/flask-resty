@@ -170,25 +170,6 @@ def test_filter_field(client):
     ]
 
 
-def test_filter_field_kwargs(client):
-    red_response = client.get('/widgets?color_no_separator=red')
-    assert helpers.get_data(red_response) == [
-        {
-            'id': '1',
-            'color': 'red',
-            'size': 1,
-        },
-        {
-            'id': '4',
-            'color': 'red',
-            'size': 6,
-        },
-    ]
-
-    empty_response = client.get('/widgets?color_no_separator=red,blue')
-    assert helpers.get_data(empty_response) == []
-
-
 # -----------------------------------------------------------------------------
 
 
