@@ -45,8 +45,13 @@ def filter_fields():
     def filter_size_is_odd(model, value):
         return model.size % 2 == int(value)
 
+    @filter_function(fields.String(), separator=None)
+    def filter_color_no_separator(model, value):
+        return model.color == value
+
     return {
-        'size_is_odd': filter_size_is_odd
+        'size_is_odd': filter_size_is_odd,
+        'color_no_separator': filter_color_no_separator,
     }
 
 
@@ -61,6 +66,7 @@ def routes(app, models, schemas, filter_fields):
             size_min=('size', operator.ge),
             size_divides=('size', lambda size, value: size % value == 0),
             size_is_odd=filter_fields['size_is_odd'],
+            color_no_separator=filter_fields['color_no_separator'],
         )
 
         def get(self):
@@ -162,6 +168,25 @@ def test_filter_field(client):
             'size': 3,
         },
     ]
+
+
+def test_filter_field_kwargs(client):
+    red_response = client.get('/widgets?color_no_separator=red')
+    assert helpers.get_data(red_response) == [
+        {
+            'id': '1',
+            'color': 'red',
+            'size': 1,
+        },
+        {
+            'id': '4',
+            'color': 'red',
+            'size': 6,
+        },
+    ]
+
+    empty_response = client.get('/widgets?color_no_separator=red,blue')
+    assert helpers.get_data(empty_response) == []
 
 
 # -----------------------------------------------------------------------------

@@ -27,9 +27,9 @@ def get_item_or_404(method=None, **decorator_kwargs):
 # -----------------------------------------------------------------------------
 
 
-def filter_function(field):
+def filter_function(field, **kwargs):
     def wrapper(function):
-        filter_field = ModelFilterField(field, function)
+        filter_field = ModelFilterField(field, function, **kwargs)
         functools.update_wrapper(filter_field, function)
         return filter_field
 
