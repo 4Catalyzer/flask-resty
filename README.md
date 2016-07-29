@@ -1,7 +1,7 @@
 # Flask-RESTy [![Travis][build-badge]][build] [![PyPI][pypi-badge]][pypi]
 Building blocks for REST APIs for [Flask](http://flask.pocoo.org/).
 
-[![Coveralls][coveralls-badge]][coveralls]
+[![Codecov][codecov-badge]][codecov]
 
 ## Usage
 
@@ -48,5 +48,5 @@ api.add_resource('/widgets', WidgetListView, WidgetView)
 [pypi-badge]: https://img.shields.io/pypi/v/Flask-RESTy.svg
 [pypi]: https://pypi.python.org/pypi/Flask-RESTy
 
-[coveralls-badge]: https://img.shields.io/coveralls/4Catalyzer/flask-resty/master.svg
-[coveralls]: https://coveralls.io/github/4Catalyzer/flask-resty
+[codecov-badge]: https://img.shields.io/codecov/c/github/4Catalyzer/flask-resty/master.svg
+[codecov]: https://codecov.io/gh/4Catalyzer/flask-resty
