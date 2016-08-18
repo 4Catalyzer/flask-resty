@@ -7,10 +7,14 @@ from werkzeug.exceptions import NotFound
 
 from .authentication import NoOpAuthentication
 from .authorization import NoOpAuthorization
+from . import context
 from .exceptions import ApiError
-from . import meta
 from .spec import ApiViewDeclaration, ModelViewDeclaration
 from . import utils
+
+# -----------------------------------------------------------------------------
+
+META_KEY = 'meta'
 
 # -----------------------------------------------------------------------------
 
@@ -37,8 +41,16 @@ class ApiView(MethodView):
     def serializer(self):
         return self.schema
 
+    def get_response_meta(self):
+        return context.get_context_value(META_KEY, None)
+
+    def set_response_meta(self, **kwargs):
+        meta = context.get_context_value(META_KEY, {})
+        meta.update(kwargs)
+        context.set_context_value(META_KEY, meta)
+
     def make_response(self, data, *args, **kwargs):
-        body = self.make_response_body(data, meta.get_response_meta())
+        body = self.make_response_body(data, self.get_response_meta())
         return self.make_raw_response(flask.jsonify(body), *args, **kwargs)
 
     def make_response_body(self, data, response_meta):
@@ -290,7 +302,7 @@ class ModelView(ApiView):
 
         pagination_meta = self.pagination.get_item_meta(item, self)
         if pagination_meta is not None:
-            meta.set_response_meta(**pagination_meta)
+            self.set_response_meta(**pagination_meta)
 
     def make_created_response(self, item):
         response = self.make_item_response(item, 201)

@@ -5,7 +5,6 @@ import sqlalchemy as sa
 from sqlalchemy import Column, sql
 
 from .exceptions import ApiError
-from . import meta
 from . import utils
 
 # -----------------------------------------------------------------------------
@@ -47,7 +46,7 @@ class LimitPagination(PaginationBase):
         else:
             has_next_page = False
 
-        meta.set_response_meta(has_next_page=has_next_page)
+        view.set_response_meta(has_next_page=has_next_page)
         return items
 
     def get_limit(self):
@@ -326,7 +325,7 @@ class RelayCursorPagination(CursorPaginationBase):
 
         # Relay expects a cursor for each item.
         cursors_out = self.make_cursors(items, view, column_orderings)
-        meta.set_response_meta(cursors=cursors_out)
+        view.set_response_meta(cursors=cursors_out)
 
         return items
 
