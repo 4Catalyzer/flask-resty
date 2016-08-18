@@ -1,13 +1,17 @@
-import flask
+from . import context
+
+# -----------------------------------------------------------------------------
+
+META_KEY = 'meta'
 
 # -----------------------------------------------------------------------------
 
 
 def get_response_meta():
-    return getattr(flask.g, 'resty_response_meta', None)
+    return context.get_context_value(META_KEY, None)
 
 
 def set_response_meta(**kwargs):
-    meta = getattr(flask.g, 'resty_response_meta', {})
+    meta = context.get_context_value(META_KEY, {})
     meta.update(kwargs)
-    flask.g.resty_response_meta = meta
+    context.set_context_value(META_KEY, meta)

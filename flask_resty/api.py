@@ -21,7 +21,6 @@ class Api(object):
         self._prefix = prefix
 
     def init_app(self, app):
-
         app.extensions['resty'] = FlaskRestyState(self)
 
         @app.errorhandler(ApiError)
@@ -31,13 +30,12 @@ class Api(object):
     def _get_app(self, app):
         app = app or self._app
         assert app, "no application specified"
-        # store the view urls for reference. Doesn't support multiple routes
-        # mapped to same view
         return app
 
     def add_resource(
-            self, base_rule, base_view, alternate_view=None,
-            alternate_rule=None, id_rule=None, app=None):
+        self, base_rule, base_view, alternate_view=None,
+        alternate_rule=None, id_rule=None, app=None,
+    ):
         if alternate_view:
             if not alternate_rule:
                 id_rule = id_rule or DEFAULT_ID_RULE
@@ -49,8 +47,11 @@ class Api(object):
             assert id_rule is None
 
         app = self._get_app(app)
-        views = app.extensions['resty'].views
         endpoint = self._get_endpoint(base_view, alternate_view)
+
+        # Store the view urls for reference. Doesn't support multiple routes
+        # mapped to same view.
+        views = app.extensions['resty'].views
 
         base_rule_full = '{}{}'.format(self._prefix, base_rule)
         base_view_func = base_view.as_view(endpoint)
@@ -101,6 +102,9 @@ class Api(object):
             return '', 200
 
 
+# -----------------------------------------------------------------------------
+
+
 class FlaskRestyState(object):
     def __init__(self, api):
         self.api = api
@@ -108,7 +112,7 @@ class FlaskRestyState(object):
 
 
 class Resource(object):
-    """simple object to store information about an added resource"""
+    """Simple object to store information about an added resource"""
 
     def __init__(self, view, rule):
         self.rule = rule
