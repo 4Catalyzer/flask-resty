@@ -195,7 +195,7 @@ class ModelView(ApiView):
                 item = self.create_missing_item(id)
                 if for_update:
                     # Bypass authorizating the save if we are getting the item
-                    # for update, as
+                    # for update, as update_item will make that check.
                     self.session.add(item)
                 else:
                     try:
