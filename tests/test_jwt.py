@@ -1,9 +1,8 @@
 from flask_resty import Api, GenericModelView, HasAnyCredentialsAuthorization
+from flask_resty.testing import assert_response
 from marshmallow import fields, Schema
 import pytest
 from sqlalchemy import Column, Integer, String
-
-import helpers
 
 # -----------------------------------------------------------------------------
 
@@ -120,23 +119,22 @@ def test_header(client, token):
         },
     )
 
-    assert helpers.get_data(response) == [
+    assert_response(response, 200, [
         {
             'id': '1',
             'owner_id': 'foo',
         },
-    ]
+    ])
 
 
 def test_arg(client, token):
     response = client.get('/widgets?id_token={}'.format(token))
-
-    assert helpers.get_data(response) == [
+    assert_response(response, 200, [
         {
             'id': '1',
             'owner_id': 'foo',
         },
-    ]
+    ])
 
 
 # -----------------------------------------------------------------------------
@@ -144,11 +142,9 @@ def test_arg(client, token):
 
 def test_error_unauthenticated(client):
     response = client.get('/widgets')
-    assert response.status_code == 401
-
-    assert helpers.get_errors(response) == [{
+    assert_response(response, 401, [{
         'code': 'invalid_credentials.missing',
-    }]
+    }])
 
 
 def test_error_invalid_authorization(client):
@@ -158,11 +154,9 @@ def test_error_invalid_authorization(client):
             'Authorization': 'foo',
         },
     )
-    assert response.status_code == 401
-
-    assert helpers.get_errors(response) == [{
+    assert_response(response, 401, [{
         'code': 'invalid_authorization',
-    }]
+    }])
 
 
 def test_error_invalid_authorization_scheme(client):
@@ -172,11 +166,9 @@ def test_error_invalid_authorization_scheme(client):
             'Authorization': 'foo bar',
         },
     )
-    assert response.status_code == 401
-
-    assert helpers.get_errors(response) == [{
+    assert_response(response, 401, [{
         'code': 'invalid_authorization.scheme',
-    }]
+    }])
 
 
 def test_error_invalid_token(client, invalid_token):
@@ -186,8 +178,6 @@ def test_error_invalid_token(client, invalid_token):
             'Authorization': 'Bearer {}'.format(invalid_token),
         },
     )
-    assert response.status_code == 401
-
-    assert helpers.get_errors(response) == [{
+    assert_response(response, 401, [{
         'code': 'invalid_token',
-    }]
+    }])

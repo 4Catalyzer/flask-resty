@@ -2,12 +2,13 @@ from flask_resty import (
     Api, Filtering, GenericModelView, LimitOffsetPagination, PagePagination,
     RelayCursorPagination, Sorting
 )
+from flask_resty.testing import assert_response, get_body, get_meta
 from marshmallow import fields, Schema
 import operator
 import pytest
 from sqlalchemy import Column, Integer
 
-import helpers
+from helpers import request
 
 # -----------------------------------------------------------------------------
 
@@ -105,7 +106,7 @@ def data(db, models):
 def test_limit_offset(client):
     response = client.get('/limit_offset_widgets?offset=2&limit=3')
 
-    assert helpers.get_data(response) == [
+    assert_response(response, 200, [
         {
             'id': '3',
             'size': 3,
@@ -118,8 +119,8 @@ def test_limit_offset(client):
             'id': '5',
             'size': 2,
         },
-    ]
-    assert helpers.get_meta(response) == {
+    ])
+    assert get_meta(response) == {
         'has_next_page': True
     }
 
@@ -127,7 +128,7 @@ def test_limit_offset(client):
 def test_limit_offset_default(client):
     response = client.get('/limit_offset_widgets')
 
-    assert helpers.get_data(response) == [
+    assert_response(response, 200, [
         {
             'id': '1',
             'size': 1,
@@ -136,8 +137,8 @@ def test_limit_offset_default(client):
             'id': '2',
             'size': 2,
         },
-    ]
-    assert helpers.get_meta(response) == {
+    ])
+    assert get_meta(response) == {
         'has_next_page': True
     }
 
@@ -145,7 +146,7 @@ def test_limit_offset_default(client):
 def test_limit_offset_limit(client):
     response = client.get('/limit_offset_widgets?limit=3')
 
-    assert helpers.get_data(response) == [
+    assert_response(response, 200, [
         {
             'id': '1',
             'size': 1,
@@ -158,8 +159,8 @@ def test_limit_offset_limit(client):
             'id': '3',
             'size': 3,
         },
-    ]
-    assert helpers.get_meta(response) == {
+    ])
+    assert get_meta(response) == {
         'has_next_page': True
     }
 
@@ -167,7 +168,7 @@ def test_limit_offset_limit(client):
 def test_limit_offset_max_limit(client):
     response = client.get('/limit_offset_widgets?limit=5')
 
-    assert helpers.get_data(response) == [
+    assert_response(response, 200, [
         {
             'id': '1',
             'size': 1,
@@ -184,8 +185,8 @@ def test_limit_offset_max_limit(client):
             'id': '4',
             'size': 1,
         },
-    ]
-    assert helpers.get_meta(response) == {
+    ])
+    assert get_meta(response) == {
         'has_next_page': True
     }
 
@@ -193,7 +194,7 @@ def test_limit_offset_max_limit(client):
 def test_limit_offset_offset(client):
     response = client.get('/limit_offset_widgets?offset=2')
 
-    assert helpers.get_data(response) == [
+    assert_response(response, 200, [
         {
             'id': '3',
             'size': 3,
@@ -202,8 +203,8 @@ def test_limit_offset_offset(client):
             'id': '4',
             'size': 1,
         },
-    ]
-    assert helpers.get_meta(response) == {
+    ])
+    assert get_meta(response) == {
         'has_next_page': True
     }
 
@@ -211,7 +212,7 @@ def test_limit_offset_offset(client):
 def test_limit_offset_offset_end(client):
     response = client.get('/limit_offset_widgets?offset=4')
 
-    assert helpers.get_data(response) == [
+    assert_response(response, 200, [
         {
             'id': '5',
             'size': 2,
@@ -220,8 +221,8 @@ def test_limit_offset_offset_end(client):
             'id': '6',
             'size': 3,
         },
-    ]
-    assert helpers.get_meta(response) == {
+    ])
+    assert get_meta(response) == {
         'has_next_page': False
     }
 
@@ -229,13 +230,13 @@ def test_limit_offset_offset_end(client):
 def test_limit_offset_offset_truncate(client):
     response = client.get('/limit_offset_widgets?offset=5')
 
-    assert helpers.get_data(response) == [
+    assert_response(response, 200, [
         {
             'id': '6',
             'size': 3,
         },
-    ]
-    assert helpers.get_meta(response) == {
+    ])
+    assert get_meta(response) == {
         'has_next_page': False
     }
 
@@ -243,13 +244,13 @@ def test_limit_offset_offset_truncate(client):
 def test_limit_offset_filtered(client):
     response = client.get('/limit_offset_widgets?size=2&limit=1')
 
-    assert helpers.get_data(response) == [
+    assert_response(response, 200, [
         {
             'id': '2',
             'size': 2,
         },
-    ]
-    assert helpers.get_meta(response) == {
+    ])
+    assert get_meta(response) == {
         'has_next_page': True
     }
 
@@ -257,19 +258,19 @@ def test_limit_offset_filtered(client):
 def test_limit_offset_filtered_offset(client):
     response = client.get('/limit_offset_widgets?size=2&offset=1')
 
-    assert helpers.get_data(response) == [
+    assert_response(response, 200, [
         {
             'id': '5',
             'size': 2,
         },
-    ]
-    assert helpers.get_meta(response) == {
+    ])
+    assert get_meta(response) == {
         'has_next_page': False
     }
 
 
 def test_limit_offset_create(client):
-    response = helpers.request(
+    response = request(
         client,
         'POST', '/limit_offset_widgets',
         {
@@ -277,13 +278,13 @@ def test_limit_offset_create(client):
         },
     )
 
-    assert 'meta' not in helpers.get_body(response)
+    assert 'meta' not in get_body(response)
 
 
 def test_page(client):
     response = client.get('/page_widgets?page=1')
 
-    assert helpers.get_data(response) == [
+    assert_response(response, 200, [
         {
             'id': '3',
             'size': 3,
@@ -292,8 +293,8 @@ def test_page(client):
             'id': '4',
             'size': 1,
         },
-    ]
-    assert helpers.get_meta(response) == {
+    ])
+    assert get_meta(response) == {
         'has_next_page': True
     }
 
@@ -301,7 +302,7 @@ def test_page(client):
 def test_page_default(client):
     response = client.get('/page_widgets')
 
-    assert helpers.get_data(response) == [
+    assert_response(response, 200, [
         {
             'id': '1',
             'size': 1,
@@ -310,14 +311,14 @@ def test_page_default(client):
             'id': '2',
             'size': 2,
         },
-    ]
-    assert helpers.get_meta(response) == {
+    ])
+    assert get_meta(response) == {
         'has_next_page': True
     }
 
 
 def test_page_create(client):
-    response = helpers.request(
+    response = request(
         client,
         'POST', '/page_widgets',
         {
@@ -325,13 +326,13 @@ def test_page_create(client):
         },
     )
 
-    assert 'meta' not in helpers.get_body(response)
+    assert 'meta' not in get_body(response)
 
 
 def test_relay_cursor(client):
     response = client.get('/relay_cursor_widgets?cursor=MQ')
 
-    assert helpers.get_data(response) == [
+    assert_response(response, 200, [
         {
             'id': '2',
             'size': 2,
@@ -340,8 +341,8 @@ def test_relay_cursor(client):
             'id': '3',
             'size': 3,
         },
-    ]
-    assert helpers.get_meta(response) == {
+    ])
+    assert get_meta(response) == {
         'has_next_page': True,
         'cursors': [
             'Mg',
@@ -353,7 +354,7 @@ def test_relay_cursor(client):
 def test_relay_cursor_default(client):
     response = client.get('/relay_cursor_widgets')
 
-    assert helpers.get_data(response) == [
+    assert_response(response, 200, [
         {
             'id': '1',
             'size': 1,
@@ -362,8 +363,8 @@ def test_relay_cursor_default(client):
             'id': '2',
             'size': 2,
         },
-    ]
-    assert helpers.get_meta(response) == {
+    ])
+    assert get_meta(response) == {
         'has_next_page': True,
         'cursors': [
             'MQ',
@@ -375,7 +376,7 @@ def test_relay_cursor_default(client):
 def test_relay_cursor_sorted(client):
     response = client.get('/relay_cursor_widgets?sort=size,-id&cursor=MQ.NA')
 
-    assert helpers.get_data(response) == [
+    assert_response(response, 200, [
         {
             'id': '1',
             'size': 1,
@@ -384,8 +385,8 @@ def test_relay_cursor_sorted(client):
             'id': '5',
             'size': 2,
         },
-    ]
-    assert helpers.get_meta(response) == {
+    ])
+    assert get_meta(response) == {
         'has_next_page': True,
         'cursors': [
             'MQ.MQ',
@@ -397,7 +398,7 @@ def test_relay_cursor_sorted(client):
 def test_relay_cursor_sorted_default(client):
     response = client.get('/relay_cursor_widgets?sort=size,-id')
 
-    assert helpers.get_data(response) == [
+    assert_response(response, 200, [
         {
             'id': '4',
             'size': 1,
@@ -406,8 +407,8 @@ def test_relay_cursor_sorted_default(client):
             'id': '1',
             'size': 1,
         },
-    ]
-    assert helpers.get_meta(response) == {
+    ])
+    assert get_meta(response) == {
         'has_next_page': True,
         'cursors': [
             'MQ.NA',
@@ -417,7 +418,7 @@ def test_relay_cursor_sorted_default(client):
 
 
 def test_relay_cursor_create(client):
-    response = helpers.request(
+    response = request(
         client,
         'POST', '/relay_cursor_widgets',
         {
@@ -425,13 +426,13 @@ def test_relay_cursor_create(client):
         },
     )
 
-    assert helpers.get_meta(response) == {
+    assert get_meta(response) == {
         'cursor': 'Nw',
     }
 
 
 def test_relay_cursor_create_sorted(client):
-    response = helpers.request(
+    response = request(
         client,
         'POST', '/relay_cursor_widgets?sort=size,-id',
         {
@@ -439,7 +440,7 @@ def test_relay_cursor_create_sorted(client):
         },
     )
 
-    assert helpers.get_meta(response) == {
+    assert get_meta(response) == {
         'cursor': 'MQ.Nw',
     }
 
@@ -449,93 +450,72 @@ def test_relay_cursor_create_sorted(client):
 
 def test_error_invalid_limit_type(client):
     response = client.get('/limit_offset_widgets?limit=foo')
-    assert response.status_code == 400
-
-    assert helpers.get_errors(response) == [{
+    assert_response(response, 400, [{
         'code': 'invalid_limit',
         'source': {'parameter': 'limit'},
-    }]
+    }])
 
 
 def test_error_invalid_limit_value(client):
     response = client.get('/limit_offset_widgets?limit=-1')
-    assert response.status_code == 400
-
-    assert helpers.get_errors(response) == [{
+    assert_response(response, 400, [{
         'code': 'invalid_limit',
         'source': {'parameter': 'limit'},
-    }]
+    }])
 
 
 def test_error_invalid_offset_type(client):
     response = client.get('/limit_offset_widgets?offset=foo')
-    assert response.status_code == 400
-
-    assert helpers.get_errors(response) == [{
+    assert_response(response, 400, [{
         'code': 'invalid_offset',
         'source': {'parameter': 'offset'},
-    }]
+    }])
 
 
 def test_error_invalid_offset_value(client):
     response = client.get('/limit_offset_widgets?offset=-1')
-    assert response.status_code == 400
-
-    assert helpers.get_errors(response) == [{
+    assert_response(response, 400, [{
         'code': 'invalid_offset',
         'source': {'parameter': 'offset'},
-    }]
+    }])
 
 
 def test_error_invalid_page_type(client):
     response = client.get('/page_widgets?page=foo')
-    assert response.status_code == 400
-
-    assert helpers.get_errors(response) == [{
+    assert_response(response, 400, [{
         'code': 'invalid_page',
         'source': {'parameter': 'page'},
-    }]
+    }])
 
 
 def test_error_invalid_page_value(client):
     response = client.get('/page_widgets?page=-1')
-    assert response.status_code == 400
-
-    assert helpers.get_errors(response) == [{
+    assert_response(response, 400, [{
         'code': 'invalid_page',
         'source': {'parameter': 'page'},
-    }]
+    }])
 
 
 def test_error_invalid_relay_cursor_encoding(client):
     response = client.get('/relay_cursor_widgets?cursor=_')
-    assert response.status_code == 400
-
-    assert helpers.get_errors(response) == [{
+    assert_response(response, 400, [{
         'code': 'invalid_cursor.encoding',
         'source': {'parameter': 'cursor'},
-    }]
+    }])
 
 
 def test_error_invalid_relay_cursor_length(client):
     response = client.get('/relay_cursor_widgets?cursor=MQ.MQ')
-    assert response.status_code == 400
-
-    assert helpers.get_errors(response) == [{
+    assert_response(response, 400, [{
         'code': 'invalid_cursor.length',
         'source': {'parameter': 'cursor'},
-    }]
+    }])
 
 
 def test_error_invalid_relay_cursor_field(client):
     response = client.get('/relay_cursor_widgets?cursor=Zm9v')
-    assert response.status_code == 400
-
-    errors = helpers.get_errors(response)
-    for error in errors:
-        assert error.pop('detail', None) is not None
-
-    assert errors == [{
+    assert_response(response, 400, [{
         'code': 'invalid_cursor',
+        'detail': 'Not a valid integer.',
         'source': {'parameter': 'cursor'},
-    }]
+    }])
