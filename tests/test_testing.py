@@ -17,6 +17,8 @@ def test_simple_cases():
 
     assert_value({1, 2}, {2, 1})
 
+    assert_value(0.1 + 0.2, 0.3)
+
 
 def test_failures():
     with pytest.raises(AssertionError):
@@ -42,7 +44,7 @@ def test_objects():
         'c': [{}, {'a': 1}],
         'd': {
             'a': 1,
-            'b': []
+            'b': [],
         },
     }
 
@@ -60,7 +62,7 @@ def test_objects():
     assert_value(complex_object, {
         'd': {
             'a': 1,
-        }
+        },
     })
 
     with pytest.raises(AssertionError):
@@ -71,13 +73,13 @@ def test_objects():
 
     with pytest.raises(AssertionError):
         assert_value(complex_object, {
-            'b': [1, 2]
+            'b': [1, 2],
         })
 
     with pytest.raises(AssertionError):
         assert_value(complex_object, {
             'a': 1,
-            'foo': 1
+            'foo': 1,
         })
 
     with pytest.raises(AssertionError):
