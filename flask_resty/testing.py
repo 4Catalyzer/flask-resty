@@ -5,7 +5,7 @@ try:
 except ImportError:
     from itertools import izip_longest as zip_longest
 
-NO_DATA = {}
+NO_DATA = object()
 
 # -----------------------------------------------------------------------------
 
