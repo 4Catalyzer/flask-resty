@@ -1,9 +1,10 @@
 from flask_resty import Api, GenericModelView
+from flask_resty.testing import assert_response
 from marshmallow import fields, Schema
 import pytest
 from sqlalchemy import Column, Integer
 
-import helpers
+from helpers import request
 
 # -----------------------------------------------------------------------------
 
@@ -71,30 +72,26 @@ def test_api_prefix(app, views, client):
     api.add_resource('/widgets', views['widget_list'])
 
     response = client.get('/api/widgets')
-    assert helpers.get_data(response) == [
-        {
-            'id': '1',
-        },
-    ]
+    assert_response(response, 200, [{
+        'id': '1',
+    }])
 
 
 def test_create_client_id(app, views, client):
     api = Api(app)
     api.add_resource('/widgets', views['widget_list'], views['widget'])
 
-    response = helpers.request(
+    response = request(
         client,
         'POST', '/widgets',
         {
             'id': '100',
         },
     )
-    assert response.status_code == 201
     assert response.headers['Location'] == 'http://localhost/widgets/100'
-
-    assert helpers.get_data(response) == {
+    assert_response(response, 201, {
         'id': '100',
-    }
+    })
 
 
 def test_training_slash(app, views, client):
@@ -102,19 +99,18 @@ def test_training_slash(app, views, client):
     api.add_resource(
         '/widgets/', views['widget_list'], views['widget'], id_rule='<id>/')
 
-    response = helpers.request(
+    response = request(
         client,
         'POST', '/widgets/',
         {
             'id': '100',
         },
     )
-    assert response.status_code == 201
     assert response.headers['Location'] == 'http://localhost/widgets/100/'
 
-    assert helpers.get_data(response) == {
+    assert_response(response, 201, {
         'id': '100',
-    }
+    })
 
     response = client.get('/widgets/100/')
     assert response.status_code == 200
@@ -130,20 +126,18 @@ def test_resource_rules(app, views, client):
     )
 
     get_response = client.get('/widget/1')
-    assert get_response.status_code == 200
 
-    assert helpers.get_data(get_response) == {
+    assert_response(get_response, 200, {
         'id': '1',
-    }
+    })
 
-    post_response = helpers.request(
+    post_response = request(
         client,
         'POST', '/widgets',
         {},
     )
-    assert post_response.status_code == 201
     assert post_response.headers['Location'] == 'http://localhost/widget/2'
 
-    assert helpers.get_data(post_response) == {
+    assert_response(post_response, 201, {
         'id': '2',
-    }
+    })

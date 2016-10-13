@@ -1,9 +1,10 @@
 from flask_resty import Api, GenericModelView
+from flask_resty.testing import assert_response
 from marshmallow import fields, Schema
 import pytest
 from sqlalchemy import Column, Integer, String
 
-import helpers
+from helpers import request
 
 # -----------------------------------------------------------------------------
 
@@ -82,9 +83,7 @@ def data(db, models):
 
 def test_list(client):
     response = client.get('/widgets')
-    assert response.status_code == 200
-
-    assert helpers.get_data(response) == [
+    assert_response(response, 200, [
         {
             'id': '1',
             'name': "Foo",
@@ -100,22 +99,21 @@ def test_list(client):
             'name': "Baz",
             'description': "baz widget",
         },
-    ]
+    ])
 
 
 def test_retrieve(client):
     response = client.get('/widgets/1')
-    assert response.status_code == 200
 
-    assert helpers.get_data(response) == {
+    assert_response(response, 200, {
         'id': '1',
         'name': "Foo",
         'description': "foo widget",
-    }
+    })
 
 
 def test_create(client):
-    response = helpers.request(
+    response = request(
         client,
         'POST', '/widgets',
         {
@@ -123,18 +121,17 @@ def test_create(client):
             'description': "qux widget",
         },
     )
-    assert response.status_code == 201
     assert response.headers['Location'] == 'http://localhost/widgets/4'
 
-    assert helpers.get_data(response) == {
+    assert_response(response, 201, {
         'id': '4',
         'name': "Qux",
         'description': "qux widget",
-    }
+    })
 
 
 def test_update(client):
-    update_response = helpers.request(
+    update_response = request(
         client,
         'PATCH', '/widgets/1',
         {
@@ -142,21 +139,20 @@ def test_update(client):
             'description': "updated description",
         },
     )
-    assert update_response.status_code == 204
+    assert_response(update_response, 204)
 
     retrieve_response = client.get('/widgets/1')
-    assert retrieve_response.status_code == 200
 
-    assert helpers.get_data(retrieve_response) == {
+    assert_response(retrieve_response, 200, {
         'id': '1',
         'name': "Foo",
         'description': "updated description",
-    }
+    })
 
 
 def test_destroy(client):
     destroy_response = client.delete('/widgets/1')
-    assert destroy_response.status_code == 204
+    assert_response(destroy_response, 204)
 
     retrieve_response = client.get('/widgets/1')
-    assert retrieve_response.status_code == 404
+    assert_response(retrieve_response, 404)

@@ -1,9 +1,10 @@
 from flask_resty import Api, GenericModelView
+from flask_resty.testing import assert_response, get_body
 from marshmallow import fields, Schema
 import pytest
 from sqlalchemy import Column, Integer, String
 
-import helpers
+from helpers import request
 
 # -----------------------------------------------------------------------------
 
@@ -86,11 +87,9 @@ def test_invalid_body(client):
         '/widgets',
         data='foo',
     )
-    assert response.status_code == 400
-
-    assert helpers.get_errors(response) == [{
+    assert_response(response, 400, [{
         'code': 'invalid_body',
-    }]
+    }])
 
 
 def test_data_missing(client):
@@ -99,15 +98,13 @@ def test_data_missing(client):
         content_type='application/json',
         data='{}',
     )
-    assert response.status_code == 400
-
-    assert helpers.get_errors(response) == [{
+    assert_response(response, 400, [{
         'code': 'invalid_data.missing',
-    }]
+    }])
 
 
 def test_deserializer_errors(client):
-    response = helpers.request(
+    response = request(
         client,
         'POST', '/widgets',
         {
@@ -119,22 +116,7 @@ def test_deserializer_errors(client):
             ],
         },
     )
-    assert response.status_code == 422
-
-    errors = helpers.get_errors(response)
-    for error in errors:
-        assert error.pop('detail', None) is not None
-
-    errors.sort(key=lambda error: error['source']['pointer'])
-    assert errors == [
-        {
-            'code': 'invalid_data',
-            'source': {'pointer': '/data/name'},
-        },
-        {
-            'code': 'invalid_data',
-            'source': {'pointer': '/data/nested/value'},
-        },
+    assert_response(response, 422, [
         {
             'code': 'invalid_data',
             'source': {'pointer': '/data/nested_many/0/value'},
@@ -143,11 +125,19 @@ def test_deserializer_errors(client):
             'code': 'invalid_data',
             'source': {'pointer': '/data/nested_many/2/value'},
         },
-    ]
+        {
+            'code': 'invalid_data',
+            'source': {'pointer': '/data/name'},
+        },
+        {
+            'code': 'invalid_data',
+            'source': {'pointer': '/data/nested/value'},
+        },
+    ])
 
 
 def test_id_forbidden(client):
-    response = helpers.request(
+    response = request(
         client,
         'POST', '/widgets',
         {
@@ -155,30 +145,26 @@ def test_id_forbidden(client):
             'name': "Bar",
         },
     )
-    assert response.status_code == 403
-
-    assert helpers.get_errors(response) == [{
+    assert_response(response, 403, [{
         'code': 'invalid_id.forbidden',
-    }]
+    }])
 
 
 def test_id_missing(client):
-    response = helpers.request(
+    response = request(
         client,
         'PATCH', '/widgets/1',
         {
             'name': "Bar",
         },
     )
-    assert response.status_code == 422
-
-    assert helpers.get_errors(response) == [{
+    assert_response(response, 422, [{
         'code': 'invalid_id.missing',
-    }]
+    }])
 
 
 def test_id_mismatch(client):
-    response = helpers.request(
+    response = request(
         client,
         'PATCH', '/widgets/1',
         {
@@ -186,26 +172,22 @@ def test_id_mismatch(client):
             'name': "Bar",
         },
     )
-    assert response.status_code == 409
-
-    assert helpers.get_errors(response) == [{
+    assert_response(response, 409, [{
         'code': 'invalid_id.mismatch',
-    }]
+    }])
 
 
 def test_commit_conflict(client):
-    response = helpers.request(
+    response = request(
         client,
         'POST', '/widgets',
         {
             'name': "Foo",
         },
     )
-    assert response.status_code == 409
-
-    assert helpers.get_errors(response) == [{
+    assert_response(response, 409, [{
         'code': 'invalid_data.conflict',
-    }]
+    }])
 
 
 def test_debug(app, client):
@@ -216,8 +198,8 @@ def test_debug(app, client):
         '/widgets',
         data='foo',
     )
-    assert production_response.status_code == 400
-    assert 'debug' not in helpers.get_body(production_response)
+    assert_response(production_response, 400)
+    assert 'debug' not in get_body(production_response)
 
     app.debug = True
     app.testing = False
@@ -226,8 +208,8 @@ def test_debug(app, client):
         '/widgets',
         data='foo',
     )
-    assert debug_response.status_code == 400
-    assert 'debug' in helpers.get_body(debug_response)
+    assert_response(debug_response, 400)
+    assert 'debug' in get_body(debug_response)
 
     app.debug = False
     app.testing = True
@@ -236,5 +218,5 @@ def test_debug(app, client):
         '/widgets',
         data='foo',
     )
-    assert testing_response.status_code == 400
-    assert 'debug' in helpers.get_body(testing_response)
+    assert_response(testing_response, 400)
+    assert 'debug' in get_body(testing_response)

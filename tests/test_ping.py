@@ -1,4 +1,5 @@
 from flask_resty import Api
+from flask_resty.testing import assert_response
 import pytest
 
 # -----------------------------------------------------------------------------
@@ -15,5 +16,5 @@ def routes(app):
 
 def test_ping(client):
     response = client.get('/ping')
-    assert response.status_code == 200
-    assert not response.get_data()
+    assert_response(response, 200)
+    assert response.get_data(as_text=True) == ''

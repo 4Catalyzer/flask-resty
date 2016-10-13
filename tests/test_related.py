@@ -1,10 +1,11 @@
 from flask_resty import Api, GenericModelView, Related, RelatedItem
+from flask_resty.testing import assert_response
 from marshmallow import fields, Schema
 import pytest
 from sqlalchemy import Column, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 
-import helpers
+from helpers import request
 
 # -----------------------------------------------------------------------------
 
@@ -121,29 +122,29 @@ def data(db, models):
 
 def test_baseline(client):
     parent_response = client.get('/parents/1')
-    assert helpers.get_data(parent_response) == {
+    assert_response(parent_response, 200, {
         'id': '1',
         'name': "Parent",
         'children': [],
-    }
+    })
 
     child_1_response = client.get('/children/1')
-    assert helpers.get_data(child_1_response) == {
+    assert_response(child_1_response, 200, {
         'id': '1',
         'name': "Child 1",
         'parent': None,
-    }
+    })
 
     child_2_response = client.get('/children/2')
-    assert helpers.get_data(child_2_response) == {
+    assert_response(child_2_response, 200, {
         'id': '2',
         'name': "Child 2",
         'parent': None,
-    }
+    })
 
 
 def test_single(client):
-    response = helpers.request(
+    response = request(
         client,
         'PUT', '/children/1',
         {
@@ -153,18 +154,18 @@ def test_single(client):
         },
     )
 
-    assert helpers.get_data(response) == {
+    assert_response(response, 200, {
         'id': '1',
         'name': "Updated Child",
         'parent': {
             'id': '1',
             'name': "Parent",
         },
-    }
+    })
 
 
 def test_many(client):
-    response = helpers.request(
+    response = request(
         client,
         'PUT', '/parents/1',
         {
@@ -177,7 +178,7 @@ def test_many(client):
         },
     )
 
-    assert helpers.get_data(response) == {
+    assert_response(response, 200, {
         'id': '1',
         'name': "Updated Parent",
         'children': [
@@ -190,11 +191,11 @@ def test_many(client):
                 'name': "Child 2",
             },
         ],
-    }
+    })
 
 
 def test_many_nested(client):
-    response = helpers.request(
+    response = request(
         client,
         'PUT', '/nested_parents/1',
         {
@@ -207,7 +208,7 @@ def test_many_nested(client):
         },
     )
 
-    assert helpers.get_data(response) == {
+    assert_response(response, 200, {
         'id': '1',
         'name': "Updated Parent",
         'children': [
@@ -220,13 +221,13 @@ def test_many_nested(client):
                 'name': "Child 4",
             },
         ],
-    }
+    })
 
 
 def test_missing(client):
     test_single(client)
 
-    response = helpers.request(
+    response = request(
         client,
         'PUT', '/children/1',
         {
@@ -235,20 +236,20 @@ def test_missing(client):
         },
     )
 
-    assert helpers.get_data(response) == {
+    assert_response(response, 200, {
         'id': '1',
         'name': "Twice Updated Child",
         'parent': {
             'id': '1',
             'name': "Parent",
         },
-    }
+    })
 
 
 def test_null(client):
     test_single(client)
 
-    response = helpers.request(
+    response = request(
         client,
         'PUT', '/children/1',
         {
@@ -257,18 +258,17 @@ def test_null(client):
             'parent': None,
         },
     )
-
-    assert helpers.get_data(response) == {
+    assert_response(response, 200, {
         'id': '1',
         'name': "Twice Updated Child",
         'parent': None,
-    }
+    })
 
 
 def test_many_falsy(client):
     test_many(client)
 
-    response = helpers.request(
+    response = request(
         client,
         'PUT', '/parents/1',
         {
@@ -278,18 +278,18 @@ def test_many_falsy(client):
         },
     )
 
-    assert helpers.get_data(response) == {
+    assert_response(response, 200, {
         'id': '1',
         'name': "Twice Updated Parent",
         'children': [],
-    }
+    })
 
 
 # -----------------------------------------------------------------------------
 
 
 def test_error_not_found(client):
-    response = helpers.request(
+    response = request(
         client,
         'PUT', '/children/1',
         {
@@ -298,16 +298,14 @@ def test_error_not_found(client):
             'parent': {'id': '2'},
         },
     )
-    assert response.status_code == 422
-
-    assert helpers.get_errors(response) == [{
+    assert_response(response, 422, [{
         'code': 'invalid_related.not_found',
         'source': {'pointer': '/data/parent'},
-    }]
+    }])
 
 
 def test_error_missing_id(client):
-    response = helpers.request(
+    response = request(
         client,
         'PUT', '/children/1',
         {
@@ -316,9 +314,7 @@ def test_error_missing_id(client):
             'parent': {},
         },
     )
-    assert response.status_code == 422
-
-    assert helpers.get_errors(response) == [{
+    assert_response(response, 422, [{
         'code': 'invalid_related.missing_id',
         'source': {'pointer': '/data/parent'},
-    }]
+    }])

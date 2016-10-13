@@ -3,11 +3,12 @@ from flask_resty import (
     Api, ApiError, AuthenticationBase, GenericModelView,
     HasAnyCredentialsAuthorization, HasCredentialsAuthorizationBase,
 )
+from flask_resty.testing import assert_response
 from marshmallow import fields, Schema
 import pytest
 from sqlalchemy import Column, Integer, String
 
-import helpers
+from helpers import request
 
 # -----------------------------------------------------------------------------
 
@@ -143,7 +144,7 @@ def data(db, models):
 
 def test_list(client):
     response = client.get('/widgets?user_id=foo')
-    assert helpers.get_data(response) == [
+    assert_response(response, 200, [
         {
             'id': '1',
             'owner_id': 'foo',
@@ -154,16 +155,16 @@ def test_list(client):
             'owner_id': None,
             'name': "Public",
         },
-    ]
+    ])
 
 
 def test_retrieve(client):
     response = client.get('/widgets/1?user_id=foo')
-    assert response.status_code == 200
+    assert_response(response, 200)
 
 
 def test_create(client):
-    response = helpers.request(
+    response = request(
         client,
         'POST', '/widgets?user_id=foo',
         {
@@ -171,11 +172,11 @@ def test_create(client):
             'name': "Created",
         },
     )
-    assert response.status_code == 201
+    assert_response(response, 201)
 
 
 def test_update(client):
-    response = helpers.request(
+    response = request(
         client,
         'PATCH', '/widgets/1?user_id=foo',
         {
@@ -184,12 +185,12 @@ def test_update(client):
             'name': "Updated",
         },
     )
-    assert response.status_code == 204
+    assert_response(response, 204)
 
 
 def test_delete(client):
     response = client.delete('/widgets/1?user_id=foo')
-    assert response.status_code == 204
+    assert_response(response, 204)
 
 
 def test_retrieve_any_credentials(client):
@@ -199,15 +200,15 @@ def test_retrieve_any_credentials(client):
 
 def test_retrieve_create_missing(client):
     response = client.get('/widgets_create_missing/4?user_id=foo&owner_id=foo')
-    assert helpers.get_data(response) == {
+    assert_response(response, 200, {
         'id': '4',
         'owner_id': 'foo',
         'name': None,
-    }
+    })
 
 
 def test_update_update_missing(client):
-    response = helpers.request(
+    response = request(
         client,
         'PUT', '/widgets_create_missing/4?user_id=foo&owner_id=foo',
         {
@@ -215,7 +216,7 @@ def test_update_update_missing(client):
             'name': "Created",
         }
     )
-    assert response.status_code == 204
+    assert_response(response, 204)
 
 
 # -----------------------------------------------------------------------------
@@ -223,20 +224,18 @@ def test_update_update_missing(client):
 
 def test_error_unauthenticated(client):
     response = client.get('/widgets')
-    assert response.status_code == 401
-
-    assert helpers.get_errors(response) == [{
+    assert_response(response, 401, [{
         'code': 'invalid_credentials.missing',
-    }]
+    }])
 
 
 def test_error_retrieve_unauthorized(client):
     response = client.get('/widgets/1?user_id=bar')
-    assert response.status_code == 404
+    assert_response(response, 404)
 
 
 def test_error_create_unauthorized(client):
-    response = helpers.request(
+    response = request(
         client,
         'POST', '/widgets?user_id=bar',
         {
@@ -244,15 +243,13 @@ def test_error_create_unauthorized(client):
             'name': "Created",
         },
     )
-    assert response.status_code == 403
-
-    assert helpers.get_errors(response) == [{
+    assert_response(response, 403, [{
         'code': 'invalid_user'
-    }]
+    }])
 
 
 def test_error_update_unauthorized(client):
-    not_found_response = helpers.request(
+    not_found_response = request(
         client,
         'PATCH', '/widgets/1?user_id=bar',
         {
@@ -261,9 +258,9 @@ def test_error_update_unauthorized(client):
             'name': "Updated",
         },
     )
-    assert not_found_response.status_code == 404
+    assert_response(not_found_response, 404)
 
-    forbidden_response = helpers.request(
+    forbidden_response = request(
         client,
         'PATCH', '/widgets/3?user_id=bar',
         {
@@ -272,23 +269,19 @@ def test_error_update_unauthorized(client):
             'name': "Updated",
         },
     )
-    assert forbidden_response.status_code == 403
-
-    assert helpers.get_errors(forbidden_response) == [{
+    assert_response(forbidden_response, 403, [{
         'code': 'invalid_user'
-    }]
+    }])
 
 
 def test_error_delete_unauthorized(client):
     not_found_response = client.delete('/widgets/1?user_id=bar')
-    assert not_found_response.status_code == 404
+    assert_response(not_found_response, 404)
 
     forbidden_response = client.delete('/widgets/3?user_id=bar')
-    assert forbidden_response.status_code == 403
-
-    assert helpers.get_errors(forbidden_response) == [{
+    assert_response(forbidden_response, 403, [{
         'code': 'invalid_user'
-    }]
+    }])
 
 
 def test_error_any_credentials_unauthenticated(client):
@@ -298,11 +291,11 @@ def test_error_any_credentials_unauthenticated(client):
 
 def test_error_retrieve_create_missing_unauthorized(client):
     response = client.get('/widgets_create_missing/4?user_id=bar&owner_id=foo')
-    assert response.status_code == 404
+    assert_response(response, 404)
 
 
 def test_error_update_create_missing_unauthorized(client):
-    response = helpers.request(
+    response = request(
         client,
         'PUT', '/widgets_create_missing/4?user_id=bar&owner_id=foo',
         {
@@ -310,4 +303,6 @@ def test_error_update_create_missing_unauthorized(client):
             'name': "Created",
         }
     )
-    assert response.status_code == 403
+    assert_response(response, 403, [{
+        'code': 'invalid_user'
+    }])

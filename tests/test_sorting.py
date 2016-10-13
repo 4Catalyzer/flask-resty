@@ -1,9 +1,8 @@
 from flask_resty import Api, FixedSorting, GenericModelView, Sorting
+from flask_resty.testing import assert_response
 from marshmallow import fields, Schema
 import pytest
 from sqlalchemy import Column, Integer, String
-
-import helpers
 
 # -----------------------------------------------------------------------------
 
@@ -76,7 +75,7 @@ def data(db, models):
 def test_single(client):
     response = client.get('/widgets?sort=size')
 
-    assert helpers.get_data(response) == [
+    assert_response(response, 200, [
         {
             'id': '1',
             'name': "Foo",
@@ -92,13 +91,13 @@ def test_single(client):
             'name': "Foo",
             'size': 5,
         },
-    ]
+    ])
 
 
 def test_many(client):
     response = client.get('/widgets?sort=name,-size')
 
-    assert helpers.get_data(response) == [
+    assert_response(response, 200, [
         {
             'id': '3',
             'name': "Baz",
@@ -114,13 +113,13 @@ def test_many(client):
             'name': "Foo",
             'size': 1,
         },
-    ]
+    ])
 
 
 def test_no_sort(client):
     response = client.get('/widgets')
 
-    assert helpers.get_data(response) == [
+    assert_response(response, 200, [
         {
             'id': '1',
             'name': "Foo",
@@ -136,13 +135,13 @@ def test_no_sort(client):
             'name': "Baz",
             'size': 3,
         },
-    ]
+    ])
 
 
 def test_fixed(client):
     response = client.get('/fixed_widgets')
 
-    assert helpers.get_data(response) == [
+    assert_response(response, 200, [
         {
             'id': '3',
             'name': "Baz",
@@ -158,7 +157,7 @@ def test_fixed(client):
             'name': "Foo",
             'size': 5,
         },
-    ]
+    ])
 
 
 # -----------------------------------------------------------------------------
@@ -166,19 +165,16 @@ def test_fixed(client):
 
 def test_error_invalid_field(client):
     response = client.get('/widgets?sort=id')
-    assert response.status_code == 400
 
-    assert helpers.get_errors(response) == [{
+    assert_response(response, 400, [{
         'code': 'invalid_sort',
         'source': {'parameter': 'sort'},
-    }]
+    }])
 
 
 def test_error_empty(client):
     response = client.get('/widgets?sort=')
-    assert response.status_code == 400
-
-    assert helpers.get_errors(response) == [{
+    assert_response(response, 400, [{
         'code': 'invalid_sort',
         'source': {'parameter': 'sort'},
-    }]
+    }])

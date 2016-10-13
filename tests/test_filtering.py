@@ -1,10 +1,9 @@
 from flask_resty import Api, filter_function, Filtering, GenericModelView
+from flask_resty.testing import assert_response
 from marshmallow import fields, Schema
 import operator
 import pytest
 from sqlalchemy import Column, Integer, String
-
-import helpers
 
 # -----------------------------------------------------------------------------
 
@@ -92,7 +91,7 @@ def data(db, models):
 
 def test_eq(client):
     response = client.get('/widgets?color=red')
-    assert helpers.get_data(response) == [
+    assert_response(response, 200, [
         {
             'id': '1',
             'color': 'red',
@@ -103,12 +102,12 @@ def test_eq(client):
             'color': 'red',
             'size': 6,
         },
-    ]
+    ])
 
 
 def test_eq_many(client):
     response = client.get('/widgets?color=green,blue')
-    assert helpers.get_data(response) == [
+    assert_response(response, 200, [
         {
             'id': '2',
             'color': 'green',
@@ -119,12 +118,12 @@ def test_eq_many(client):
             'color': 'blue',
             'size': 3,
         },
-    ]
+    ])
 
 
 def test_ge(client):
     response = client.get('/widgets?size_min=3')
-    assert helpers.get_data(response) == [
+    assert_response(response, 200, [
         {
             'id': '3',
             'color': 'blue',
@@ -135,12 +134,12 @@ def test_ge(client):
             'color': 'red',
             'size': 6,
         },
-    ]
+    ])
 
 
 def test_custom_operator(client):
     response = client.get('/widgets?size_divides=2')
-    assert helpers.get_data(response) == [
+    assert_response(response, 200, [
         {
             'id': '2',
             'color': 'green',
@@ -151,12 +150,12 @@ def test_custom_operator(client):
             'color': 'red',
             'size': 6,
         },
-    ]
+    ])
 
 
 def test_filter_field(client):
     response = client.get('/widgets?size_is_odd=true')
-    assert helpers.get_data(response) == [
+    assert_response(response, 200, [
         {
             'id': '1',
             'color': 'red',
@@ -167,12 +166,12 @@ def test_filter_field(client):
             'color': 'blue',
             'size': 3,
         },
-    ]
+    ])
 
 
 def test_filter_field_kwargs(client):
     red_response = client.get('/widgets?color_no_separator=red')
-    assert helpers.get_data(red_response) == [
+    assert_response(red_response, 200, [
         {
             'id': '1',
             'color': 'red',
@@ -183,10 +182,10 @@ def test_filter_field_kwargs(client):
             'color': 'red',
             'size': 6,
         },
-    ]
+    ])
 
     empty_response = client.get('/widgets?color_no_separator=red,blue')
-    assert helpers.get_data(empty_response) == []
+    assert_response(empty_response, 200, [])
 
 
 # -----------------------------------------------------------------------------
@@ -194,12 +193,8 @@ def test_filter_field_kwargs(client):
 
 def test_error_invalid_field(client):
     response = client.get('/widgets?size_min=foo')
-    assert response.status_code == 400
-
-    errors = helpers.get_errors(response)
-    for error in errors:
-        assert error.pop('detail', None) is not None
-    assert errors == [{
+    assert_response(response, 400, [{
         'code': 'invalid_filter',
+        'detail': 'Not a valid integer.',
         'source': {'parameter': 'size_min'},
-    }]
+    }])
