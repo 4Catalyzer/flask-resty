@@ -31,9 +31,11 @@ def get_meta(response):
 
 def assert_value(actual, expected):
     if isinstance(expected, dict):
+        assert isinstance(actual, dict)
         for k, v in expected.items():
             assert_value(actual.get(k, None), v)
     elif isinstance(expected, list):
+        assert isinstance(actual, list)
         for a, e in zip_longest(actual, expected):
             assert_value(a, e)
     elif isinstance(expected, float):
