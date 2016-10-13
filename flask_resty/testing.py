@@ -5,6 +5,8 @@ try:
 except ImportError:
     from itertools import izip_longest as zip_longest
 
+# -----------------------------------------------------------------------------
+
 NO_DATA = object()
 
 # -----------------------------------------------------------------------------
@@ -40,11 +42,14 @@ def assert_value(actual, expected):
         assert actual == expected
 
 
-def assert_response(response, expected_status=200, expected_data=NO_DATA):
-    """check the results of a response. The data is checked against either the
-    data or the errors in the body, depending on the expected status. It is
-    allowed for the data to have more keys than the one specified"""
-    assert response.status_code == expected_status
+def assert_response(response, expected_status_code, expected_data=NO_DATA):
+    """Assert on the status and contents of a response.
+
+    If specified, expected_data is checked against either the data or the
+    errors in the response body, depending on the response status. This check
+    ignores extra keys in the response contents.
+    """
+    assert response.status_code == expected_status_code
 
     if expected_data == NO_DATA:
         return
