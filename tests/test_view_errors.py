@@ -1,5 +1,5 @@
 from flask_resty import Api, GenericModelView
-from flask_resty.testing import assert_response, get_body
+from flask_resty.testing import assert_response, get_body, get_errors
 from marshmallow import fields, Schema
 import pytest
 from sqlalchemy import Column, Integer, String
@@ -116,15 +116,14 @@ def test_deserializer_errors(client):
             ],
         },
     )
-    assert_response(response, 422, [
-        {
-            'code': 'invalid_data',
-            'source': {'pointer': '/data/nested_many/0/value'},
-        },
-        {
-            'code': 'invalid_data',
-            'source': {'pointer': '/data/nested_many/2/value'},
-        },
+    assert_response(response, 422)
+
+    errors = get_errors(response)
+    for error in errors:
+        assert error.pop('detail', None) is not None
+
+    errors.sort(key=lambda error: error['source']['pointer'])
+    assert errors == [
         {
             'code': 'invalid_data',
             'source': {'pointer': '/data/name'},
@@ -133,7 +132,15 @@ def test_deserializer_errors(client):
             'code': 'invalid_data',
             'source': {'pointer': '/data/nested/value'},
         },
-    ])
+        {
+            'code': 'invalid_data',
+            'source': {'pointer': '/data/nested_many/0/value'},
+        },
+        {
+            'code': 'invalid_data',
+            'source': {'pointer': '/data/nested_many/2/value'},
+        },
+    ]
 
 
 def test_id_forbidden(client):
