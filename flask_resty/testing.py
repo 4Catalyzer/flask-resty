@@ -1,7 +1,7 @@
 from collections import Mapping, Sequence
 import json
 
-from .compat import zip_longest
+from .compat import String, zip_longest
 
 # -----------------------------------------------------------------------------
 
@@ -32,7 +32,7 @@ def assert_value(actual, expected):
         assert isinstance(actual, Mapping)
         for k, v in expected.items():
             assert_value(actual.get(k, None), v)
-    elif isinstance(expected, Sequence) and not isinstance(expected, str):
+    elif isinstance(expected, Sequence) and not isinstance(expected, String):
         assert isinstance(actual, Sequence)
         for a, e in zip_longest(actual, expected):
             assert_value(a, e)
