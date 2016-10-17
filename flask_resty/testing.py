@@ -1,3 +1,4 @@
+from collections import Mapping, Sequence
 import json
 
 from .compat import zip_longest
@@ -28,9 +29,11 @@ def get_meta(response):
 
 def assert_value(actual, expected):
     if isinstance(expected, dict):
+        assert isinstance(actual, Mapping)
         for k, v in expected.items():
             assert_value(actual.get(k, None), v)
-    elif isinstance(expected, list):
+    elif isinstance(expected, Sequence) and not isinstance(expected, str):
+        assert isinstance(actual, Sequence)
         for a, e in zip_longest(actual, expected):
             assert_value(a, e)
     elif isinstance(expected, float):
