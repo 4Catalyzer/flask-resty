@@ -59,9 +59,18 @@ def views(models, schemas):
         def patch(self, id):
             return self.update(id, partial=True)
 
+    class WidgetFlushListView(WidgetViewBase):
+        def post(self):
+            return self.create()
+
+        def add_item(self, item):
+            super(WidgetFlushListView, self).add_item(item)
+            self.flush()
+
     return {
         'widget_list': WidgetListView,
         'widget': WidgetView,
+        'widget_flush_list': WidgetFlushListView,
     }
 
 
@@ -69,7 +78,10 @@ def views(models, schemas):
 def routes(app, views):
     api = Api(app)
     api.add_resource(
-        '/widgets', views['widget_list'], views['widget'], id_rule='<int:id>'
+        '/widgets', views['widget_list'], views['widget'], id_rule='<int:id>',
+    )
+    api.add_resource(
+        '/widgets_flush', views['widget_flush_list'],
     )
 
 
@@ -188,6 +200,19 @@ def test_commit_conflict(client):
     response = request(
         client,
         'POST', '/widgets',
+        {
+            'name': "Foo",
+        },
+    )
+    assert_response(response, 409, [{
+        'code': 'invalid_data.conflict',
+    }])
+
+
+def test_flush_conflict(client):
+    response = request(
+        client,
+        'POST', '/widgets_flush',
         {
             'name': "Foo",
         },

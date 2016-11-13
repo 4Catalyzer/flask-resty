@@ -258,6 +258,13 @@ class ModelView(ApiView):
 
         self.session.delete(item)
 
+    def flush(self):
+        try:
+            # Flushing allows checking invariants without committing.
+            self.session.flush()
+        except IntegrityError:
+            raise ApiError(409, {'code': 'invalid_data.conflict'})
+
     def commit(self):
         try:
             self.session.commit()
