@@ -39,7 +39,7 @@ def assert_value(actual, expected):
         for a, e in zip_longest(actual, expected):
             assert_value(a, e)
     elif isinstance(expected, float):
-        assert abs(actual / expected - 1) < 1e-6
+        assert abs(actual - expected) < 1e-6
     else:
         assert actual == expected
 
