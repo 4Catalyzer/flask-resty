@@ -49,7 +49,7 @@ class Api(object):
         app = self._get_app(app)
         endpoint = self._get_endpoint(base_view, alternate_view)
 
-        # Store the view urls for reference. Doesn't support multiple routes
+        # Store the view rules for reference. Doesn't support multiple routes
         # mapped to same view.
         views = app.extensions['resty'].views
 

@@ -14,8 +14,8 @@ from flask_resty.spec import ModelViewDeclaration
 # -----------------------------------------------------------------------------
 
 
-@pytest.fixture()
-def schemas(app):
+@pytest.fixture
+def schemas():
     class FooSchema(Schema):
         id = fields.Integer(as_string=True)
         name = fields.String(required=True)
@@ -26,8 +26,8 @@ def schemas(app):
     }
 
 
-@pytest.fixture(autouse=True)
-def routes(app, schemas):
+@pytest.fixture
+def views(schemas):
     class FooView(GenericModelView):
         schema = schemas['foo']()
 
@@ -78,15 +78,18 @@ def routes(app, schemas):
             """put a bar"""
             pass
 
-    api = Api(app)
-    api.add_resource('/foos', FooListView, FooView)
-    api.add_resource('/bars', BarView)
-
     return {
         'foo': FooView,
-        'fooList': FooListView,
+        'foo_list': FooListView,
         'bar': BarView,
     }
+
+
+@pytest.fixture(autouse=True)
+def routes(app, views):
+    api = Api(app)
+    api.add_resource('/foos', views['foo_list'], views['foo'])
+    api.add_resource('/bars', views['bar'])
 
 
 @pytest.fixture(autouse=True)
@@ -95,42 +98,46 @@ def ctx(app):
     ctx.push()
 
 
-@pytest.fixture()
-def spec(app, schemas, routes):
+@pytest.fixture
+def spec(schemas, views):
     spec = APISpec(
         title='test api',
         version='0.1.0',
-        plugins=('apispec.ext.marshmallow', 'flask_resty.spec'))
+        plugins=('apispec.ext.marshmallow', 'flask_resty.spec'),
+    )
 
     spec.definition('Foo', schema=schemas['foo'])
 
-    spec.add_path(view=routes['fooList'])
-    spec.add_path(view=routes['foo'])
-    spec.add_path(view=routes['bar'])
+    spec.add_path(view=views['foo_list'])
+    spec.add_path(view=views['foo'])
+    spec.add_path(view=views['bar'])
 
     return spec.to_dict()
+
 
 # -----------------------------------------------------------------------------
 
 
-def test_definition_autogeneration(app, routes):
+def test_definition_autogeneration(views):
     spec = APISpec(
         title='test api',
         version='0.1.0',
-        plugins=('apispec.ext.marshmallow', 'flask_resty.spec'))
+        plugins=('apispec.ext.marshmallow', 'flask_resty.spec'),
+    )
 
-    spec.add_path(view=routes['fooList'])
+    spec.add_path(view=views['foo_list'])
 
     assert 'FooSchema' in spec.to_dict()['definitions']
 
 
-def test_tagging(app, routes):
+def test_tagging(views):
     spec = APISpec(
         title='test api',
         version='0.1.0',
-        plugins=('apispec.ext.marshmallow', 'flask_resty.spec'))
+        plugins=('apispec.ext.marshmallow', 'flask_resty.spec'),
+    )
 
-    spec.add_path(view=routes['fooList'])
+    spec.add_path(view=views['foo_list'])
 
     assert 'FooSchema' in spec.to_dict()['paths']['/foos']['get']['tags']
 
@@ -149,7 +156,7 @@ def test_schema_definitions(spec):
             'id': {'type': 'integer', 'format': 'int32'},
             'name': {'type': 'string'},
             'color': {'type': 'string'},
-        }
+        },
     }
 
 
@@ -167,10 +174,10 @@ def test_get_response(spec):
             'schema': {
                 'type': 'object',
                 'properties': {
-                    'data': {'$ref': '#/definitions/Foo'}
-                }
-            }
-        }
+                    'data': {'$ref': '#/definitions/Foo'},
+                },
+            },
+        },
     }
 
 
@@ -178,7 +185,7 @@ def test_get_list_response(spec):
     foos_get = spec['paths']['/foos']['get']
     assert foos_get['responses']['200']['schema']['properties']['data'] == {
         'type': 'array',
-        'items': {'$ref': '#/definitions/Foo'}
+        'items': {'$ref': '#/definitions/Foo'},
     }
 
 
@@ -187,29 +194,29 @@ def test_get_pagination_meta(spec):
     assert foos_get['responses']['200']['schema']['properties']['meta'] == {
         'type': 'object',
         'properties': {
-            'has_next_page': {'type': 'boolean'}
-        }
+            'has_next_page': {'type': 'boolean'},
+        },
     }
 
 
 def test_post_response(spec):
     foos_get = spec['paths']['/foos']['post']
     assert foos_get['responses'] == {
-        '201': {'description': ''}
+        '201': {'description': ''},
     }
 
 
 def test_put_response(spec):
     foo_put = spec['paths']['/foos/{id}']['put']
     assert foo_put['responses'] == {
-        '204': {'description': ''}
+        '204': {'description': ''},
     }
 
 
 def test_delete_response(spec):
     foo_delete = spec['paths']['/foos/{id}']['delete']
     assert foo_delete['responses'] == {
-        '204': {'description': ''}
+        '204': {'description': ''},
     }
 
 
