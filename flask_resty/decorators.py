@@ -5,12 +5,12 @@ from .filtering import ModelFilterField
 # -----------------------------------------------------------------------------
 
 
-def get_item_or_404(method=None, **decorator_kwargs):
+def get_item_or_404(function=None, **decorator_kwargs):
     # Allow using this as either a decorator or a decorator factory.
-    if method is None:
+    if function is None:
         return functools.partial(get_item_or_404, **decorator_kwargs)
 
-    @functools.wraps(method)
+    @functools.wraps(function)
     def wrapped(self, *args, **kwargs):
         id = self.get_data_id(kwargs)
         item = self.get_item_or_404(id, **decorator_kwargs)
@@ -19,7 +19,7 @@ def get_item_or_404(method=None, **decorator_kwargs):
         for id_field in self.id_fields:
             del kwargs[id_field]
 
-        return method(self, item, *args, **kwargs)
+        return function(self, item, *args, **kwargs)
 
     return wrapped
 
