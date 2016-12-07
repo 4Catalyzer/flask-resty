@@ -245,6 +245,11 @@ class ModelView(ApiView):
 
         self.authorization.authorize_save_item(item)
 
+    def create_and_add_item(self, data):
+        item = self.create_item(data)
+        self.add_item(item)
+        return item
+
     def update_item(self, item, data):
         self.authorization.authorize_update_item(item, data)
 
@@ -312,9 +317,8 @@ class GenericModelView(ModelView):
     def create(self, allow_client_id=False):
         expected_id = None if allow_client_id else False
         data_in = self.get_request_data(expected_id=expected_id)
-        item = self.create_item(data_in)
 
-        self.add_item(item)
+        item = self.create_and_add_item(data_in)
         self.commit()
 
         return self.make_created_response(item)
