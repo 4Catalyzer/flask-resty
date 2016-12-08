@@ -44,12 +44,14 @@ def schemas():
         id = fields.Integer(as_string=True)
         name = fields.String(required=True)
 
+        child_ids = fields.List(fields.String(), load_only=True)
         children = RelatedItem('ChildSchema', many=True, exclude=('parent',))
 
     class ChildSchema(Schema):
         id = fields.Integer(as_string=True)
         name = fields.String(required=True)
 
+        parent_id = fields.String(load_only=True, allow_none=True)
         parent = RelatedItem(
             ParentSchema, exclude=('children',), allow_none=True,
         )
@@ -68,6 +70,7 @@ def routes(app, models, schemas):
 
         related = Related(
             children=lambda: ChildView(),
+            child_ids=(lambda: ChildView(), 'children'),
         )
 
         def get(self, id):
@@ -93,6 +96,7 @@ def routes(app, models, schemas):
 
         related = Related(
             parent=ParentView,
+            parent_id=(ParentView, 'parent'),
         )
 
         def get(self, id):
@@ -164,6 +168,27 @@ def test_single(client):
     })
 
 
+def test_single_id(client):
+    response = request(
+        client,
+        'PUT', '/children/1',
+        {
+            'id': '1',
+            'name': "Updated Child",
+            'parent_id': '1',
+        },
+    )
+
+    assert_response(response, 200, {
+        'id': '1',
+        'name': "Updated Child",
+        'parent': {
+            'id': '1',
+            'name': "Parent",
+        },
+    })
+
+
 def test_many(client):
     response = request(
         client,
@@ -175,6 +200,33 @@ def test_many(client):
                 {'id': '1'},
                 {'id': '2'},
             ],
+        },
+    )
+
+    assert_response(response, 200, {
+        'id': '1',
+        'name': "Updated Parent",
+        'children': [
+            {
+                'id': '1',
+                'name': "Child 1",
+            },
+            {
+                'id': '2',
+                'name': "Child 2",
+            },
+        ],
+    })
+
+
+def test_many_ids(client):
+    response = request(
+        client,
+        'PUT', '/parents/1',
+        {
+            'id': '1',
+            'name': "Updated Parent",
+            'child_ids': ['1', '2'],
         },
     )
 
@@ -265,6 +317,25 @@ def test_null(client):
     })
 
 
+def test_null_id(client):
+    test_single(client)
+
+    response = request(
+        client,
+        'PUT', '/children/1',
+        {
+            'id': '1',
+            'name': "Twice Updated Child",
+            'parent_id': None,
+        },
+    )
+    assert_response(response, 200, {
+        'id': '1',
+        'name': "Twice Updated Child",
+        'parent': None,
+    })
+
+
 def test_many_falsy(client):
     test_many(client)
 
@@ -275,6 +346,26 @@ def test_many_falsy(client):
             'id': '1',
             'name': "Twice Updated Parent",
             'children': [],
+        },
+    )
+
+    assert_response(response, 200, {
+        'id': '1',
+        'name': "Twice Updated Parent",
+        'children': [],
+    })
+
+
+def test_many_ids_falsy(client):
+    test_many(client)
+
+    response = request(
+        client,
+        'PUT', '/parents/1',
+        {
+            'id': '1',
+            'name': "Twice Updated Parent",
+            'child_ids': [],
         },
     )
 
@@ -304,7 +395,23 @@ def test_error_not_found(client):
     }])
 
 
-def test_error_missing_id(client):
+def test_error_not_found_id(client):
+    response = request(
+        client,
+        'PUT', '/children/1',
+        {
+            'id': '1',
+            'name': "Updated Child",
+            'parent_id': '2',
+        },
+    )
+    assert_response(response, 422, [{
+        'code': 'invalid_related.not_found',
+        'source': {'pointer': '/data/parent_id'},
+    }])
+
+
+def test_error_empty_value(client):
     response = request(
         client,
         'PUT', '/children/1',
