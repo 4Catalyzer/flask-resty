@@ -2,7 +2,9 @@ from datetime import datetime, timedelta
 
 import pytest
 
-from flask_resty.testing import assert_similar, JUST_BEFORE, Similar, UNDEFINED
+from flask_resty.testing import (
+    assert_similar, JUST_BEFORE, Matching, Similar, UNDEFINED,
+)
 from flask_resty.utils import utc
 
 # -----------------------------------------------------------------------------
@@ -71,6 +73,7 @@ def test_similar_mapping(assert_similar_func):
             'a': 1,
             'b': [],
         },
+        'bar': 'a long string',
     }
 
     assert_similar_func(actual_mapping, actual_mapping)
@@ -92,6 +95,10 @@ def test_similar_mapping(assert_similar_func):
 
     assert_similar_func(actual_mapping, {
         'foo': UNDEFINED,
+    })
+
+    assert_similar_func(actual_mapping, {
+        'bar': Matching(r'.*long.*')
     })
 
     with pytest.raises(AssertionError):
@@ -124,6 +131,11 @@ def test_similar_mapping(assert_similar_func):
     with pytest.raises(AssertionError):
         assert_similar_func(actual_mapping, {
             'a': UNDEFINED,
+        })
+
+    with pytest.raises(AssertionError):
+        assert_similar_func(actual_mapping, {
+            'bar': Matching(r'.*lung.*')
         })
 
 

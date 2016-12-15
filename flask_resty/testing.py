@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+import re
 
 from dateutil import parser
 
@@ -117,3 +118,14 @@ def _just_before(timestamp):
 
 
 JUST_BEFORE = EVAL(_just_before)
+
+# -----------------------------------------------------------------------------
+
+
+def Matching(expected_regex):
+    regex = re.compile(expected_regex)
+
+    def predicate(actual):
+        return regex.match(actual)
+
+    return EVAL(predicate)
