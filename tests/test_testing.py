@@ -133,12 +133,14 @@ def test_similar_mapping(assert_similar_func):
 def test_just_before():
     now = datetime.now(utc)
 
-    assert now == JUST_BEFORE
-    assert now - timedelta(seconds=9) == JUST_BEFORE
+    assert JUST_BEFORE == now
+    assert JUST_BEFORE == now - timedelta(seconds=9)
 
-    assert now + timedelta(seconds=1) != JUST_BEFORE
-    assert now - timedelta(seconds=10) != JUST_BEFORE
-    assert now - timedelta(hours=4) != JUST_BEFORE
+    assert JUST_BEFORE != now + timedelta(seconds=1)
+    assert JUST_BEFORE != now - timedelta(seconds=10)
+    assert JUST_BEFORE != now - timedelta(hours=4)
 
-    assert now.isoformat() == JUST_BEFORE
-    assert (now - timedelta(seconds=10)).isoformat() != JUST_BEFORE
+    assert JUST_BEFORE == now.isoformat()
+    assert JUST_BEFORE != (now - timedelta(seconds=10)).isoformat()
+
+    assert_similar({'foo': now}, {'foo': JUST_BEFORE})

@@ -62,7 +62,7 @@ def assert_similar(actual, expected):
             else:
                 assert key not in actual
     elif isinstance(expected, basestring):
-        assert actual == expected
+        assert expected == actual
     elif isinstance(expected, Sequence):
         assert isinstance(actual, Sequence)
         assert len(actual) == len(expected)
@@ -71,7 +71,7 @@ def assert_similar(actual, expected):
     elif isinstance(expected, float):
         assert abs(actual - expected) < 1e-6
     else:
-        assert actual == expected
+        assert expected == actual
 
 
 def Similar(expected):
