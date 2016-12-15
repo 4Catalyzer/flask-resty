@@ -1,46 +1,68 @@
+from datetime import datetime, timedelta
+
 import pytest
 
-from flask_resty.testing import assert_value, UNDEFINED
+from flask_resty.testing import assert_similar, JUST_BEFORE, Similar, UNDEFINED
+from flask_resty.utils import utc
+
+# -----------------------------------------------------------------------------
+
+# the two different flavors of similar should behave in the same way. Here we
+# normalize the way they are called so we can parametrize the tests
+
+
+def assert_similar_func_1(a, b):
+    assert a == Similar(b)
+
+
+assert_similar_func_2 = assert_similar
+
+parametrize_similar_funcs = pytest.mark.parametrize('assert_similar_func', (
+    assert_similar_func_1, assert_similar_func_2,
+))
 
 # -----------------------------------------------------------------------------
 
 
-def test_basic():
-    assert_value(1, 1)
+@parametrize_similar_funcs
+def test_similar_basic(assert_similar_func):
+    assert_similar_func(1, 1)
 
     a = object()
-    assert_value(a, a)
+    assert_similar_func(a, a)
 
-    assert_value('a', 'a')
+    assert_similar_func('a', 'a')
 
-    assert_value([1, 2], [1, 2])
+    assert_similar_func([1, 2], [1, 2])
 
-    assert_value({1, 2}, {2, 1})
+    assert_similar_func({1, 2}, {2, 1})
 
-    assert_value(0.1 + 0.2, 0.3)
+    assert_similar_func(0.1 + 0.2, 0.3)
 
 
-def test_failures():
+@parametrize_similar_funcs
+def test_similar_failures(assert_similar_func):
     with pytest.raises(AssertionError):
-        assert_value({}, [])
-
-    with pytest.raises(AssertionError):
-        assert_value({}, None)
+        assert_similar_func({}, [])
 
     with pytest.raises(AssertionError):
-        assert_value(1, '1')
+        assert_similar_func({}, None)
 
     with pytest.raises(AssertionError):
-        assert_value([1, 2], [2, 1])
+        assert_similar_func(1, '1')
 
     with pytest.raises(AssertionError):
-        assert_value([1], [1, 2])
+        assert_similar_func([1, 2], [2, 1])
 
     with pytest.raises(AssertionError):
-        assert_value(1.001, 1.002)
+        assert_similar_func([1], [1, 2])
+
+    with pytest.raises(AssertionError):
+        assert_similar_func(1.001, 1.002)
 
 
-def test_mapping():
+@parametrize_similar_funcs
+def test_similar_mapping(assert_similar_func):
     actual_mapping = {
         'a': 1,
         'b': [1, 2, 3],
@@ -51,55 +73,72 @@ def test_mapping():
         },
     }
 
-    assert_value(actual_mapping, actual_mapping)
+    assert_similar_func(actual_mapping, actual_mapping)
 
-    assert_value(actual_mapping, {})
+    assert_similar_func(actual_mapping, {})
 
-    assert_value(actual_mapping, {'a': 1})
+    assert_similar_func(actual_mapping, {'a': 1})
 
-    assert_value(actual_mapping, {
+    assert_similar_func(actual_mapping, {
         'b': [1, 2, 3],
         'c': [{}, {}],
     })
 
-    assert_value(actual_mapping, {
+    assert_similar_func(actual_mapping, {
         'd': {
             'a': 1,
         },
     })
 
-    assert_value(actual_mapping, {
+    assert_similar_func(actual_mapping, {
         'foo': UNDEFINED,
     })
 
     with pytest.raises(AssertionError):
-        assert_value(actual_mapping, [])
+        assert_similar_func(actual_mapping, [])
 
     with pytest.raises(AssertionError):
-        assert_value(actual_mapping, None)
+        assert_similar_func(actual_mapping, None)
 
     with pytest.raises(AssertionError):
-        assert_value(actual_mapping, {
+        assert_similar_func(actual_mapping, {
             'b': [1, 2],
         })
 
     with pytest.raises(AssertionError):
-        assert_value(actual_mapping, {
+        assert_similar_func(actual_mapping, {
             'a': 1,
             'foo': None,
         })
 
     with pytest.raises(AssertionError):
-        assert_value(actual_mapping, {
+        assert_similar_func(actual_mapping, {
             'c': [{}, {'b': 2}],
         })
 
     with pytest.raises(AssertionError):
-        assert_value(actual_mapping, {
+        assert_similar_func(actual_mapping, {
             'b': [1, 2, 3, 4],
         })
 
     with pytest.raises(AssertionError):
-        assert_value(actual_mapping, {
+        assert_similar_func(actual_mapping, {
             'a': UNDEFINED,
         })
+
+
+# -----------------------------------------------------------------------------
+
+
+def test_just_before():
+    now = datetime.now(utc)
+
+    assert now == JUST_BEFORE
+    assert now - timedelta(seconds=9) == JUST_BEFORE
+
+    assert now + timedelta(seconds=1) != JUST_BEFORE
+    assert now - timedelta(seconds=10) != JUST_BEFORE
+    assert now - timedelta(hours=4) != JUST_BEFORE
+
+    assert now.isoformat() == JUST_BEFORE
+    assert (now - timedelta(seconds=10)).isoformat() != JUST_BEFORE

@@ -1,11 +1,34 @@
+from datetime import datetime, timedelta
+
+from dateutil import parser
+
 from collections import Mapping, Sequence
 import json
 
 from .compat import basestring
+from .utils import utc
 
 # -----------------------------------------------------------------------------
 
 UNDEFINED = object()
+
+TIME_EPSILON = timedelta(seconds=10)
+
+# -----------------------------------------------------------------------------
+
+
+class EVAL(object):
+    """A helper object to do predicate assertion"""
+
+    def __init__(self, predicate):
+        self.predicate = predicate
+
+    def __eq__(self, other):
+        return self.predicate(other)
+
+    def __ne__(self, other):
+        return not self.predicate(other)
+
 
 # -----------------------------------------------------------------------------
 
@@ -27,7 +50,7 @@ def get_meta(response):
     return get_body(response)['meta']
 
 
-def assert_value(actual, expected):
+def assert_similar(actual, expected):
     if isinstance(expected, Mapping):
         assert isinstance(actual, Mapping)
         # Unlike all the others, this checks that the actual items are a
@@ -35,7 +58,7 @@ def assert_value(actual, expected):
         for key, value in expected.items():
             if value is not UNDEFINED:
                 assert key in actual
-                assert_value(actual[key], value)
+                assert_similar(actual[key], value)
             else:
                 assert key not in actual
     elif isinstance(expected, basestring):
@@ -44,11 +67,22 @@ def assert_value(actual, expected):
         assert isinstance(actual, Sequence)
         assert len(actual) == len(expected)
         for actual_item, expected_item in zip(actual, expected):
-            assert_value(actual_item, expected_item)
+            assert_similar(actual_item, expected_item)
     elif isinstance(expected, float):
         assert abs(actual - expected) < 1e-6
     else:
         assert actual == expected
+
+
+def Similar(expected):
+    """like assert_similar, useful when assert_similar cannot be used directly
+    (eg mock.assert_called_with)
+    """
+    def predicate(actual):
+        assert_similar(actual, expected)
+        return True
+
+    return EVAL(predicate)
 
 
 def assert_response(response, expected_status_code, expected_data=UNDEFINED):
@@ -68,4 +102,18 @@ def assert_response(response, expected_status_code, expected_data=UNDEFINED):
     else:
         response_data = get_errors(response)
 
-    assert_value(response_data, expected_data)
+    assert_similar(response_data, expected_data)
+
+
+# -----------------------------------------------------------------------------
+
+
+def _just_before(timestamp):
+    now = datetime.now(utc)
+    if isinstance(timestamp, str):
+        timestamp = parser.parse(timestamp)
+
+    return now - TIME_EPSILON < timestamp < now
+
+
+JUST_BEFORE = EVAL(_just_before)
