@@ -49,7 +49,6 @@ setup(
         'Flask >= 0.10',
         'Flask-SQLAlchemy >= 1.0',
         'marshmallow >= 2.2.0',
-        'python-dateutil >= 2.6.0',
         'SQLAlchemy >= 1.0.0',
         'Werkzeug >= 0.11',
     ),
