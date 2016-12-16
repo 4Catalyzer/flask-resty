@@ -1,3 +1,5 @@
+import re
+
 from collections import Mapping, Sequence
 import json
 
@@ -6,6 +8,22 @@ from .compat import basestring
 # -----------------------------------------------------------------------------
 
 UNDEFINED = object()
+
+# -----------------------------------------------------------------------------
+
+
+class Predicate(object):
+    """A helper object to do predicate assertion"""
+
+    def __init__(self, predicate):
+        self.predicate = predicate
+
+    def __eq__(self, other):
+        return self.predicate(other)
+
+    def __ne__(self, other):
+        return not self.predicate(other)
+
 
 # -----------------------------------------------------------------------------
 
@@ -27,7 +45,7 @@ def get_meta(response):
     return get_body(response)['meta']
 
 
-def assert_value(actual, expected):
+def assert_shape(actual, expected):
     if isinstance(expected, Mapping):
         assert isinstance(actual, Mapping)
         # Unlike all the others, this checks that the actual items are a
@@ -35,20 +53,31 @@ def assert_value(actual, expected):
         for key, value in expected.items():
             if value is not UNDEFINED:
                 assert key in actual
-                assert_value(actual[key], value)
+                assert_shape(actual[key], value)
             else:
                 assert key not in actual
     elif isinstance(expected, basestring):
-        assert actual == expected
+        assert expected == actual
     elif isinstance(expected, Sequence):
         assert isinstance(actual, Sequence)
         assert len(actual) == len(expected)
         for actual_item, expected_item in zip(actual, expected):
-            assert_value(actual_item, expected_item)
+            assert_shape(actual_item, expected_item)
     elif isinstance(expected, float):
         assert abs(actual - expected) < 1e-6
     else:
-        assert actual == expected
+        assert expected == actual
+
+
+def Shape(expected):
+    """like assert_shape, useful when assert_shape cannot be used directly
+    (eg mock.assert_called_with)
+    """
+    def predicate(actual):
+        assert_shape(actual, expected)
+        return True
+
+    return Predicate(predicate)
 
 
 def assert_response(response, expected_status_code, expected_data=UNDEFINED):
@@ -68,4 +97,16 @@ def assert_response(response, expected_status_code, expected_data=UNDEFINED):
     else:
         response_data = get_errors(response)
 
-    assert_value(response_data, expected_data)
+    assert_shape(response_data, expected_data)
+
+
+# -----------------------------------------------------------------------------
+
+
+def Matching(expected_regex):
+    regex = re.compile(expected_regex)
+
+    def predicate(actual):
+        return regex.match(actual)
+
+    return Predicate(predicate)

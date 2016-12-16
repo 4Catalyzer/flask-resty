@@ -1,46 +1,67 @@
 import pytest
 
-from flask_resty.testing import assert_value, UNDEFINED
+from flask_resty.testing import (
+    assert_shape, Matching, Predicate, Shape, UNDEFINED,
+)
+
+# -----------------------------------------------------------------------------
+
+# the two different flavors of shape should behave in the same way. Here we
+# normalize the way they are called so we can parametrize the tests
+
+
+def assert_shape_func_1(a, b):
+    assert a == Shape(b)
+
+
+assert_shape_func_2 = assert_shape
+
+parametrize_shape_funcs = pytest.mark.parametrize('assert_shape_func', (
+    assert_shape_func_1, assert_shape_func_2,
+))
 
 # -----------------------------------------------------------------------------
 
 
-def test_basic():
-    assert_value(1, 1)
+@parametrize_shape_funcs
+def test_shape_basic(assert_shape_func):
+    assert_shape_func(1, 1)
 
     a = object()
-    assert_value(a, a)
+    assert_shape_func(a, a)
 
-    assert_value('a', 'a')
+    assert_shape_func('a', 'a')
 
-    assert_value([1, 2], [1, 2])
+    assert_shape_func([1, 2], [1, 2])
 
-    assert_value({1, 2}, {2, 1})
+    assert_shape_func({1, 2}, {2, 1})
 
-    assert_value(0.1 + 0.2, 0.3)
+    assert_shape_func(0.1 + 0.2, 0.3)
 
 
-def test_failures():
+@parametrize_shape_funcs
+def test_shape_failures(assert_shape_func):
     with pytest.raises(AssertionError):
-        assert_value({}, [])
-
-    with pytest.raises(AssertionError):
-        assert_value({}, None)
+        assert_shape_func({}, [])
 
     with pytest.raises(AssertionError):
-        assert_value(1, '1')
+        assert_shape_func({}, None)
 
     with pytest.raises(AssertionError):
-        assert_value([1, 2], [2, 1])
+        assert_shape_func(1, '1')
 
     with pytest.raises(AssertionError):
-        assert_value([1], [1, 2])
+        assert_shape_func([1, 2], [2, 1])
 
     with pytest.raises(AssertionError):
-        assert_value(1.001, 1.002)
+        assert_shape_func([1], [1, 2])
+
+    with pytest.raises(AssertionError):
+        assert_shape_func(1.001, 1.002)
 
 
-def test_mapping():
+@parametrize_shape_funcs
+def test_shape_mapping(assert_shape_func):
     actual_mapping = {
         'a': 1,
         'b': [1, 2, 3],
@@ -49,57 +70,74 @@ def test_mapping():
             'a': 1,
             'b': [],
         },
+        'bar': 'a long string',
     }
 
-    assert_value(actual_mapping, actual_mapping)
+    assert_shape_func(actual_mapping, actual_mapping)
 
-    assert_value(actual_mapping, {})
+    assert_shape_func(actual_mapping, {})
 
-    assert_value(actual_mapping, {'a': 1})
+    assert_shape_func(actual_mapping, {'a': 1})
 
-    assert_value(actual_mapping, {
+    assert_shape_func(actual_mapping, {
         'b': [1, 2, 3],
         'c': [{}, {}],
     })
 
-    assert_value(actual_mapping, {
+    assert_shape_func(actual_mapping, {
         'd': {
             'a': 1,
         },
     })
 
-    assert_value(actual_mapping, {
+    assert_shape_func(actual_mapping, {
         'foo': UNDEFINED,
     })
 
-    with pytest.raises(AssertionError):
-        assert_value(actual_mapping, [])
+    assert_shape_func(actual_mapping, {
+        'bar': Matching(r'.*long.*')
+    })
 
     with pytest.raises(AssertionError):
-        assert_value(actual_mapping, None)
+        assert_shape_func(actual_mapping, [])
 
     with pytest.raises(AssertionError):
-        assert_value(actual_mapping, {
+        assert_shape_func(actual_mapping, None)
+
+    with pytest.raises(AssertionError):
+        assert_shape_func(actual_mapping, {
             'b': [1, 2],
         })
 
     with pytest.raises(AssertionError):
-        assert_value(actual_mapping, {
+        assert_shape_func(actual_mapping, {
             'a': 1,
             'foo': None,
         })
 
     with pytest.raises(AssertionError):
-        assert_value(actual_mapping, {
+        assert_shape_func(actual_mapping, {
             'c': [{}, {'b': 2}],
         })
 
     with pytest.raises(AssertionError):
-        assert_value(actual_mapping, {
+        assert_shape_func(actual_mapping, {
             'b': [1, 2, 3, 4],
         })
 
     with pytest.raises(AssertionError):
-        assert_value(actual_mapping, {
+        assert_shape_func(actual_mapping, {
             'a': UNDEFINED,
         })
+
+    with pytest.raises(AssertionError):
+        assert_shape_func(actual_mapping, {
+            'bar': Matching(r'.*lung.*')
+        })
+
+
+def test_predicate():
+    Integer = Predicate(lambda x: isinstance(x, int))
+
+    assert Integer == 1
+    assert Integer != 1.2
