@@ -1,7 +1,7 @@
 import pytest
 
 from flask_resty.testing import (
-    assert_shape, Matching, Shape, UNDEFINED,
+    assert_shape, Matching, Predicate, Shape, UNDEFINED,
 )
 
 # -----------------------------------------------------------------------------
@@ -134,3 +134,10 @@ def test_shape_mapping(assert_shape_func):
         assert_shape_func(actual_mapping, {
             'bar': Matching(r'.*lung.*')
         })
+
+
+def test_predicate():
+    Integer = Predicate(lambda x: isinstance(x, int))
+
+    assert Integer == 1
+    assert Integer != 1.2
