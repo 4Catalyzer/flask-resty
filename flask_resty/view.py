@@ -293,9 +293,11 @@ class ModelView(ApiView):
             meta.set_response_meta(**pagination_meta)
 
     def make_created_response(self, item):
-        return self.make_item_response(
-            item, 201, {'Location': self.get_location(item)},
-        )
+        response = self.make_item_response(item, 201)
+        location = self.get_location(item)
+        if location is not None:
+            response.headers['Location'] = location
+        return response
 
     def get_location(self, item):
         id_dict = {
