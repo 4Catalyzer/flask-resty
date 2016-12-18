@@ -94,10 +94,28 @@ def test_create_client_id(app, views, client):
     })
 
 
+def test_create_no_location(app, views, client):
+    views['widget_list'].get_location = lambda self, item: None
+
+    api = Api(app)
+    api.add_resource('/widgets', views['widget_list'], views['widget'])
+
+    response = request(
+        client,
+        'POST', '/widgets',
+        {},
+    )
+    assert 'Location' not in response.headers
+    assert_response(response, 201, {
+        'id': '2',
+    })
+
+
 def test_training_slash(app, views, client):
     api = Api(app)
     api.add_resource(
-        '/widgets/', views['widget_list'], views['widget'], id_rule='<id>/')
+        '/widgets/', views['widget_list'], views['widget'], id_rule='<id>/',
+    )
 
     response = request(
         client,
