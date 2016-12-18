@@ -25,7 +25,7 @@ class Api(object):
 
         @app.errorhandler(ApiError)
         def handle_api_error(error):
-            return flask.jsonify(**error.body), error.status_code
+            return flask.jsonify(error.body), error.status_code
 
     def _get_app(self, app):
         app = app or self._app
