@@ -1,6 +1,7 @@
 import posixpath
 
 import flask
+from werkzeug.exceptions import default_exceptions
 
 from .exceptions import ApiError
 
@@ -8,6 +9,23 @@ from .exceptions import ApiError
 
 # Don't set default value in function so we can assert on None-ness.
 DEFAULT_ID_RULE = '<id>'
+
+# -----------------------------------------------------------------------------
+
+
+def handle_api_error(error):
+    return flask.jsonify(error.body), error.status_code
+
+
+def handle_http_exception(error):
+    body = {
+        'errors': [{
+            'code': '_'.join(word.lower() for word in error.name.split()),
+            'details': error.description,
+        }],
+    }
+    return flask.jsonify(body), error.code
+
 
 # -----------------------------------------------------------------------------
 
@@ -25,9 +43,11 @@ class Api(object):
     def init_app(self, app):
         app.extensions['resty'] = FlaskRestyState(self)
 
-        @app.errorhandler(ApiError)
-        def handle_api_error(error):
-            return flask.jsonify(error.body), error.status_code
+        app.register_error_handler(ApiError, handle_api_error)
+
+        # TODO: Just handle HTTPException once pallets/flask#2314 lands.
+        for exception in default_exceptions.values():
+            app.register_error_handler(exception, handle_http_exception)
 
     def _get_app(self, app):
         app = app or self._app
