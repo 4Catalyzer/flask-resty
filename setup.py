@@ -24,7 +24,7 @@ def system(command):
 
 setup(
     name="Flask-RESTy",
-    version='0.10.10',
+    version='0.11.0',
     description="Building blocks for REST APIs for Flask",
     url='https://github.com/4Catalyzer/flask-resty',
     author="Jimmy Jia",
