@@ -17,7 +17,7 @@ from .pagination import (
     PagePagination, RelayCursorPagination,
 )
 from .related import Related
-from .sorting import FixedSorting, Sorting, SortingBase
+from .sorting import FixedSorting, PrimaryKeySorting, Sorting, SortingBase
 from .view import ApiView, GenericModelView, ModelView
 
 try:

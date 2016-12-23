@@ -80,3 +80,10 @@ class Sorting(SortingBase):
             name='sort',
             type='string',
             description='field to sort by')
+
+
+class PrimaryKeySorting(SortingBase):
+    def sort_query(self, query, view):
+        return self.sort_query_by_fields(query, view, (
+            (column.name, True) for column in view.model.__table__.primary_key
+        ))
