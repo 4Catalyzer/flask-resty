@@ -68,7 +68,7 @@ class LimitPagination(LimitPaginationBase):
         try:
             return self.parse_limit(limit)
         except ApiError as e:
-            raise e.update({'source': {'parameter': self.limit_arg}})
+            raise e.update({'source': {'query': self.limit_arg}})
 
     def parse_limit(self, limit):
         if limit is None:
@@ -114,7 +114,7 @@ class LimitOffsetPagination(LimitPagination):
         try:
             return self.parse_offset(offset)
         except ApiError as e:
-            raise e.update({'source': {'parameter': self.offset_arg}})
+            raise e.update({'source': {'query': self.offset_arg}})
 
     def parse_offset(self, offset):
         if offset is None:
@@ -154,7 +154,7 @@ class PagePagination(LimitOffsetPagination):
         try:
             return self.parse_page(page)
         except ApiError as e:
-            raise e.update({'source': {'parameter': self.page_arg}})
+            raise e.update({'source': {'query': self.page_arg}})
 
     def parse_page(self, page):
         if page is None:
@@ -212,7 +212,7 @@ class CursorPaginationBase(LimitPagination):
         try:
             return self.parse_cursor(cursor, view, field_orderings)
         except ApiError as e:
-            raise e.update({'source': {'parameter': self.cursor_arg}})
+            raise e.update({'source': {'query': self.cursor_arg}})
 
     def parse_cursor(self, cursor, view, field_orderings):
         cursor = self.decode_cursor(cursor)
