@@ -183,7 +183,7 @@ class ModelView(ApiView):
 
         return item
 
-    def get_item(self, id, create_missing=False, for_update=False):
+    def get_item(self, id, create_missing=False):
         try:
             # Can't use self.query.get(), because query might be filtered.
             item = self.query.filter(and_(
@@ -193,17 +193,12 @@ class ModelView(ApiView):
         except NoResultFound as e:
             if create_missing:
                 item = self.create_missing_item(id)
-                if for_update:
-                    # Bypass authorizating the save if we are getting the item
-                    # for update, as update_item will make that check.
-                    self.session.add(item)
-                else:
-                    try:
-                        self.add_item(item)
-                    except ApiError:
-                        # Raise the original not found error instead of the
-                        # authorization error.
-                        raise e
+                try:
+                    self.add_item(item)
+                except ApiError:
+                    # Raise the original not found error instead of the
+                    # authorization error.
+                    raise e
 
                 return item
 
@@ -316,8 +311,9 @@ class GenericModelView(ModelView):
         item = self.get_item_or_404(id, create_missing=create_missing)
         return self.make_item_response(item)
 
-    def create(self, allow_client_id=False):
-        expected_id = None if allow_client_id else False
+    def create(self, allow_client_id=False, expected_id=None):
+        if not expected_id:
+            expected_id = None if allow_client_id else False
         data_in = self.get_request_data(expected_id=expected_id)
 
         item = self.create_and_add_item(data_in)
@@ -328,11 +324,14 @@ class GenericModelView(ModelView):
     def update(
         self, id, create_missing=False, partial=False, return_content=False,
     ):
-        # No need to authorize creating the missing item, as we will authorize
-        # before saving to database below.
-        item = self.get_item_or_404(
-            id, create_missing=create_missing, for_update=True,
-        )
+        try:
+            item = self.get_item(id)
+        except NoResultFound:
+            if create_missing:
+                return self.create(expected_id=id)
+
+            raise NotFound()
+
         data_in = self.get_request_data(expected_id=id, partial=partial)
 
         self.update_item(item, data_in)

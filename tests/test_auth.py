@@ -108,8 +108,11 @@ def routes(app, models, schemas, auth):
             return self.retrieve(id)
 
     class WidgetCreateMissingView(WidgetViewBase):
-        def create_missing_item(self, id):
-            return self.model(id=id, owner_id=flask.request.args['owner_id'])
+        def create_item(self, data):
+            if 'owner_id' not in data:
+                data['owner_id'] = flask.request.args['owner_id']
+
+            return super(WidgetCreateMissingView, self).create_item(data)
 
         def get(self, id):
             return self.retrieve(id, create_missing=True)
@@ -216,7 +219,7 @@ def test_update_update_missing(client):
             'name': "Created",
         }
     )
-    assert_response(response, 204)
+    assert_response(response, 201)
 
 
 # -----------------------------------------------------------------------------
