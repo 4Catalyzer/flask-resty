@@ -1,9 +1,11 @@
+import operator
+
+from marshmallow import fields, Schema
+import pytest
+from sqlalchemy import Column, Integer, sql, String
+
 from flask_resty import Api, filter_function, Filtering, GenericModelView
 from flask_resty.testing import assert_response
-from marshmallow import fields, Schema
-import operator
-import pytest
-from sqlalchemy import Column, Integer, String
 
 # -----------------------------------------------------------------------------
 
@@ -62,6 +64,13 @@ def routes(app, models, schemas, filter_fields):
 
         filtering = Filtering(
             color=operator.eq,
+            size=(operator.eq, {
+                'separator': '|',
+                'empty': sql.false(),
+            }),
+            size_alt=(operator.eq, {
+                'empty': lambda view: view.model.size == 1,
+            }),
             size_min=('size', operator.ge),
             size_divides=('size', lambda size, value: size % value == 0),
             size_is_odd=filter_fields['size_is_odd'],
@@ -117,6 +126,43 @@ def test_eq_many(client):
             'id': '3',
             'color': 'blue',
             'size': 3,
+        },
+    ])
+
+
+def test_eq_many_custom_separator(client):
+    response = client.get('/widgets?size=2|3')
+    assert_response(response, 200, [
+        {
+            'id': '2',
+            'color': 'green',
+            'size': 2,
+        },
+        {
+            'id': '3',
+            'color': 'blue',
+            'size': 3,
+        },
+    ])
+
+
+def test_eq_empty(client):
+    response = client.get('/widgets?color=')
+    assert_response(response, 200, [])
+
+
+def test_eq_empty_custom_column_element(client):
+    response = client.get('/widgets?size=')
+    assert_response(response, 200, [])
+
+
+def test_eq_empty_custom_function(client):
+    response = client.get('/widgets?size_alt=')
+    assert_response(response, 200, [
+        {
+            'id': '1',
+            'color': 'red',
+            'size': 1,
         },
     ])
 

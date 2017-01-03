@@ -1,6 +1,7 @@
 import flask
 from marshmallow import ValidationError
 import sqlalchemy as sa
+from sqlalchemy.sql import ColumnElement
 
 from .exceptions import ApiError
 from . import utils
@@ -9,10 +10,18 @@ from . import utils
 
 
 class FilterFieldBase(object):
-    def __init__(self, separator=','):
+    def __init__(self, separator=',', empty=''):
         self._separator = separator
+        self._empty = empty
 
     def __call__(self, view, arg_value):
+        if not arg_value:
+            if isinstance(self._empty, ColumnElement):
+                return self._empty
+            elif callable(self._empty):
+                return self._empty(view)
+            arg_value = self._empty
+
         if not self._separator or self._separator not in arg_value:
             return self.get_arg_clause(view, arg_value)
 
@@ -90,7 +99,17 @@ class Filtering(object):
         elif callable(value):
             return ColumnFilterField(arg_name, value)
         else:
-            return ColumnFilterField(*value)
+            args = tuple(value)
+            # Insert the column name as the implicit first argument if the
+            # specified first argument is actually the operator.
+            if callable(args[0]):
+                args = (arg_name,) + args
+            if len(args) == 2:
+                return ColumnFilterField(*args)
+            else:
+                # If present, the third element of the args tuple is the kwargs
+                # dict, which we pass into the ColumnFilterField constructor.
+                return ColumnFilterField(*args[:2], **args[2])
 
     def filter_query(self, query, view):
         for arg_name, filter_field in self._filter_fields.items():
