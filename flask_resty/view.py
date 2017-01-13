@@ -10,7 +10,7 @@ from .authorization import NoOpAuthorization
 from .exceptions import ApiError
 from . import meta
 from .spec import ApiViewDeclaration, ModelViewDeclaration
-from . import utils
+from .utils import iter_validation_errors, settable_property
 
 # -----------------------------------------------------------------------------
 
@@ -33,7 +33,7 @@ class ApiView(MethodView):
     def serialize(self, item, **kwargs):
         return self.serializer.dump(item, **kwargs).data
 
-    @property
+    @settable_property
     def serializer(self):
         return self.schema
 
@@ -72,14 +72,14 @@ class ApiView(MethodView):
         if errors:
             formatted_errors = (
                 self.format_validation_error(error)
-                for error in utils.iter_validation_errors(errors)
+                for error in iter_validation_errors(errors)
             )
             raise ApiError(422, *formatted_errors)
 
         self.validate_request_id(data, expected_id)
         return data
 
-    @property
+    @settable_property
     def deserializer(self):
         return self.schema
 
@@ -137,11 +137,11 @@ class ModelView(ApiView):
 
     spec_declaration = ModelViewDeclaration()
 
-    @property
+    @settable_property
     def session(self):
         return flask.current_app.extensions['sqlalchemy'].db.session
 
-    @property
+    @settable_property
     def query(self):
         query = self.model.query
         query = self.authorization.filter_query(query, self)

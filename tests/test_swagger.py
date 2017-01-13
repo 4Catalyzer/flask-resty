@@ -10,7 +10,6 @@ from flask_resty import (
 )
 from flask_resty.spec import ModelViewDeclaration
 
-
 # -----------------------------------------------------------------------------
 
 
