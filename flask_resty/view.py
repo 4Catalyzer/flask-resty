@@ -276,6 +276,10 @@ class ModelView(ApiView):
         except IntegrityError:
             raise ApiError(409, {'code': 'invalid_data.conflict'})
 
+    def make_items_response(self, items, *args):
+        data_out = self.serialize(items, many=True)
+        return self.make_response(data_out, *args, items=items)
+
     def make_item_response(self, item, *args):
         data_out = self.serialize(item)
         self.set_item_meta(item)
@@ -309,8 +313,7 @@ class ModelView(ApiView):
 class GenericModelView(ModelView):
     def list(self):
         items = self.get_list()
-        data_out = self.serialize(items, many=True)
-        return self.make_response(data_out, items=items)
+        return self.make_items_response(items)
 
     def retrieve(self, id, create_missing=False):
         item = self.get_item_or_404(id, create_missing=create_missing)
