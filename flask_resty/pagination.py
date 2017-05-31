@@ -22,18 +22,7 @@ class PaginationBase(object):
 # -----------------------------------------------------------------------------
 
 
-class LimitPagination(PaginationBase):
-    limit_arg = 'limit'
-
-    def __init__(self, default_limit=None, max_limit=None):
-        self._default_limit = utils.if_none(default_limit, max_limit)
-        self._max_limit = max_limit
-
-        if self._max_limit is not None:
-            assert \
-                self._default_limit <= self._max_limit, \
-                "default limit exceeds max limit"
-
+class LimitPaginationBase(PaginationBase):
     def get_page(self, query, view):
         limit = self.get_limit()
         if limit is not None:
@@ -49,6 +38,30 @@ class LimitPagination(PaginationBase):
 
         meta.set_response_meta(has_next_page=has_next_page)
         return items
+
+    def get_limit(self, query, view):
+        raise NotImplementedError()
+
+
+class MaxLimitPagination(LimitPaginationBase):
+    def __init__(self, max_limit):
+        self._max_limit = max_limit
+
+    def get_limit(self):
+        return self._max_limit
+
+
+class LimitPagination(LimitPaginationBase):
+    limit_arg = 'limit'
+
+    def __init__(self, default_limit=None, max_limit=None):
+        self._default_limit = utils.if_none(default_limit, max_limit)
+        self._max_limit = max_limit
+
+        if self._max_limit is not None:
+            assert \
+                self._default_limit <= self._max_limit, \
+                "default limit exceeds max limit"
 
     def get_limit(self):
         limit = flask.request.args.get(self.limit_arg)

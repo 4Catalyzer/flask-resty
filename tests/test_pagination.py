@@ -1,6 +1,6 @@
 from flask_resty import (
-    Api, Filtering, GenericModelView, LimitOffsetPagination, PagePagination,
-    RelayCursorPagination, Sorting
+    Api, Filtering, GenericModelView, LimitOffsetPagination,
+    MaxLimitPagination, PagePagination, RelayCursorPagination, Sorting
 )
 from flask_resty.testing import assert_response, get_body, get_meta
 from marshmallow import fields, Schema
@@ -47,6 +47,12 @@ def routes(app, models, schemas):
         model = models['widget']
         schema = schemas['widget']
 
+    class MaxLimitWidgetListView(WidgetViewBase):
+        pagination = MaxLimitPagination(2)
+
+        def get(self):
+            return self.list()
+
     class LimitOffsetWidgetListView(WidgetViewBase):
         filtering = Filtering(
             size=operator.eq,
@@ -82,6 +88,7 @@ def routes(app, models, schemas):
             return self.create()
 
     api = Api(app)
+    api.add_resource('/max_limit_widgets', MaxLimitWidgetListView)
     api.add_resource('/limit_offset_widgets', LimitOffsetWidgetListView)
     api.add_resource('/page_widgets', PageWidgetListView)
     api.add_resource('/relay_cursor_widgets', RelayCursorListView)
@@ -101,6 +108,23 @@ def data(db, models):
 
 
 # -----------------------------------------------------------------------------
+
+
+def test_max_limit(client):
+    response = client.get('/max_limit_widgets')
+    assert_response(response, 200, [
+        {
+            'id': '1',
+            'size': 1,
+        },
+        {
+            'id': '2',
+            'size': 2,
+        },
+    ])
+    assert get_meta(response) == {
+        'has_next_page': True
+    }
 
 
 def test_limit_offset(client):

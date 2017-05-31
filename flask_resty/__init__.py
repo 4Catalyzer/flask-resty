@@ -14,7 +14,7 @@ from .filtering import (
 )
 from .pagination import (
     CursorPaginationBase, LimitOffsetPagination, LimitPagination,
-    PagePagination, RelayCursorPagination,
+    MaxLimitPagination, PagePagination, RelayCursorPagination,
 )
 from .related import Related
 from .sorting import FixedSorting, Sorting, SortingBase
