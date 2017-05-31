@@ -91,10 +91,10 @@ def routes(app, views):
     api.add_resource('/bars', views['bar'])
 
 
-@pytest.fixture(autouse=True)
+@pytest.yield_fixture(autouse=True)
 def ctx(app):
-    ctx = app.test_request_context()
-    ctx.push()
+    with app.test_request_context():
+        yield
 
 
 @pytest.fixture
