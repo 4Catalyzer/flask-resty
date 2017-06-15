@@ -37,6 +37,18 @@ class ApiView(MethodView):
     def serializer(self):
         return self.schema
 
+    def make_items_response(self, items, *args):
+        data_out = self.serialize(items, many=True)
+        return self.make_response(data_out, *args, items=items)
+
+    def make_item_response(self, item, *args):
+        data_out = self.serialize(item)
+        self.set_item_meta(item)
+        return self.make_response(data_out, *args, item=item)
+
+    def set_item_meta(self, item):
+        pass
+
     def make_response(self, data, *args, **kwargs):
         body = self.make_response_body(data, meta.get_response_meta())
         return self.make_raw_response(flask.jsonify(body), *args, **kwargs)
@@ -56,6 +68,19 @@ class ApiView(MethodView):
 
     def make_empty_response(self, **kwargs):
         return self.make_raw_response('', 204, **kwargs)
+
+    def make_created_response(self, item):
+        response = self.make_item_response(item, 201)
+        location = self.get_location(item)
+        if location is not None:
+            response.headers['Location'] = location
+        return response
+
+    def get_location(self, item):
+        id_dict = {
+            id_field: getattr(item, id_field) for id_field in self.id_fields
+        }
+        return flask.url_for(flask.request.endpoint, _method='GET', **id_dict)
 
     def get_request_data(self, **kwargs):
         try:
@@ -276,16 +301,8 @@ class ModelView(ApiView):
         except IntegrityError:
             raise ApiError(409, {'code': 'invalid_data.conflict'})
 
-    def make_items_response(self, items, *args):
-        data_out = self.serialize(items, many=True)
-        return self.make_response(data_out, *args, items=items)
-
-    def make_item_response(self, item, *args):
-        data_out = self.serialize(item)
-        self.set_item_meta(item)
-        return self.make_response(data_out, *args, item=item)
-
     def set_item_meta(self, item):
+        super(ModelView, self).set_item_meta(item)
         self.set_item_pagination_meta(item)
 
     def set_item_pagination_meta(self, item):
@@ -295,19 +312,6 @@ class ModelView(ApiView):
         pagination_meta = self.pagination.get_item_meta(item, self)
         if pagination_meta is not None:
             meta.set_response_meta(**pagination_meta)
-
-    def make_created_response(self, item):
-        response = self.make_item_response(item, 201)
-        location = self.get_location(item)
-        if location is not None:
-            response.headers['Location'] = location
-        return response
-
-    def get_location(self, item):
-        id_dict = {
-            id_field: getattr(item, id_field) for id_field in self.id_fields
-        }
-        return flask.url_for(flask.request.endpoint, _method='GET', **id_dict)
 
 
 class GenericModelView(ModelView):
