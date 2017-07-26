@@ -4,8 +4,6 @@ from marshmallow import fields, Schema
 import pytest
 from sqlalchemy import Column, Integer, String
 
-from helpers import request
-
 # -----------------------------------------------------------------------------
 
 
@@ -97,6 +95,7 @@ def data(db, models):
 def test_invalid_body(client):
     response = client.post(
         '/widgets',
+        content_type='text',
         data='foo',
     )
     assert_response(response, 400, [{
@@ -104,8 +103,8 @@ def test_invalid_body(client):
     }])
 
 
-def test_data_missing(client):
-    response = client.post(
+def test_data_missing(base_client):
+    response = base_client.post(
         '/widgets',
         content_type='application/json',
         data='{}',
@@ -116,18 +115,14 @@ def test_data_missing(client):
 
 
 def test_deserializer_errors(client):
-    response = request(
-        client,
-        'POST', '/widgets',
-        {
-            'nested': {'value': 'three'},
-            'nested_many': [
-                {'value': 'four'},
-                {'value': 5},
-                {'value': 'six'},
-            ],
-        },
-    )
+    response = client.post('/widgets', data={
+        'nested': {'value': 'three'},
+        'nested_many': [
+            {'value': 'four'},
+            {'value': 5},
+            {'value': 'six'},
+        ],
+    })
     assert_response(response, 422)
 
     errors = get_errors(response)
@@ -156,67 +151,47 @@ def test_deserializer_errors(client):
 
 
 def test_id_forbidden(client):
-    response = request(
-        client,
-        'POST', '/widgets',
-        {
-            'id': '2',
-            'name': "Bar",
-        },
-    )
+    response = client.post('/widgets', data={
+        'id': '2',
+        'name': "Bar",
+    })
     assert_response(response, 403, [{
         'code': 'invalid_id.forbidden',
     }])
 
 
 def test_id_missing(client):
-    response = request(
-        client,
-        'PATCH', '/widgets/1',
-        {
-            'name': "Bar",
-        },
-    )
+    response = client.patch('/widgets/1', data={
+        'name': "Bar",
+    })
     assert_response(response, 422, [{
         'code': 'invalid_id.missing',
     }])
 
 
 def test_id_mismatch(client):
-    response = request(
-        client,
-        'PATCH', '/widgets/1',
-        {
-            'id': '2',
-            'name': "Bar",
-        },
-    )
+    response = client.patch('/widgets/1', data={
+        'id': '2',
+        'name': "Bar",
+    })
     assert_response(response, 409, [{
         'code': 'invalid_id.mismatch',
     }])
 
 
 def test_commit_conflict(client):
-    response = request(
-        client,
-        'POST', '/widgets',
-        {
-            'name': "Foo",
-        },
-    )
+    response = client.post('/widgets', data={
+        'name': "Foo",
+    })
     assert_response(response, 409, [{
         'code': 'invalid_data.conflict',
     }])
 
 
 def test_flush_conflict(client):
-    response = request(
-        client,
-        'POST', '/widgets_flush',
-        {
-            'name': "Foo",
-        },
-    )
+    response = client.post('/widgets_flush', data={
+        'name': "Foo",
+    })
     assert_response(response, 409, [{
         'code': 'invalid_data.conflict',
     }])
@@ -228,6 +203,7 @@ def test_debug(app, client):
 
     production_response = client.post(
         '/widgets',
+        content_type='text',
         data='foo',
     )
     assert_response(production_response, 400)
@@ -238,6 +214,7 @@ def test_debug(app, client):
 
     debug_response = client.post(
         '/widgets',
+        content_type='text',
         data='foo',
     )
     assert_response(debug_response, 400)
@@ -248,6 +225,7 @@ def test_debug(app, client):
 
     testing_response = client.post(
         '/widgets',
+        content_type='text',
         data='foo',
     )
     assert_response(testing_response, 400)

@@ -1,6 +1,7 @@
+from collections import Mapping, Sequence
 import re
 
-from collections import Mapping, Sequence
+from flask.testing import FlaskClient
 import json
 
 from .compat import basestring
@@ -8,6 +9,23 @@ from .compat import basestring
 # -----------------------------------------------------------------------------
 
 UNDEFINED = object()
+
+# -----------------------------------------------------------------------------
+
+
+class ApiClient(FlaskClient):
+    def open(self, path, *args, **kwargs):
+        full_path = '{}{}'.format(
+            self.application.extensions['resty'].api.prefix, path,
+        )
+
+        if 'data' in kwargs:
+            kwargs.setdefault('content_type', 'application/json')
+            if kwargs['content_type'] == 'application/json':
+                kwargs['data'] = json.dumps({'data': kwargs['data']})
+
+        return super(ApiClient, self).open(full_path, *args, **kwargs)
+
 
 # -----------------------------------------------------------------------------
 
@@ -25,24 +43,8 @@ class Predicate(object):
         return not self.predicate(other)
 
 
-# -----------------------------------------------------------------------------
-
-
-def get_body(response):
-    assert response.mimetype == 'application/json'
-    return json.loads(response.get_data(as_text=True))
-
-
-def get_data(response):
-    return get_body(response)['data']
-
-
-def get_errors(response):
-    return get_body(response)['errors']
-
-
-def get_meta(response):
-    return get_body(response)['meta']
+def Matching(expected_regex):
+    return Predicate(re.compile(expected_regex).match)
 
 
 def assert_shape(actual, expected):
@@ -70,14 +72,31 @@ def assert_shape(actual, expected):
 
 
 def Shape(expected):
-    """like assert_shape, useful when assert_shape cannot be used directly
-    (eg mock.assert_called_with)
-    """
     def predicate(actual):
         assert_shape(actual, expected)
         return True
 
     return Predicate(predicate)
+
+
+# -----------------------------------------------------------------------------
+
+
+def get_body(response):
+    assert response.mimetype == 'application/json'
+    return json.loads(response.get_data(as_text=True))
+
+
+def get_data(response):
+    return get_body(response)['data']
+
+
+def get_errors(response):
+    return get_body(response)['errors']
+
+
+def get_meta(response):
+    return get_body(response)['meta']
 
 
 def assert_response(response, expected_status_code, expected_data=UNDEFINED):
@@ -97,16 +116,7 @@ def assert_response(response, expected_status_code, expected_data=UNDEFINED):
     else:
         response_data = get_errors(response)
 
-    assert_shape(response_data, expected_data)
+    if not isinstance(expected_data, Predicate):
+        expected_data = Shape(expected_data)
 
-
-# -----------------------------------------------------------------------------
-
-
-def Matching(expected_regex):
-    regex = re.compile(expected_regex)
-
-    def predicate(actual):
-        return regex.match(actual)
-
-    return Predicate(predicate)
+    assert response_data == expected_data

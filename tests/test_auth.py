@@ -8,8 +8,6 @@ from marshmallow import fields, Schema
 import pytest
 from sqlalchemy import Column, Integer, String
 
-from helpers import request
-
 # -----------------------------------------------------------------------------
 
 
@@ -164,27 +162,19 @@ def test_retrieve(client):
 
 
 def test_create(client):
-    response = request(
-        client,
-        'POST', '/widgets?user_id=foo',
-        {
-            'owner_id': 'foo',
-            'name': "Created",
-        },
-    )
+    response = client.post('/widgets?user_id=foo', data={
+        'owner_id': 'foo',
+        'name': "Created",
+    })
     assert_response(response, 201)
 
 
 def test_update(client):
-    response = request(
-        client,
-        'PATCH', '/widgets/1?user_id=foo',
-        {
-            'id': '1',
-            'owner_id': 'foo',
-            'name': "Updated",
-        },
-    )
+    response = client.patch('/widgets/1?user_id=foo', data={
+        'id': '1',
+        'owner_id': 'foo',
+        'name': "Updated",
+    })
     assert_response(response, 204)
 
 
@@ -208,13 +198,12 @@ def test_retrieve_create_missing(client):
 
 
 def test_update_update_missing(client):
-    response = request(
-        client,
-        'PUT', '/widgets_create_missing/4?user_id=foo&owner_id=foo',
-        {
+    response = client.put(
+        '/widgets_create_missing/4?user_id=foo&owner_id=foo',
+        data={
             'id': '4',
             'name': "Created",
-        }
+        },
     )
     assert_response(response, 204)
 
@@ -235,40 +224,28 @@ def test_error_retrieve_unauthorized(client):
 
 
 def test_error_create_unauthorized(client):
-    response = request(
-        client,
-        'POST', '/widgets?user_id=bar',
-        {
-            'owner_id': 'foo',
-            'name': "Created",
-        },
-    )
+    response = client.post('/widgets?user_id=bar', data={
+        'owner_id': 'foo',
+        'name': "Created",
+    })
     assert_response(response, 403, [{
         'code': 'invalid_user'
     }])
 
 
 def test_error_update_unauthorized(client):
-    not_found_response = request(
-        client,
-        'PATCH', '/widgets/1?user_id=bar',
-        {
-            'id': '1',
-            'owner_id': 'bar',
-            'name': "Updated",
-        },
-    )
+    not_found_response = client.patch('/widgets/1?user_id=bar', data={
+        'id': '1',
+        'owner_id': 'bar',
+        'name': "Updated",
+    })
     assert_response(not_found_response, 404)
 
-    forbidden_response = request(
-        client,
-        'PATCH', '/widgets/3?user_id=bar',
-        {
-            'id': '3',
-            'owner_id': 'bar',
-            'name': "Updated",
-        },
-    )
+    forbidden_response = client.patch('/widgets/3?user_id=bar', data={
+        'id': '3',
+        'owner_id': 'bar',
+        'name': "Updated",
+    })
     assert_response(forbidden_response, 403, [{
         'code': 'invalid_user'
     }])
@@ -295,13 +272,12 @@ def test_error_retrieve_create_missing_unauthorized(client):
 
 
 def test_error_update_create_missing_unauthorized(client):
-    response = request(
-        client,
-        'PUT', '/widgets_create_missing/4?user_id=bar&owner_id=foo',
-        {
+    response = client.put(
+        '/widgets_create_missing/4?user_id=bar&owner_id=foo',
+        data={
             'id': '4',
             'name': "Created",
-        }
+        },
     )
     assert_response(response, 403, [{
         'code': 'invalid_user'

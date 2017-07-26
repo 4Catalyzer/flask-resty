@@ -14,7 +14,7 @@ def routes(app):
 # -----------------------------------------------------------------------------
 
 
-def test_ping(client):
-    response = client.get('/ping')
+def test_ping(base_client):
+    response = base_client.get('/ping')
     assert_response(response, 200)
     assert response.get_data(as_text=True) == ''

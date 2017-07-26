@@ -5,8 +5,6 @@ import pytest
 from sqlalchemy import Column, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 
-from helpers import request
-
 # -----------------------------------------------------------------------------
 
 
@@ -144,15 +142,11 @@ def test_baseline(client):
 
 
 def test_single(client):
-    response = request(
-        client,
-        'PUT', '/children/1',
-        {
-            'id': '1',
-            'name': "Updated Child",
-            'parent': {'id': '1'},
-        },
-    )
+    response = client.put('/children/1', data={
+        'id': '1',
+        'name': "Updated Child",
+        'parent': {'id': '1'},
+    })
 
     assert_response(response, 200, {
         'id': '1',
@@ -165,18 +159,14 @@ def test_single(client):
 
 
 def test_many(client):
-    response = request(
-        client,
-        'PUT', '/parents/1',
-        {
-            'id': '1',
-            'name': "Updated Parent",
-            'children': [
-                {'id': '1'},
-                {'id': '2'},
-            ],
-        },
-    )
+    response = client.put('/parents/1', data={
+        'id': '1',
+        'name': "Updated Parent",
+        'children': [
+            {'id': '1'},
+            {'id': '2'},
+        ],
+    })
 
     assert_response(response, 200, {
         'id': '1',
@@ -195,18 +185,14 @@ def test_many(client):
 
 
 def test_many_nested(client):
-    response = request(
-        client,
-        'PUT', '/nested_parents/1',
-        {
-            'id': '1',
-            'name': "Updated Parent",
-            'children': [
-                {'name': "Child 3"},
-                {'name': "Child 4"},
-            ],
-        },
-    )
+    response = client.put('/nested_parents/1', data={
+        'id': '1',
+        'name': "Updated Parent",
+        'children': [
+            {'name': "Child 3"},
+            {'name': "Child 4"},
+        ],
+    })
 
     assert_response(response, 200, {
         'id': '1',
@@ -227,14 +213,10 @@ def test_many_nested(client):
 def test_missing(client):
     test_single(client)
 
-    response = request(
-        client,
-        'PUT', '/children/1',
-        {
-            'id': '1',
-            'name': "Twice Updated Child",
-        },
-    )
+    response = client.put('/children/1', data={
+        'id': '1',
+        'name': "Twice Updated Child",
+    })
 
     assert_response(response, 200, {
         'id': '1',
@@ -249,15 +231,11 @@ def test_missing(client):
 def test_null(client):
     test_single(client)
 
-    response = request(
-        client,
-        'PUT', '/children/1',
-        {
-            'id': '1',
-            'name': "Twice Updated Child",
-            'parent': None,
-        },
-    )
+    response = client.put('/children/1', data={
+        'id': '1',
+        'name': "Twice Updated Child",
+        'parent': None,
+    })
     assert_response(response, 200, {
         'id': '1',
         'name': "Twice Updated Child",
@@ -268,15 +246,11 @@ def test_null(client):
 def test_many_falsy(client):
     test_many(client)
 
-    response = request(
-        client,
-        'PUT', '/parents/1',
-        {
-            'id': '1',
-            'name': "Twice Updated Parent",
-            'children': [],
-        },
-    )
+    response = client.put('/parents/1', data={
+        'id': '1',
+        'name': "Twice Updated Parent",
+        'children': [],
+    })
 
     assert_response(response, 200, {
         'id': '1',
@@ -289,15 +263,11 @@ def test_many_falsy(client):
 
 
 def test_error_not_found(client):
-    response = request(
-        client,
-        'PUT', '/children/1',
-        {
-            'id': '1',
-            'name': "Updated Child",
-            'parent': {'id': '2'},
-        },
-    )
+    response = client.put('/children/1', data={
+        'id': '1',
+        'name': "Updated Child",
+        'parent': {'id': '2'},
+    })
     assert_response(response, 422, [{
         'code': 'invalid_related.not_found',
         'source': {'pointer': '/data/parent'},
@@ -305,15 +275,11 @@ def test_error_not_found(client):
 
 
 def test_error_missing_id(client):
-    response = request(
-        client,
-        'PUT', '/children/1',
-        {
-            'id': '1',
-            'name': "Updated Child",
-            'parent': {},
-        },
-    )
+    response = client.put('/children/1', data={
+        'id': '1',
+        'name': "Updated Child",
+        'parent': {},
+    })
     assert_response(response, 422, [{
         'code': 'invalid_related.missing_id',
         'source': {'pointer': '/data/parent'},
