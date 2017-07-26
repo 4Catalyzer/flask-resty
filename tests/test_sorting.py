@@ -1,4 +1,6 @@
-from flask_resty import Api, FixedSorting, GenericModelView, Sorting
+from flask_resty import (
+    Api, FixedSorting, GenericModelView, PrimaryKeySorting, Sorting,
+)
 from flask_resty.testing import assert_response
 from marshmallow import fields, Schema
 import pytest
@@ -54,17 +56,24 @@ def routes(app, models, schemas):
         def get(self):
             return self.list()
 
+    class PrimaryKeyWidgetListView(WidgetListView):
+        sorting = PrimaryKeySorting()
+
+        def get(self):
+            return self.list()
+
     api = Api(app)
     api.add_resource('/widgets', WidgetListView)
     api.add_resource('/fixed_widgets', FixedWidgetListView)
+    api.add_resource('/primary_key_widgets', PrimaryKeyWidgetListView)
 
 
 @pytest.fixture(autouse=True)
 def data(db, models):
     db.session.add_all((
-        models['widget'](name="Foo", size=1),
-        models['widget'](name="Foo", size=5),
-        models['widget'](name="Baz", size=3),
+        models['widget'](id=1, name="Foo", size=1),
+        models['widget'](id=9, name="Foo", size=5),
+        models['widget'](id=3, name="Baz", size=3),
     ))
     db.session.commit()
 
@@ -87,7 +96,7 @@ def test_single(client):
             'size': 3,
         },
         {
-            'id': '2',
+            'id': '9',
             'name': "Foo",
             'size': 5,
         },
@@ -104,7 +113,7 @@ def test_many(client):
             'size': 3,
         },
         {
-            'id': '2',
+            'id': '9',
             'name': "Foo",
             'size': 5,
         },
@@ -126,14 +135,14 @@ def test_no_sort(client):
             'size': 1,
         },
         {
-            'id': '2',
-            'name': "Foo",
-            'size': 5,
-        },
-        {
             'id': '3',
             'name': "Baz",
             'size': 3,
+        },
+        {
+            'id': '9',
+            'name': "Foo",
+            'size': 5,
         },
     ])
 
@@ -153,7 +162,29 @@ def test_fixed(client):
             'size': 1,
         },
         {
-            'id': '2',
+            'id': '9',
+            'name': "Foo",
+            'size': 5,
+        },
+    ])
+
+
+def test_primary_key_sort(client):
+    response = client.get('/primary_key_widgets')
+
+    assert_response(response, 200, [
+        {
+            'id': '1',
+            'name': "Foo",
+            'size': 1,
+        },
+        {
+            'id': '3',
+            'name': "Baz",
+            'size': 3,
+        },
+        {
+            'id': '9',
             'name': "Foo",
             'size': 5,
         },
