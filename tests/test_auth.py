@@ -1,7 +1,7 @@
 import flask
 from marshmallow import fields, Schema
 import pytest
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, sql, String
 
 from flask_resty import (
     Api,
@@ -56,7 +56,7 @@ def auth():
         def filter_query(self, query, view):
             return query.filter(
                 (view.model.owner_id == self.get_request_credentials()) |
-                (view.model.owner_id == None),  # noqa
+                (view.model.owner_id == sql.null()),
             )
 
         def authorize_save_item(self, item):
