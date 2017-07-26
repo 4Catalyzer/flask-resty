@@ -4,8 +4,6 @@ from marshmallow import fields, Schema
 import pytest
 from sqlalchemy import Column, Integer, String
 
-from helpers import request
-
 # -----------------------------------------------------------------------------
 
 
@@ -114,15 +112,11 @@ def test_retrieve(client):
 
 
 def test_create(client):
-    response = request(
-        client,
-        'POST', '/widgets',
-        {
-            'id_1': '4',
-            'id_2': '6',
-            'name': "Qux",
-        },
-    )
+    response = client.post('/widgets', data={
+        'id_1': '4',
+        'id_2': '6',
+        'name': "Qux",
+    })
     assert response.headers['Location'] == 'http://localhost/widgets/4/6'
 
     assert_response(response, 201, {
@@ -133,15 +127,11 @@ def test_create(client):
 
 
 def test_update(client):
-    update_response = request(
-        client,
-        'PATCH', '/widgets/1/2',
-        {
-            'id_1': '1',
-            'id_2': '2',
-            'name': "Qux",
-        },
-    )
+    update_response = client.patch('/widgets/1/2', data={
+        'id_1': '1',
+        'id_2': '2',
+        'name': "Qux",
+    })
     assert_response(update_response, 204)
 
     retrieve_response = client.get('/widgets/1/2')

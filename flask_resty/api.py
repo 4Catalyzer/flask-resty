@@ -18,7 +18,7 @@ class Api(object):
             self._app = app
             self.init_app(app)
 
-        self._prefix = prefix
+        self.prefix = prefix
 
     def init_app(self, app):
         app.extensions['resty'] = FlaskRestyState(self)
@@ -53,7 +53,7 @@ class Api(object):
         # mapped to same view.
         views = app.extensions['resty'].views
 
-        base_rule_full = '{}{}'.format(self._prefix, base_rule)
+        base_rule_full = '{}{}'.format(self.prefix, base_rule)
         base_view_func = base_view.as_view(endpoint)
 
         if not alternate_view:
@@ -61,7 +61,7 @@ class Api(object):
             views[base_view] = Resource(base_view, base_rule_full)
             return
 
-        alternate_rule_full = '{}{}'.format(self._prefix, alternate_rule)
+        alternate_rule_full = '{}{}'.format(self.prefix, alternate_rule)
         alternate_view_func = alternate_view.as_view(endpoint)
 
         def view_func(*args, **kwargs):

@@ -8,8 +8,6 @@ import operator
 import pytest
 from sqlalchemy import Column, Integer
 
-from helpers import request
-
 # -----------------------------------------------------------------------------
 
 
@@ -294,13 +292,9 @@ def test_limit_offset_filtered_offset(client):
 
 
 def test_limit_offset_create(client):
-    response = request(
-        client,
-        'POST', '/limit_offset_widgets',
-        {
-            'size': 1,
-        },
-    )
+    response = client.post('/limit_offset_widgets', data={
+        'size': 1,
+    })
 
     assert 'meta' not in get_body(response)
 
@@ -342,13 +336,9 @@ def test_page_default(client):
 
 
 def test_page_create(client):
-    response = request(
-        client,
-        'POST', '/page_widgets',
-        {
-            'size': 1,
-        },
-    )
+    response = client.post('/page_widgets', data={
+        'size': 1,
+    })
 
     assert 'meta' not in get_body(response)
 
@@ -442,13 +432,9 @@ def test_relay_cursor_sorted_default(client):
 
 
 def test_relay_cursor_create(client):
-    response = request(
-        client,
-        'POST', '/relay_cursor_widgets',
-        {
-            'size': 1,
-        },
-    )
+    response = client.post('/relay_cursor_widgets', data={
+        'size': 1,
+    })
 
     assert get_meta(response) == {
         'cursor': 'Nw',
@@ -456,13 +442,9 @@ def test_relay_cursor_create(client):
 
 
 def test_relay_cursor_create_sorted(client):
-    response = request(
-        client,
-        'POST', '/relay_cursor_widgets?sort=size,-id',
-        {
-            'size': 1,
-        },
-    )
+    response = client.post('/relay_cursor_widgets?sort=size,-id', data={
+        'size': 1,
+    })
 
     assert get_meta(response) == {
         'cursor': 'MQ.Nw',

@@ -4,8 +4,6 @@ from marshmallow import fields, Schema
 import pytest
 from sqlalchemy import Column, Integer
 
-from helpers import request
-
 # -----------------------------------------------------------------------------
 
 
@@ -67,11 +65,16 @@ def data(db, models):
 # -----------------------------------------------------------------------------
 
 
-def test_api_prefix(app, views, client):
+def test_api_prefix(app, views, client, base_client):
     api = Api(app, '/api')
     api.add_resource('/widgets', views['widget_list'])
 
-    response = client.get('/api/widgets')
+    response = client.get('/widgets')
+    assert_response(response, 200, [{
+        'id': '1',
+    }])
+
+    response = base_client.get('/api/widgets')
     assert_response(response, 200, [{
         'id': '1',
     }])
@@ -81,13 +84,9 @@ def test_create_client_id(app, views, client):
     api = Api(app)
     api.add_resource('/widgets', views['widget_list'], views['widget'])
 
-    response = request(
-        client,
-        'POST', '/widgets',
-        {
-            'id': '100',
-        },
-    )
+    response = client.post('/widgets', data={
+        'id': '100',
+    })
     assert response.headers['Location'] == 'http://localhost/widgets/100'
     assert_response(response, 201, {
         'id': '100',
@@ -100,11 +99,7 @@ def test_create_no_location(app, views, client):
     api = Api(app)
     api.add_resource('/widgets', views['widget_list'], views['widget'])
 
-    response = request(
-        client,
-        'POST', '/widgets',
-        {},
-    )
+    response = client.post('/widgets', data={})
     assert 'Location' not in response.headers
     assert_response(response, 201, {
         'id': '2',
@@ -117,13 +112,9 @@ def test_training_slash(app, views, client):
         '/widgets/', views['widget_list'], views['widget'], id_rule='<id>/',
     )
 
-    response = request(
-        client,
-        'POST', '/widgets/',
-        {
-            'id': '100',
-        },
-    )
+    response = client.post('/widgets/', data={
+        'id': '100',
+    })
     assert response.headers['Location'] == 'http://localhost/widgets/100/'
 
     assert_response(response, 201, {
@@ -149,11 +140,7 @@ def test_resource_rules(app, views, client):
         'id': '1',
     })
 
-    post_response = request(
-        client,
-        'POST', '/widgets',
-        {},
-    )
+    post_response = client.post('/widgets', data={})
     assert post_response.headers['Location'] == 'http://localhost/widget/2'
 
     assert_response(post_response, 201, {
