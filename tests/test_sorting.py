@@ -1,8 +1,9 @@
-from flask_resty import Api, FixedSorting, GenericModelView, Sorting
-from flask_resty.testing import assert_response
 from marshmallow import fields, Schema
 import pytest
 from sqlalchemy import Column, Integer, String
+
+from flask_resty import Api, FixedSorting, GenericModelView, Sorting
+from flask_resty.testing import assert_response
 
 # -----------------------------------------------------------------------------
 

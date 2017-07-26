@@ -46,7 +46,7 @@ class ApiViewDeclaration(object):
             else:
                 data = {
                     'type': 'array',
-                    'items': schema_ref
+                    'items': schema_ref,
                 }
             path['get'].add_property_to_response(prop_name='data', **data)
 
@@ -56,8 +56,8 @@ class ApiViewDeclaration(object):
             'schema': {
                 'type': 'object',
                 'required': ['data'],
-                'properties': {'data': schema_ref}
-            }
+                'properties': {'data': schema_ref},
+            },
         }
 
         if 'post' in view_methods:

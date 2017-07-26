@@ -6,7 +6,7 @@ class Operation(dict):
     def __init__(self):
         super(Operation, self).__init__({
             'responses': {},
-            'parameters': []
+            'parameters': [],
         })
 
     def add_parameter(self, location='query', **kwargs):

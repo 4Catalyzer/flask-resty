@@ -1,12 +1,20 @@
-from flask_resty import (
-    Api, Filtering, GenericModelView, LimitOffsetPagination,
-    MaxLimitPagination, PagePagination, RelayCursorPagination, Sorting
-)
-from flask_resty.testing import assert_response, get_body, get_meta
-from marshmallow import fields, Schema
 import operator
+
+from marshmallow import fields, Schema
 import pytest
 from sqlalchemy import Column, Integer
+
+from flask_resty import (
+    Api,
+    Filtering,
+    GenericModelView,
+    LimitOffsetPagination,
+    MaxLimitPagination,
+    PagePagination,
+    RelayCursorPagination,
+    Sorting,
+)
+from flask_resty.testing import assert_response, get_body, get_meta
 
 # -----------------------------------------------------------------------------
 
@@ -121,7 +129,7 @@ def test_max_limit(client):
         },
     ])
     assert get_meta(response) == {
-        'has_next_page': True
+        'has_next_page': True,
     }
 
 
@@ -143,7 +151,7 @@ def test_limit_offset(client):
         },
     ])
     assert get_meta(response) == {
-        'has_next_page': True
+        'has_next_page': True,
     }
 
 
@@ -161,7 +169,7 @@ def test_limit_offset_default(client):
         },
     ])
     assert get_meta(response) == {
-        'has_next_page': True
+        'has_next_page': True,
     }
 
 
@@ -183,7 +191,7 @@ def test_limit_offset_limit(client):
         },
     ])
     assert get_meta(response) == {
-        'has_next_page': True
+        'has_next_page': True,
     }
 
 
@@ -209,7 +217,7 @@ def test_limit_offset_max_limit(client):
         },
     ])
     assert get_meta(response) == {
-        'has_next_page': True
+        'has_next_page': True,
     }
 
 
@@ -227,7 +235,7 @@ def test_limit_offset_offset(client):
         },
     ])
     assert get_meta(response) == {
-        'has_next_page': True
+        'has_next_page': True,
     }
 
 
@@ -245,7 +253,7 @@ def test_limit_offset_offset_end(client):
         },
     ])
     assert get_meta(response) == {
-        'has_next_page': False
+        'has_next_page': False,
     }
 
 
@@ -259,7 +267,7 @@ def test_limit_offset_offset_truncate(client):
         },
     ])
     assert get_meta(response) == {
-        'has_next_page': False
+        'has_next_page': False,
     }
 
 
@@ -273,7 +281,7 @@ def test_limit_offset_filtered(client):
         },
     ])
     assert get_meta(response) == {
-        'has_next_page': True
+        'has_next_page': True,
     }
 
 
@@ -287,7 +295,7 @@ def test_limit_offset_filtered_offset(client):
         },
     ])
     assert get_meta(response) == {
-        'has_next_page': False
+        'has_next_page': False,
     }
 
 
@@ -313,7 +321,7 @@ def test_page(client):
         },
     ])
     assert get_meta(response) == {
-        'has_next_page': True
+        'has_next_page': True,
     }
 
 
@@ -331,7 +339,7 @@ def test_page_default(client):
         },
     ])
     assert get_meta(response) == {
-        'has_next_page': True
+        'has_next_page': True,
     }
 
 

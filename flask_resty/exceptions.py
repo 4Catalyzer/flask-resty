@@ -9,7 +9,7 @@ class ApiError(Exception):
     def __init__(self, status_code, *errors):
         self.status_code = status_code
         self.body = {
-            'errors': errors
+            'errors': errors,
         }
 
         if flask.current_app.debug or flask.current_app.testing:

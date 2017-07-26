@@ -1,0 +1,4 @@
+[flake8]
+ignore = C813
+import-order-style = google
+application-import-names = flask_resty

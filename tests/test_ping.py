@@ -1,6 +1,7 @@
+import pytest
+
 from flask_resty import Api
 from flask_resty.testing import assert_response
-import pytest
 
 # -----------------------------------------------------------------------------
 

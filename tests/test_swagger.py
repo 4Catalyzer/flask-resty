@@ -21,7 +21,7 @@ def schemas():
         color = fields.String()
 
     return {
-        'foo': FooSchema
+        'foo': FooSchema,
     }
 
 
@@ -64,7 +64,7 @@ def views(schemas):
 
         spec_declaration = ModelViewDeclaration(
             post={'204': {'description': 'request the creation of a new bar'}},
-            get={'200': {}}
+            get={'200': {}},
         )
 
         def post(self):
@@ -246,9 +246,9 @@ def test_body_params(spec):
             'type': 'object',
             'required': ['data'],
             'properties': {
-                'data': {'$ref': '#/definitions/Foo'}
-            }
-        }
+                'data': {'$ref': '#/definitions/Foo'},
+            },
+        },
     }
     assert body in foo_post['parameters']
 
@@ -288,7 +288,7 @@ def test_filters(spec):
     parameter = {
         'in': 'query',
         'name': 'color',
-        'type': 'string'
+        'type': 'string',
     }
     assert parameter in foos_get['parameters']
 
@@ -302,15 +302,15 @@ def test_schemaless(spec):
     bars_post = spec['paths']['/bars']['post']
     assert bars_post['responses'] == {
         '204': {
-            'description': 'request the creation of a new bar'
-        }
+            'description': 'request the creation of a new bar',
+        },
     }
 
     bars_put = spec['paths']['/bars']['put']
     assert bars_put == {
         'responses': {},
         'parameters': [],
-        'description': 'put a bar'
+        'description': 'put a bar',
     }
 
 

@@ -1,12 +1,13 @@
 import base64
+
 import flask
 from marshmallow import ValidationError
 import sqlalchemy as sa
 from sqlalchemy import Column, sql
 
-from .exceptions import ApiError
 from . import meta
 from . import utils
+from .exceptions import ApiError
 
 # -----------------------------------------------------------------------------
 
@@ -94,8 +95,8 @@ class LimitPagination(LimitPaginationBase):
             prop_name='meta',
             type='object',
             properties={
-                'has_next_page': {'type': 'boolean'}
-            }
+                'has_next_page': {'type': 'boolean'},
+            },
         )
 
 
