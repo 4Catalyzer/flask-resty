@@ -1,5 +1,6 @@
-from setuptools import Command, setup, find_packages
 import subprocess
+
+from setuptools import Command, find_packages, setup
 
 # -----------------------------------------------------------------------------
 

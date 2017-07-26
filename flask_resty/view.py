@@ -5,10 +5,10 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
 from werkzeug.exceptions import NotFound
 
+from . import meta
 from .authentication import NoOpAuthentication
 from .authorization import NoOpAuthorization
 from .exceptions import ApiError
-from . import meta
 from .spec import ApiViewDeclaration, ModelViewDeclaration
 from .utils import iter_validation_errors, settable_property
 

@@ -95,7 +95,7 @@ def test_shape_mapping(assert_shape_func):
     })
 
     assert_shape_func(actual_mapping, {
-        'bar': Matching(r'.*long.*')
+        'bar': Matching(r'.*long.*'),
     })
 
     with pytest.raises(AssertionError):
@@ -132,7 +132,7 @@ def test_shape_mapping(assert_shape_func):
 
     with pytest.raises(AssertionError):
         assert_shape_func(actual_mapping, {
-            'bar': Matching(r'.*lung.*')
+            'bar': Matching(r'.*lung.*'),
         })
 
 

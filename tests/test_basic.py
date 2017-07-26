@@ -1,8 +1,9 @@
-from flask_resty import Api, GenericModelView
-from flask_resty.testing import assert_response
 from marshmallow import fields, Schema
 import pytest
 from sqlalchemy import Column, Integer, String
+
+from flask_resty import Api, GenericModelView
+from flask_resty.testing import assert_response
 
 # -----------------------------------------------------------------------------
 
@@ -62,7 +63,7 @@ def routes(app, models, schemas):
 
     api = Api(app)
     api.add_resource(
-        '/widgets', WidgetListView, WidgetView, id_rule='<int:id>'
+        '/widgets', WidgetListView, WidgetView, id_rule='<int:id>',
     )
 
 

@@ -1,6 +1,7 @@
-from flask_resty import RelatedItem
-import pytest
 from marshmallow import fields, Schema
+import pytest
+
+from flask_resty import RelatedItem
 
 # -----------------------------------------------------------------------------
 

@@ -1,9 +1,10 @@
-from flask_resty import Api, GenericModelView, Related, RelatedItem
-from flask_resty.testing import assert_response
 from marshmallow import fields, Schema
 import pytest
 from sqlalchemy import Column, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
+
+from flask_resty import Api, GenericModelView, Related, RelatedItem
+from flask_resty.testing import assert_response
 
 # -----------------------------------------------------------------------------
 

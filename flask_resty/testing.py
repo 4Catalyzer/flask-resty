@@ -1,8 +1,8 @@
 from collections import Mapping, Sequence
+import json
 import re
 
 from flask.testing import FlaskClient
-import json
 
 from .compat import basestring
 

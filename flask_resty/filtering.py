@@ -3,8 +3,8 @@ from marshmallow import ValidationError
 import sqlalchemy as sa
 from sqlalchemy.sql import ColumnElement
 
-from .exceptions import ApiError
 from . import utils
+from .exceptions import ApiError
 
 # -----------------------------------------------------------------------------
 
@@ -126,5 +126,5 @@ class Filtering(object):
         return query
 
     def spec_declaration(self, path, spec, **kwargs):
-        for arg_name, filter_field in self._filter_fields.items():
+        for arg_name in self._filter_fields.keys():
             path['get'].add_parameter(name=arg_name)

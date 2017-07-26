@@ -1,12 +1,17 @@
 import flask
-from flask_resty import (
-    Api, ApiError, AuthenticationBase, GenericModelView,
-    HasAnyCredentialsAuthorization, HasCredentialsAuthorizationBase,
-)
-from flask_resty.testing import assert_response
 from marshmallow import fields, Schema
 import pytest
 from sqlalchemy import Column, Integer, String
+
+from flask_resty import (
+    Api,
+    ApiError,
+    AuthenticationBase,
+    GenericModelView,
+    HasAnyCredentialsAuthorization,
+    HasCredentialsAuthorizationBase,
+)
+from flask_resty.testing import assert_response
 
 # -----------------------------------------------------------------------------
 
@@ -117,7 +122,7 @@ def routes(app, models, schemas, auth):
 
     api = Api(app)
     api.add_resource(
-        '/widgets', WidgetListView, WidgetView, id_rule='<int:id>'
+        '/widgets', WidgetListView, WidgetView, id_rule='<int:id>',
     )
     api.add_resource(
         '/widgets_any_credentials/<int:id>', WidgetAnyCredentialsView,
@@ -229,7 +234,7 @@ def test_error_create_unauthorized(client):
         'name': "Created",
     })
     assert_response(response, 403, [{
-        'code': 'invalid_user'
+        'code': 'invalid_user',
     }])
 
 
@@ -247,7 +252,7 @@ def test_error_update_unauthorized(client):
         'name': "Updated",
     })
     assert_response(forbidden_response, 403, [{
-        'code': 'invalid_user'
+        'code': 'invalid_user',
     }])
 
 
@@ -257,7 +262,7 @@ def test_error_delete_unauthorized(client):
 
     forbidden_response = client.delete('/widgets/3?user_id=bar')
     assert_response(forbidden_response, 403, [{
-        'code': 'invalid_user'
+        'code': 'invalid_user',
     }])
 
 
@@ -280,5 +285,5 @@ def test_error_update_create_missing_unauthorized(client):
         },
     )
     assert_response(response, 403, [{
-        'code': 'invalid_user'
+        'code': 'invalid_user',
     }])
