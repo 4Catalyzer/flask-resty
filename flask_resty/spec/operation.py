@@ -21,7 +21,7 @@ class Operation(dict):
         pass
 
     def add_property_to_response(self, code='200', prop_name='data', **kwargs):
-        """Add a property (http://json-schema.org/latest/json-schema-validation.html#anchor64)  # noqa E501
+        """Add a property (http://json-schema.org/latest/json-schema-validation.html#anchor64)  # noqa: E501
         to the schema of the response identified by the code"""
         self['responses']\
             .setdefault(str(code), self._new_operation())\
@@ -32,7 +32,7 @@ class Operation(dict):
 
     def declare_response(self, code='200', **kwargs):
         """Declare a response for the specified code
-        https://github.com/swagger-api/swagger-spec/blob/master/versions/2.0.md#responseObject"""  # noqa E501
+        https://github.com/swagger-api/swagger-spec/blob/master/versions/2.0.md#responseObject"""  # noqa: E501
         self['responses'][str(code)] = self._new_operation(**kwargs)
 
     def add_tag(self, tag):
