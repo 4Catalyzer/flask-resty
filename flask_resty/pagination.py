@@ -3,7 +3,6 @@ import base64
 import flask
 from marshmallow import ValidationError
 import sqlalchemy as sa
-from sqlalchemy import Column, sql
 
 from . import meta
 from . import utils
@@ -40,7 +39,7 @@ class LimitPaginationBase(PaginationBase):
         meta.set_response_meta(has_next_page=has_next_page)
         return items
 
-    def get_limit(self, query, view):
+    def get_limit(self):
         raise NotImplementedError()
 
 
@@ -60,9 +59,9 @@ class LimitPagination(LimitPaginationBase):
         self._max_limit = max_limit
 
         if self._max_limit is not None:
-            assert \
-                self._default_limit <= self._max_limit, \
+            assert self._default_limit <= self._max_limit, (
                 "default limit exceeds max limit"
+            )
 
     def get_limit(self):
         limit = flask.request.args.get(self.limit_arg)
@@ -88,9 +87,11 @@ class LimitPagination(LimitPaginationBase):
         return limit
 
     def spec_declaration(self, path, spec, **kwargs):
-        path['get'].add_parameter(name='limit',
-                                  type='int',
-                                  description='pagination limit')
+        path['get'].add_parameter(
+            name='limit',
+            type='int',
+            description="pagination limit",
+        )
         path['get'].add_property_to_response(
             prop_name='meta',
             type='object',
@@ -130,10 +131,12 @@ class LimitOffsetPagination(LimitPagination):
 
     def spec_declaration(self, path, spec, **kwargs):
         super(LimitOffsetPagination, self).spec_declaration(path, spec)
+
         path['get'].add_parameter(
             name='offset',
             type='int',
-            description='pagination offset')
+            description="pagination offset",
+        )
 
 
 class PagePagination(LimitOffsetPagination):
@@ -171,10 +174,12 @@ class PagePagination(LimitOffsetPagination):
 
     def spec_declaration(self, path, spec, **kwargs):
         super(PagePagination, self).spec_declaration(path, spec)
+
         path['get'].add_parameter(
             name='page',
             type='int',
-            description='page number')
+            description="page number",
+        )
 
 
 # -----------------------------------------------------------------------------
@@ -183,52 +188,42 @@ class PagePagination(LimitOffsetPagination):
 class CursorPaginationBase(LimitPagination):
     cursor_arg = 'cursor'
 
-    def get_column_orderings(self, query, view):
-        column_orderings = tuple(
-            self.get_column_ordering(expression)
-            for expression in query._order_by
+    def get_field_orderings(self, view):
+        sorting = view.sorting
+        assert sorting is not None, (
+            "sorting must be defined when using cursor pagination"
         )
 
+        field_orderings = sorting.get_request_field_orderings()
         for id_field in view.id_fields:
-            id_column = view.model.__table__.c[id_field]
-            assert \
-                id_column in (column for column, _ in column_orderings), \
+            assert (
+                id_field in (field_name for field_name, _ in field_orderings)
+            ), (
                 "ordering does not include {}".format(id_field)
+            )
 
-        return column_orderings
+        return field_orderings
 
-    def get_column_ordering(self, expression):
-        if isinstance(expression, Column):
-            return expression, True
-
-        column = expression.element
-        assert isinstance(column, Column), "expression is not on a column"
-
-        modifier = expression.modifier
-        assert modifier in (sql.operators.asc_op, sql.operators.desc_op)
-        asc = modifier == sql.operators.asc_op
-
-        return column, asc
-
-    def get_request_cursor(self, view, column_orderings):
+    def get_request_cursor(self, view, field_orderings):
         cursor = flask.request.args.get(self.cursor_arg)
         if not cursor:
             return None
 
         try:
-            return self.parse_cursor(cursor, view, column_orderings)
+            return self.parse_cursor(cursor, view, field_orderings)
         except ApiError as e:
             raise e.update({'source': {'parameter': self.cursor_arg}})
 
-    def parse_cursor(self, cursor, view, column_orderings):
+    def parse_cursor(self, cursor, view, field_orderings):
         cursor = self.decode_cursor(cursor)
 
-        if len(cursor) != len(column_orderings):
+        if len(cursor) != len(field_orderings):
             raise ApiError(400, {'code': 'invalid_cursor.length'})
 
         deserializer = view.deserializer
         column_fields = (
-            deserializer.fields[column.name] for column, _ in column_orderings
+            deserializer.fields[field_name]
+            for field_name, _ in field_orderings
         )
 
         try:
@@ -266,8 +261,14 @@ class CursorPaginationBase(LimitPagination):
             'detail': message,
         }
 
-    def get_filter(self, column_orderings, cursor):
-        column_cursors = tuple(zip(column_orderings, cursor))
+    def get_filter(self, view, field_orderings, cursor):
+        sorting = view.sorting
+
+        column_cursors = tuple(
+            (sorting.get_column(view, field_name), asc, value)
+            for (field_name, asc), value in zip(field_orderings, cursor),
+        )
+
         return sa.or_(
             self.get_filter_clause(column_cursors[:i + 1])
             for i in range(len(column_cursors))
@@ -275,10 +276,10 @@ class CursorPaginationBase(LimitPagination):
 
     def get_filter_clause(self, column_cursors):
         previous_clauses = sa.and_(
-            column == value for (column, _), value in column_cursors[:-1]
+            column == value for column, _, value in column_cursors[:-1],
         )
 
-        (column, asc), value = column_cursors[-1]
+        column, asc, value = column_cursors[-1]
         if asc:
             current_clause = column > value
         else:
@@ -286,26 +287,27 @@ class CursorPaginationBase(LimitPagination):
 
         return sa.and_(previous_clauses, current_clause)
 
-    def make_cursors(self, items, view, column_orderings):
-        column_fields = self.get_column_fields(view, column_orderings)
+    def make_cursors(self, items, view, field_orderings):
+        column_fields = self.get_column_fields(view, field_orderings)
         return tuple(
-            self.render_cursor(item, column_fields) for item in items
+            self.render_cursor(item, column_fields) for item in items,
         )
 
-    def make_cursor(self, item, view, column_orderings):
-        column_fields = self.get_column_fields(view, column_orderings)
+    def make_cursor(self, item, view, field_orderings):
+        column_fields = self.get_column_fields(view, field_orderings)
         return self.render_cursor(item, column_fields)
 
-    def get_column_fields(self, view, column_orderings):
+    def get_column_fields(self, view, field_orderings):
         serializer = view.serializer
         return tuple(
-            serializer.fields[column.name] for column, _ in column_orderings
+            serializer.fields[field_name]
+            for field_name, _ in field_orderings,
         )
 
     def render_cursor(self, item, column_fields):
         cursor = tuple(
             field._serialize(getattr(item, field.name), field.name, item)
-            for field in column_fields
+            for field in column_fields,
         )
 
         return self.encode_cursor(cursor)
@@ -322,31 +324,34 @@ class CursorPaginationBase(LimitPagination):
 
     def spec_declaration(self, path, spec, **kwargs):
         super(CursorPaginationBase, self).spec_declaration(path, spec)
+
         path['get'].add_parameter(
             name='cursor',
             type='string',
-            description='pagination cursor')
+            description="pagination cursor",
+        )
 
 
 class RelayCursorPagination(CursorPaginationBase):
     def get_page(self, query, view):
-        column_orderings = self.get_column_orderings(query, view)
+        field_orderings = self.get_field_orderings(view)
 
-        cursor_in = self.get_request_cursor(view, column_orderings)
+        cursor_in = self.get_request_cursor(view, field_orderings)
         if cursor_in is not None:
-            query = query.filter(self.get_filter(column_orderings, cursor_in))
+            query = query.filter(
+                self.get_filter(view, field_orderings, cursor_in),
+            )
 
         items = super(RelayCursorPagination, self).get_page(query, view)
 
         # Relay expects a cursor for each item.
-        cursors_out = self.make_cursors(items, view, column_orderings)
+        cursors_out = self.make_cursors(items, view, field_orderings)
         meta.set_response_meta(cursors=cursors_out)
 
         return items
 
     def get_item_meta(self, item, view):
-        query = view.get_list_query()
-        column_orderings = self.get_column_orderings(query, view)
+        field_orderings = self.get_field_orderings(view)
 
-        cursor = self.make_cursor(item, view, column_orderings)
+        cursor = self.make_cursor(item, view, field_orderings)
         return {'cursor': cursor}
