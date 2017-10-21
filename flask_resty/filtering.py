@@ -121,7 +121,7 @@ class Filtering(object):
             try:
                 query = query.filter(filter_field(view, arg_value))
             except ApiError as e:
-                raise e.update({'source': {'parameter': arg_name}})
+                raise e.update({'source': {'query': arg_name}})
 
         return query
 

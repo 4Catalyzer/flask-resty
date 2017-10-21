@@ -466,7 +466,7 @@ def test_error_invalid_limit_type(client):
     response = client.get('/limit_offset_widgets?limit=foo')
     assert_response(response, 400, [{
         'code': 'invalid_limit',
-        'source': {'parameter': 'limit'},
+        'source': {'query': 'limit'},
     }])
 
 
@@ -474,7 +474,7 @@ def test_error_invalid_limit_value(client):
     response = client.get('/limit_offset_widgets?limit=-1')
     assert_response(response, 400, [{
         'code': 'invalid_limit',
-        'source': {'parameter': 'limit'},
+        'source': {'query': 'limit'},
     }])
 
 
@@ -482,7 +482,7 @@ def test_error_invalid_offset_type(client):
     response = client.get('/limit_offset_widgets?offset=foo')
     assert_response(response, 400, [{
         'code': 'invalid_offset',
-        'source': {'parameter': 'offset'},
+        'source': {'query': 'offset'},
     }])
 
 
@@ -490,7 +490,7 @@ def test_error_invalid_offset_value(client):
     response = client.get('/limit_offset_widgets?offset=-1')
     assert_response(response, 400, [{
         'code': 'invalid_offset',
-        'source': {'parameter': 'offset'},
+        'source': {'query': 'offset'},
     }])
 
 
@@ -498,7 +498,7 @@ def test_error_invalid_page_type(client):
     response = client.get('/page_widgets?page=foo')
     assert_response(response, 400, [{
         'code': 'invalid_page',
-        'source': {'parameter': 'page'},
+        'source': {'query': 'page'},
     }])
 
 
@@ -506,7 +506,7 @@ def test_error_invalid_page_value(client):
     response = client.get('/page_widgets?page=-1')
     assert_response(response, 400, [{
         'code': 'invalid_page',
-        'source': {'parameter': 'page'},
+        'source': {'query': 'page'},
     }])
 
 
@@ -514,7 +514,7 @@ def test_error_invalid_relay_cursor_encoding(client):
     response = client.get('/relay_cursor_widgets?cursor=_')
     assert_response(response, 400, [{
         'code': 'invalid_cursor.encoding',
-        'source': {'parameter': 'cursor'},
+        'source': {'query': 'cursor'},
     }])
 
 
@@ -522,7 +522,7 @@ def test_error_invalid_relay_cursor_length(client):
     response = client.get('/relay_cursor_widgets?cursor=MQ.MQ')
     assert_response(response, 400, [{
         'code': 'invalid_cursor.length',
-        'source': {'parameter': 'cursor'},
+        'source': {'query': 'cursor'},
     }])
 
 
@@ -531,5 +531,5 @@ def test_error_invalid_relay_cursor_field(client):
     assert_response(response, 400, [{
         'code': 'invalid_cursor',
         'detail': 'Not a valid integer.',
-        'source': {'parameter': 'cursor'},
+        'source': {'query': 'cursor'},
     }])
