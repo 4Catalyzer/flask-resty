@@ -154,8 +154,8 @@ class ApiView(MethodView):
 class ModelView(ApiView):
     model = None
 
-    sorting = None
     filtering = None
+    sorting = None
     pagination = None
 
     related = None
@@ -178,21 +178,21 @@ class ModelView(ApiView):
 
     def get_list_query(self):
         query = self.query
-        query = self.sort_list_query(query)
         query = self.filter_list_query(query)
+        query = self.sort_list_query(query)
         return query
-
-    def sort_list_query(self, query):
-        if not self.sorting:
-            return query
-
-        return self.sorting.sort_query(query, self)
 
     def filter_list_query(self, query):
         if not self.filtering:
             return query
 
         return self.filtering.filter_query(query, self)
+
+    def sort_list_query(self, query):
+        if not self.sorting:
+            return query
+
+        return self.sorting.sort_query(query, self)
 
     def paginate_list_query(self, query):
         if not self.pagination:

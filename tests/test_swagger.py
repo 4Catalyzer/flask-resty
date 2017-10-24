@@ -5,7 +5,11 @@ from marshmallow import fields, Schema
 import pytest
 
 from flask_resty import (
-    Api, Filtering, GenericModelView, PagePagination, RelayCursorPagination,
+    Api,
+    Filtering,
+    GenericModelView,
+    PagePagination,
+    RelayCursorPagination,
     Sorting,
 )
 from flask_resty.spec import ModelViewDeclaration
@@ -44,13 +48,14 @@ def views(schemas):
 
     class FooListView(GenericModelView):
         schema = schemas['foo']()
-        pagination = PagePagination(2)
-        sorting = Sorting('name', 'color')
+
         spec_declaration = ModelViewDeclaration(many=True)
 
         filtering = Filtering(
             color=operator.eq,
         )
+        sorting = Sorting('name', 'color')
+        pagination = PagePagination(2)
 
         def get(self):
             pass
@@ -60,12 +65,12 @@ def views(schemas):
             pass
 
     class BarView(GenericModelView):
-        pagination = RelayCursorPagination(2)
-
         spec_declaration = ModelViewDeclaration(
             post={'204': {'description': 'request the creation of a new bar'}},
             get={'200': {}},
         )
+
+        pagination = RelayCursorPagination(2)
 
         def post(self):
             pass
