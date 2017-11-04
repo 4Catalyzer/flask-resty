@@ -17,6 +17,8 @@ class Api(object):
         if app:
             self._app = app
             self.init_app(app)
+        else:
+            self._app = None
 
         self.prefix = prefix
 

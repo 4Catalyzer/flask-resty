@@ -147,3 +147,18 @@ def test_resource_rules(app, views, client):
     assert_response(post_response, 201, {
         'id': '2',
     })
+
+
+def test_factory_pattern(app, views, client):
+    api = Api()
+    api.init_app(app)
+
+    with pytest.raises(AssertionError, message="no application specified"):
+        api.add_resource('/widgets', views['widget_list'])
+
+    api.add_resource('/widgets', views['widget_list'], app=app)
+
+    response = client.get('/widgets')
+    assert_response(response, 200, [{
+        'id': '1',
+    }])
