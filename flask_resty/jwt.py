@@ -28,9 +28,10 @@ class JwtAuthentication(AuthenticationBase):
     header_scheme = 'Bearer'
     id_token_arg = 'id_token'
 
-    def __init__(self, **kwargs):
+    def __init__(self, keys=None, **kwargs):
         super(JwtAuthentication, self).__init__()
 
+        self.keys = keys
         self._decode_args = {
             key: kwargs[key] for key in JWT_DECODE_ARG_KEYS if key in kwargs
         }
@@ -42,7 +43,8 @@ class JwtAuthentication(AuthenticationBase):
 
         try:
             payload = self.decode_token(token)
-        except InvalidTokenError:
+        except InvalidTokenError as e:
+            print(e)
             raise ApiError(401, {'code': 'invalid_token'})
 
         return self.get_credentials(payload)
@@ -70,8 +72,26 @@ class JwtAuthentication(AuthenticationBase):
     def get_token_from_request(self):
         return flask.request.args.get(self.id_token_arg)
 
+    def get_key_for_token(self, keys, token):
+        unverified_header = jwt.get_unverified_header(token)
+
+        try:
+            token_kid = unverified_header['kid']
+        except KeyError:
+            print('eerrrrrr')
+            raise InvalidTokenError('Key ID header parameter is missing')
+
+        for kid, key in keys.items():
+            if kid == token_kid:
+                return key
+
     def decode_token(self, token):
-        return jwt.decode(token, **self.get_jwt_decode_args())
+        args = self.get_jwt_decode_args()
+
+        if isinstance(args['key'], dict):
+            args['key'] = self.get_key_for_token(args['key'], token)
+
+        return jwt.decode(token, **args)
 
     def get_jwt_decode_args(self):
         config = flask.current_app.config

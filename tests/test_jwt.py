@@ -9,6 +9,11 @@ from flask_resty.testing import assert_response
 
 try:
     from flask_resty import JwtAuthentication
+    from jwt.utils import force_bytes
+    from cryptography.hazmat.backends import default_backend
+    from cryptography.hazmat.primitives.serialization import (
+        load_ssh_public_key,
+    )
 except ImportError:
     pytestmark = pytest.mark.skipif(True, reason="JWT support not installed")
 
@@ -45,10 +50,17 @@ def schemas():
 
 @pytest.fixture
 def auth(app):
-    app.config.update({
-        'RESTY_JWT_DECODE_KEY': 'secret',
-        'RESTY_JWT_DECODE_ALGORITHMS': ['HS256'],
-    })
+    with open('tests/keys/testkey_rsa.pub', 'r') as rsa_pub_file:
+        app.config.update({
+            'RESTY_JWT_DECODE_KEY': {
+                'foo.com': load_ssh_public_key(
+                    force_bytes(rsa_pub_file.read()),
+                    backend=default_backend(),
+                ),
+            },
+            'RESTY_JWT_DECODE_ALGORITHMS': ['RS256'],
+        })
+
     authentication = JwtAuthentication(issuer='resty')
 
     class UserAuthorization(HasAnyCredentialsAuthorization):
@@ -90,14 +102,14 @@ def data(db, models):
 
 @pytest.fixture
 def token():
-    return 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJyZXN0eSIsInN1YiI6ImZvbyJ9.VTeYS-G0nJzYoWatqbHHNt0bFKPBuEoz0TFbPQEwTak'  # noqa: E501
+    return 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6ImZvby5jb20ifQ.eyJpc3MiOiJyZXN0eSIsInN1YiI6ImZvbyJ9.BTInJ8AoZlVWchR9BOSvad2rpIpDppmXicfliljuvx_x0753qz76m7sY6DjsNJgg6cUKxDpC6DONqmsesofOdxr9zyj-3Doud4TD1vxxnvQ603M0j-OklOr9omIpzwzdrRPwY38FPqruS4mh4WxslWbiU_8sInxwHVVuGGsTQ8jn2SBEk3UiV0YC0t7u7BwdjNIttZcOyIw2zHf9tU7CUPwwFu000DQslqpM5fD5jjkVuGp_NFU7S-otrPND52YV0GZHMXbOpeLMNkQbjm_iybU25VSiooq3eChDP5meCI3fhtm0yDFsJY5SNaV2x3pzPxt4hUrVI93DRj7AhJSjtQ'  # noqa: E501
 
 
 @pytest.fixture(
     params=(
         'foo',
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJyZXN0eSIsInN1YiI6ImZvbyJ9.qke42KAZLaqSJiTWntnxlcLpmlsWjx6G9lkrAlLSeGM',  # noqa: E501
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJyZXN0eV8iLCJzdWIiOiJmb28ifQ.Y4upHw_3ZnQxm7eLb1Uda7jlIMNFQNsWWC80Vocj2MI',  # noqa: E501
+        'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6ImZvby5jb20ifQ.eyJpc3MiOiJyZXN0eV8iLCJzdWIiOiJmb28ifQ.QvrwQ_Nrccg7UgiQ7guK8sWKNBTA0vMdB1rxHNqwtSmADzt1xfUcXPyzkG1MQ5-QEwua9bkSV2rFURE4yBIFnSCwdjoPj4vgNNEWs3CtqT3VVaWScfXiCBjs1DjJ3D0eY_6SYnBKiAoSeagQxD6JkNsEdG5GeR3aCvgTyBWYYEEq5sn9n-xyjo6fZNQHV1lbKQnRhUSnz074axOFTZIcMulLC3L3tQT08X3AfyjzsgFDp67AXXtob-aCyEznIhuDhYyea5mGGRWCbKmCTTqTU7xqc9aKm49983pupAw-Xz5eywbIxVVM6gNC_D93DJcwemnw7RCA-qaSZlWxFPe5uw',  # noqa: E501
     ),
     ids=(
         'malformed',
