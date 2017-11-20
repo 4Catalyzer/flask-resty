@@ -28,10 +28,9 @@ class JwtAuthentication(AuthenticationBase):
     header_scheme = 'Bearer'
     id_token_arg = 'id_token'
 
-    def __init__(self, keys=None, **kwargs):
+    def __init__(self, **kwargs):
         super(JwtAuthentication, self).__init__()
 
-        self.keys = keys
         self._decode_args = {
             key: kwargs[key] for key in JWT_DECODE_ARG_KEYS if key in kwargs
         }
