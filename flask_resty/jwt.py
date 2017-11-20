@@ -42,7 +42,7 @@ class JwtAuthentication(AuthenticationBase):
 
         try:
             payload = self.decode_token(token)
-        except InvalidTokenError as e:
+        except InvalidTokenError:
             raise ApiError(401, {'code': 'invalid_token'})
 
         return self.get_credentials(payload)
