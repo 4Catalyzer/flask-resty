@@ -43,7 +43,6 @@ class JwtAuthentication(AuthenticationBase):
         try:
             payload = self.decode_token(token)
         except InvalidTokenError as e:
-            print(e)
             raise ApiError(401, {'code': 'invalid_token'})
 
         return self.get_credentials(payload)
@@ -77,7 +76,6 @@ class JwtAuthentication(AuthenticationBase):
         try:
             token_kid = unverified_header['kid']
         except KeyError:
-            print('eerrrrrr')
             raise InvalidTokenError('Key ID header parameter is missing')
 
         for kid, key in keys.items():
