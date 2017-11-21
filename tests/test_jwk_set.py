@@ -45,13 +45,24 @@ def schemas():
     }
 
 
-@pytest.fixture
-def auth(app):
-    with open('tests/keys/testkey_rsa.json', 'r') as rsa_pub_file:
-        app.config.update({
-            'RESTY_JWT_DECODE_KEY_SET': json.load(rsa_pub_file),
-            'RESTY_JWT_DECODE_ALGORITHMS': ['RS256'],
-        })
+@pytest.fixture(
+    params=[
+        'tests/keys/testkey_rsa_pub.json',
+        'tests/keys/testkey_rsa_cert.json',
+    ],
+    ids=['public key', 'cert'],
+)
+def jwk_set(request):
+    with open(request.param, 'r') as rsa_pub_file:
+        return json.load(rsa_pub_file)
+
+
+@pytest.fixture()
+def auth(app, jwk_set):
+    app.config.update({
+        'RESTY_JWT_DECODE_KEY_SET': jwk_set,
+        'RESTY_JWT_DECODE_ALGORITHMS': ['RS256'],
+    })
 
     authentication = JwkSetAuthentication(issuer='resty')
 
@@ -94,19 +105,21 @@ def data(db, models):
 
 @pytest.fixture
 def token():
-    return 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6ImZvby5jb20ifQ.eyJpc3MiOiJyZXN0eSIsInN1YiI6ImZvbyJ9.MtJh53tADtv9a-7TrawSP-sV1Q18ouvMi_846XVR_UpM9ZjmAA_QNDModLYCe_Sp3iUWKldG9mk9xbXCf3YIiFGWHHDFCn33z-UqQRrX3IX3awUhVGIyiohO5xB_vxWj36R-HoCvewceJjiBEiYVEA9oxkObEKl-KRAaNA7zM65wzL39fcPk8pFmH_vZN2X4eTzyFrigTLYHHxDLho-huUIWYMxjdVEY79FfA1Ba6rh1RkyaOjeXI4y7MyHPZVaeb_Oh3hsMbyDRgLD5pYeAHB_gGUDwbYmmYxC2k-OfHk52OfmdUyAlxtCfasfhxgvQIrAI0DHKT8Cw7BIt0QKJaA'  # noqa: E501
+    return 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6ImZvby5jb20ifQ.eyJpc3MiOiJyZXN0eSIsInN1YiI6ImZvbyJ9.0hkDQT1lnMoGjweZeJDeSfVMllhzlmYtSqErpeU5pp7TK5OkIoLeMCSHjqYdCOwwha8znK6hBxKO-LzT4PPuhe0LnNb_qZpEbtoX6ldN8LSkhCv3Jr8lwt_hs09-lHXxdrknuYmooICI6Q66QzOpTSF4j867UwUYtfVsMpfofxpiRCJOOvynpquYGbgXc59SGJjM5wPAgYo782uRErnRFX7YJmwt5wINjvsKhr0Ry512w_EC--jDGEpcWaNKMDXKL0UMQXWoOM5IlUMA7Kr2bF966X2xuUdRnJinVGnJvdK8yKyZg_qPA26OygLeJUqF-R4jVC-lYEfte7EOLpYBBQ'  # noqa: E501
 
 
 @pytest.fixture(
     params=(
         'foo',
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJyZXN0eSIsInN1YiI6ImZvbyJ9.qke42KAZLaqSJiTWntnxlcLpmlsWjx6G9lkrAlLSeGM',  # noqa: E501
-        'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6ImZvby5jb20ifQ.eyJpc3MiOiJyZXN0eV8iLCJzdWIiOiJmb28ifQ.nYHHNJ-qB9JYq-2gvPYbcbeZDirm9Iotl8LnUOWU9-SamklURXBGnr3UnHmzUWsB25FBUBGN-4vTO60yEvmUX4iU2RqojPbcylfZx2MNDtyEpyJ5Wxj6bAhHDxv5uqhgZU4Qfh111m9LJzOSj1Tm2In98vmWpj6ZY4GU_FoK65NXBeNynPh42azTD0rXX5rRyQrq2w367AgeZMfoIrHBECS_IA5pmiRuuNe_SwYNFHihw5KVPe1nJ7YaZBj3kMiht24yJwOdxeId5z-t5omU2dA35hACAm14EgHiARfhdXquQ-fE1WD3EzoMBS99Kf-K7533TI47TJEu2Jwu9JOpsg',  # noqa: E501
+        'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6ImZvby5jb20ifQ.eyJpc3MiOiJyZXN0eV8iLCJzdWIiOiJmb28ifQ.zow1JvW0ExAT7hNld7CIi7xox372OcX2ZQn1MdZJVeCTPvwgJi9MkFZ76xJbl_b3_4PW40Hh5TwE8X5U_eTiv7mGeQkc7jOi4wnynHoBHkIO6vqNdrUdob93iePxkxn_xrUvQiR7ROfpQa7IREQ_i8infFKURl4xZR11A0OR6RTboXckfsq1uuOet0TuFCeuBUGbbDy6YNYxBou82qbFLYsFynaUhKBcbLGETM05X_NxTs1fsEXesKrtgdbiM-Lj0N9AeSd7dEH9O0zXcix8kEN4txmxmXrbzSTpWw2PhlMQULPAXpFKk2uiWBdpHlG2nPb2XKsAAXXuN4ZXQ0X1Sw',  # noqa: E501
+        'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6Im5vcGUifQ.eyJpc3MiOiJyZXN0eSIsInN1YiI6ImZvbyJ9.dUHYJ0SVum7ZY1z7CVivLWpCIPms2FS9dukXjOMKEc7FP85l3A3-HA98ma0UFDU4AlwrEqXYbf9QFO-CNeIoLkX6A5e73XJ1H_3-rGhJTivkX3ZHXXKCk9Tizd7TWk-J8ZLSxXjLusJJrZHg_l8k1Ego89r9MPnAdk2JjB45dhawS-8jc1zFczyEaNtpimRXw_eOGuzEFz0TDeASGuK-WjPMMOSTJoD9wp-dIYubhdO5RpXbcAcQu3x0UnJPjIbUzSntmt2GNTPOE2yxtF6_VKISUHJKThRHQtYx9ePTmDyFTlLOTRI8KCuOtUYOnIHZIAtNuUrjRoJ1RPcWpgkzwQ',  # noqa: E501
     ),
     ids=(
         'malformed',
         'key_mismatch',
         'iss_mismatch',
+        'kid_mismatch',
     ),
 )
 def invalid_token(request):
