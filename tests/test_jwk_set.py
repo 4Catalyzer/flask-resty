@@ -1,3 +1,5 @@
+import json
+
 from marshmallow import fields, Schema
 import pytest
 from sqlalchemy import Column, Integer, String
@@ -8,7 +10,7 @@ from flask_resty.testing import assert_response
 # -----------------------------------------------------------------------------
 
 try:
-    from flask_resty import JwtAuthentication
+    from flask_resty import JwkSetAuthentication
 except ImportError:
     pytestmark = pytest.mark.skipif(True, reason="JWT support not installed")
 
@@ -45,11 +47,13 @@ def schemas():
 
 @pytest.fixture
 def auth(app):
-    app.config.update({
-        'RESTY_JWT_DECODE_KEY': 'secret',
-        'RESTY_JWT_DECODE_ALGORITHMS': ['HS256'],
-    })
-    authentication = JwtAuthentication(issuer='resty')
+    with open('tests/keys/testkey_rsa.json', 'r') as rsa_pub_file:
+        app.config.update({
+            'RESTY_JWT_DECODE_KEY_SET': json.load(rsa_pub_file),
+            'RESTY_JWT_DECODE_ALGORITHMS': ['RS256'],
+        })
+
+    authentication = JwkSetAuthentication(issuer='resty')
 
     class UserAuthorization(HasAnyCredentialsAuthorization):
         def filter_query(self, query, view):
@@ -90,14 +94,14 @@ def data(db, models):
 
 @pytest.fixture
 def token():
-    return 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJyZXN0eSIsInN1YiI6ImZvbyJ9.VTeYS-G0nJzYoWatqbHHNt0bFKPBuEoz0TFbPQEwTak'  # noqa: E501
+    return 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6ImZvby5jb20ifQ.eyJpc3MiOiJyZXN0eSIsInN1YiI6ImZvbyJ9.MtJh53tADtv9a-7TrawSP-sV1Q18ouvMi_846XVR_UpM9ZjmAA_QNDModLYCe_Sp3iUWKldG9mk9xbXCf3YIiFGWHHDFCn33z-UqQRrX3IX3awUhVGIyiohO5xB_vxWj36R-HoCvewceJjiBEiYVEA9oxkObEKl-KRAaNA7zM65wzL39fcPk8pFmH_vZN2X4eTzyFrigTLYHHxDLho-huUIWYMxjdVEY79FfA1Ba6rh1RkyaOjeXI4y7MyHPZVaeb_Oh3hsMbyDRgLD5pYeAHB_gGUDwbYmmYxC2k-OfHk52OfmdUyAlxtCfasfhxgvQIrAI0DHKT8Cw7BIt0QKJaA'  # noqa: E501
 
 
 @pytest.fixture(
     params=(
         'foo',
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJyZXN0eSIsInN1YiI6ImZvbyJ9.qke42KAZLaqSJiTWntnxlcLpmlsWjx6G9lkrAlLSeGM',  # noqa: E501
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJyZXN0eV8iLCJzdWIiOiJmb28ifQ.Y4upHw_3ZnQxm7eLb1Uda7jlIMNFQNsWWC80Vocj2MI',  # noqa: E501
+        'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6ImZvby5jb20ifQ.eyJpc3MiOiJyZXN0eV8iLCJzdWIiOiJmb28ifQ.nYHHNJ-qB9JYq-2gvPYbcbeZDirm9Iotl8LnUOWU9-SamklURXBGnr3UnHmzUWsB25FBUBGN-4vTO60yEvmUX4iU2RqojPbcylfZx2MNDtyEpyJ5Wxj6bAhHDxv5uqhgZU4Qfh111m9LJzOSj1Tm2In98vmWpj6ZY4GU_FoK65NXBeNynPh42azTD0rXX5rRyQrq2w367AgeZMfoIrHBECS_IA5pmiRuuNe_SwYNFHihw5KVPe1nJ7YaZBj3kMiht24yJwOdxeId5z-t5omU2dA35hACAm14EgHiARfhdXquQ-fE1WD3EzoMBS99Kf-K7533TI47TJEu2Jwu9JOpsg',  # noqa: E501
     ),
     ids=(
         'malformed',
