@@ -112,7 +112,7 @@ class JwkSetAuthentication(JwtAuthentication):
             else config[self.get_config_key('jwk_set')]
         )
 
-    def key_from_jwk(self, jwk, algorithm):
+    def get_key_from_jwk(self, jwk, algorithm):
         if 'x5c' in jwk:
             return load_der_x509_certificate(
                 base64.b64decode(jwk['x5c'][0]),
@@ -128,7 +128,7 @@ class JwkSetAuthentication(JwtAuthentication):
         try:
             token_kid = unverified_header['kid']
         except KeyError:
-            raise InvalidTokenError('Key ID header parameter is missing')
+            raise InvalidTokenError("Key ID header parameter is missing")
 
         for jwk in self.get_jwk_set()['keys']:
             if jwk['kid'] == token_kid:
@@ -142,16 +142,18 @@ class JwkSetAuthentication(JwtAuthentication):
         unverified_header = jwt.get_unverified_header(token)
         jwk = self.get_jwk_for_token(token)
 
-        # It's safe to use alg from the header here,
-        # as we verify that against the algorithm whitelist
+        # It's safe to use alg from the header here, as we verify that against
+        # the algorithm whitelist.
         alg = jwk['alg'] if 'alg' in jwk else unverified_header['alg']
 
-        # jwt.decode will also check this, so this is more defensive.
+        # jwt.decode will also check this, but this is more defensive.
         if alg not in args['algorithms']:
             raise InvalidAlgorithmError(
-                'The specified alg value is not allowed',
+                "The specified alg value is not allowed",
             )
 
-        args['key'] = self.key_from_jwk(jwk, self.algorithms[alg])
-
-        return jwt.decode(token, **args)
+        return jwt.decode(
+            token,
+            key=self.get_key_from_jwk(jwk, self.algorithms[alg]),
+            **args
+        )
