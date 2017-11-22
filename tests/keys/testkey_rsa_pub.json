@@ -8,5 +8,11 @@
     "kid": "foo.com",
     "use": "sig",
     "alg": "RS256"
+  },
+  {
+    "kty": "oct",
+    "kid": "bar.com",
+    "use": "sig",
+    "k": "hJtXIZ2uSN5kbQfbtTNWbpdmhkV8FJG-Onbc6mxCcYg"
   }]
 }

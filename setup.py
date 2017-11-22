@@ -54,7 +54,7 @@ setup(
         'Werkzeug >= 0.11',
     ),
     extras_require={
-        'jwt': ('PyJWT >= 1.4.0', 'cryptography >= 2.0.3'),
+        'jwt': ('PyJWT >= 1.4.0', 'cryptography >= 2.0.0'),
     },
     cmdclass={
         'clean': system('rm -rf build dist *.egg-info'),

@@ -102,13 +102,15 @@ class JwkSetAuthentication(JwtAuthentication):
     def __init__(self, jwk_set=None, **kwargs):
         super(JwkSetAuthentication, self).__init__(**kwargs)
 
-        self.jwks = jwk_set
+        self.jwk_set = jwk_set
         self.algorithms = get_default_algorithms()
 
-    def get_jwks(self):
+    def get_jwk_set(self):
         config = flask.current_app.config
-        return self.jwks \
-            if self.jwks else config[self.get_config_key('jwk_set')]
+        return (
+            self.jwk_set if self.jwk_set
+            else config[self.get_config_key('jwk_set')]
+        )
 
     def key_from_jwk(self, jwk, algorithm):
         if 'x5c' in jwk:
@@ -128,7 +130,7 @@ class JwkSetAuthentication(JwtAuthentication):
         except KeyError:
             raise InvalidTokenError('Key ID header parameter is missing')
 
-        for jwk in self.get_jwks()['keys']:
+        for jwk in self.get_jwk_set()['keys']:
             if jwk['kid'] == token_kid:
                 return jwk
 
@@ -140,10 +142,11 @@ class JwkSetAuthentication(JwtAuthentication):
         unverified_header = jwt.get_unverified_header(token)
         jwk = self.get_jwk_for_token(token)
 
+        # It's safe to use alg from the header here,
+        # as we verify that against the algorithm whitelist
         alg = jwk['alg'] if 'alg' in jwk else unverified_header['alg']
 
-        # I'm not sure we need to re-up this check here, jwt.decoode will
-        # check and raise the the same thing
+        # jwt.decode will also check this, so this is more defensive.
         if alg not in args['algorithms']:
             raise InvalidAlgorithmError(
                 'The specified alg value is not allowed',
