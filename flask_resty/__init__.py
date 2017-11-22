@@ -21,6 +21,6 @@ from .sorting import FixedSorting, Sorting, SortingBase
 from .view import ApiView, GenericModelView, ModelView
 
 try:
-    from .jwt import JwtAuthentication
+    from .jwt import JwtAuthentication, JwkSetAuthentication
 except ImportError:
     pass

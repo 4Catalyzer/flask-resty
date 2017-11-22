@@ -1,0 +1,18 @@
+{
+  "keys": [{
+    "kty": "RSA",
+    "key_ops": ["verify"],
+    "n":
+      "3swwoALaXGjzb0jBezQbTVDzmVFKW2o8Y0FevWdA9YOmA3k5Kajxv2MprSRe3hXjHe9RFkAez_qSbpH8cSY4bRw39aE7DZFkdQTkceba4Uo51p9sUmY4_iD_Cf_ZgMyY69oQfDbuukt_jO_k-TvHaf3ijVs4R8Cldey5LvPZyZqVt6KVj4FwaJadFDLkI8HED-tvOuiyi0rQPk4DfRbSQgkG07L0nzCGsNANsbCKaDz8xL5F1nm4EG1DaIwBKmP7WSNaqKctREJ3IR5GrsdnucU-zgDvxBhwh01k7rzyaZeLih39WJMMoBhYVQ2_COphxeD9IR60YHHf63ZDC7JeOQ",
+    "e": "AQAB",
+    "kid": "foo.com",
+    "use": "sig",
+    "alg": "RS256"
+  },
+  {
+    "kty": "oct",
+    "kid": "bar.com",
+    "use": "sig",
+    "k": "hJtXIZ2uSN5kbQfbtTNWbpdmhkV8FJG-Onbc6mxCcYg"
+  }]
+}

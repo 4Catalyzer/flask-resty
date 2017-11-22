@@ -1,11 +1,18 @@
 from __future__ import absolute_import
 
+import base64
+import json
+
+from cryptography.hazmat.backends import default_backend
+from cryptography.x509 import load_der_x509_certificate
 import flask
 import jwt
-from jwt import InvalidTokenError
+from jwt.algorithms import get_default_algorithms
+from jwt.exceptions import InvalidAlgorithmError, InvalidTokenError
 
 from .authentication import AuthenticationBase
 from .exceptions import ApiError
+
 
 # -----------------------------------------------------------------------------
 
@@ -89,3 +96,62 @@ class JwtAuthentication(AuthenticationBase):
 
     def get_credentials(self, payload):
         return payload
+
+
+class JwkSetAuthentication(JwtAuthentication):
+    def __init__(self, jwk_set=None, **kwargs):
+        super(JwkSetAuthentication, self).__init__(**kwargs)
+
+        self.jwk_set = jwk_set
+        self.algorithms = get_default_algorithms()
+
+    def get_jwk_set(self):
+        config = flask.current_app.config
+        return (
+            self.jwk_set if self.jwk_set
+            else config[self.get_config_key('jwk_set')]
+        )
+
+    def key_from_jwk(self, jwk, algorithm):
+        if 'x5c' in jwk:
+            return load_der_x509_certificate(
+                base64.b64decode(jwk['x5c'][0]),
+                default_backend(),
+            ).public_key()
+
+        # awkward
+        return algorithm.from_jwk(json.dumps(jwk))
+
+    def get_jwk_for_token(self, token):
+        unverified_header = jwt.get_unverified_header(token)
+
+        try:
+            token_kid = unverified_header['kid']
+        except KeyError:
+            raise InvalidTokenError('Key ID header parameter is missing')
+
+        for jwk in self.get_jwk_set()['keys']:
+            if jwk['kid'] == token_kid:
+                return jwk
+
+        raise InvalidTokenError("no key found")
+
+    def decode_token(self, token):
+        args = self.get_jwt_decode_args()
+
+        unverified_header = jwt.get_unverified_header(token)
+        jwk = self.get_jwk_for_token(token)
+
+        # It's safe to use alg from the header here,
+        # as we verify that against the algorithm whitelist
+        alg = jwk['alg'] if 'alg' in jwk else unverified_header['alg']
+
+        # jwt.decode will also check this, so this is more defensive.
+        if alg not in args['algorithms']:
+            raise InvalidAlgorithmError(
+                'The specified alg value is not allowed',
+            )
+
+        args['key'] = self.key_from_jwk(jwk, self.algorithms[alg])
+
+        return jwt.decode(token, **args)
