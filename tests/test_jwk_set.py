@@ -60,7 +60,7 @@ def jwk_set(request):
 @pytest.fixture()
 def auth(app, jwk_set):
     app.config.update({
-        'RESTY_JWT_DECODE_KEY_SET': jwk_set,
+        'RESTY_JWT_DECODE_JWK_SET': jwk_set,
         'RESTY_JWT_DECODE_ALGORITHMS': ['RS256'],
     })
 
@@ -114,12 +114,16 @@ def token():
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJyZXN0eSIsInN1YiI6ImZvbyJ9.qke42KAZLaqSJiTWntnxlcLpmlsWjx6G9lkrAlLSeGM',  # noqa: E501
         'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6ImZvby5jb20ifQ.eyJpc3MiOiJyZXN0eV8iLCJzdWIiOiJmb28ifQ.zow1JvW0ExAT7hNld7CIi7xox372OcX2ZQn1MdZJVeCTPvwgJi9MkFZ76xJbl_b3_4PW40Hh5TwE8X5U_eTiv7mGeQkc7jOi4wnynHoBHkIO6vqNdrUdob93iePxkxn_xrUvQiR7ROfpQa7IREQ_i8infFKURl4xZR11A0OR6RTboXckfsq1uuOet0TuFCeuBUGbbDy6YNYxBou82qbFLYsFynaUhKBcbLGETM05X_NxTs1fsEXesKrtgdbiM-Lj0N9AeSd7dEH9O0zXcix8kEN4txmxmXrbzSTpWw2PhlMQULPAXpFKk2uiWBdpHlG2nPb2XKsAAXXuN4ZXQ0X1Sw',  # noqa: E501
         'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6Im5vcGUifQ.eyJpc3MiOiJyZXN0eSIsInN1YiI6ImZvbyJ9.dUHYJ0SVum7ZY1z7CVivLWpCIPms2FS9dukXjOMKEc7FP85l3A3-HA98ma0UFDU4AlwrEqXYbf9QFO-CNeIoLkX6A5e73XJ1H_3-rGhJTivkX3ZHXXKCk9Tizd7TWk-J8ZLSxXjLusJJrZHg_l8k1Ego89r9MPnAdk2JjB45dhawS-8jc1zFczyEaNtpimRXw_eOGuzEFz0TDeASGuK-WjPMMOSTJoD9wp-dIYubhdO5RpXbcAcQu3x0UnJPjIbUzSntmt2GNTPOE2yxtF6_VKISUHJKThRHQtYx9ePTmDyFTlLOTRI8KCuOtUYOnIHZIAtNuUrjRoJ1RPcWpgkzwQ',  # noqa: E501
+        'eyJ0eXAiOiJKV1QiLCJhbGciOiJub25lIiwia2lkIjoibm9wZSJ9.eyJpc3MiOiJyZXN0eSIsInN1YiI6ImZvbyJ9.0hkDQT1lnMoGjweZeJDeSfVMllhzlmYtSqErpeU5pp7TK5OkIoLeMCSHjqYdCOwwha8znK6hBxKO-LzT4PPuhe0LnNb_qZpEbtoX6ldN8LSkhCv3Jr8lwt_hs09-lHXxdrknuYmooICI6Q66QzOpTSF4j867UwUYtfVsMpfofxpiRCJOOvynpquYGbgXc59SGJjM5wPAgYo782uRErnRFX7YJmwt5wINjvsKhr0Ry512w_EC--jDGEpcWaNKMDXKL0UMQXWoOM5IlUMA7Kr2bF966X2xuUdRnJinVGnJvdK8yKyZg_qPA26OygLeJUqF-R4jVC-lYEfte7EOLpYBBQ',  # noqa: E501
+        'eyJ0eXAiOiJKV1QiLCJraWQiOiJub3BlIn0=.eyJpc3MiOiJyZXN0eSIsInN1YiI6ImZvbyJ9.0hkDQT1lnMoGjweZeJDeSfVMllhzlmYtSqErpeU5pp7TK5OkIoLeMCSHjqYdCOwwha8znK6hBxKO-LzT4PPuhe0LnNb_qZpEbtoX6ldN8LSkhCv3Jr8lwt_hs09-lHXxdrknuYmooICI6Q66QzOpTSF4j867UwUYtfVsMpfofxpiRCJOOvynpquYGbgXc59SGJjM5wPAgYo782uRErnRFX7YJmwt5wINjvsKhr0Ry512w_EC--jDGEpcWaNKMDXKL0UMQXWoOM5IlUMA7Kr2bF966X2xuUdRnJinVGnJvdK8yKyZg_qPA26OygLeJUqF-R4jVC-lYEfte7EOLpYBBQ',  # noqa: E501
     ),
     ids=(
         'malformed',
         'key_mismatch',
         'iss_mismatch',
         'kid_mismatch',
+        'wrong_algorithm',
+        'missing_alg',
     ),
 )
 def invalid_token(request):

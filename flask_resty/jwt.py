@@ -7,8 +7,8 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.x509 import load_der_x509_certificate
 import flask
 import jwt
-from jwt import InvalidTokenError
 from jwt.algorithms import get_default_algorithms
+from jwt.exceptions import InvalidAlgorithmError, InvalidTokenError
 
 from .authentication import AuthenticationBase
 from .exceptions import ApiError
@@ -99,18 +99,18 @@ class JwtAuthentication(AuthenticationBase):
 
 
 class JwkSetAuthentication(JwtAuthentication):
-    def __init__(self, key_set=None, **kwargs):
+    def __init__(self, jwk_set=None, **kwargs):
         super(JwkSetAuthentication, self).__init__(**kwargs)
 
-        self.jwks = key_set
+        self.jwks = jwk_set
         self.algorithms = get_default_algorithms()
 
     def get_jwks(self):
         config = flask.current_app.config
         return self.jwks \
-            if self.jwks else config[self.get_config_key('key_set')]
+            if self.jwks else config[self.get_config_key('jwk_set')]
 
-    def from_jwk(self, jwk, algorithm):
+    def key_from_jwk(self, jwk, algorithm):
         if 'x5c' in jwk:
             return load_der_x509_certificate(
                 base64.b64decode(jwk['x5c'][0]),
@@ -120,13 +120,8 @@ class JwkSetAuthentication(JwtAuthentication):
         # awkward
         return algorithm.from_jwk(json.dumps(jwk))
 
-    def get_key_for_token(self, token):
+    def get_jwk_for_token(self, token):
         unverified_header = jwt.get_unverified_header(token)
-
-        try:
-            algorithm = self.algorithms[unverified_header['alg']]
-        except KeyError:
-            raise InvalidTokenError('Algorithm header parameter is missing')
 
         try:
             token_kid = unverified_header['kid']
@@ -135,14 +130,25 @@ class JwkSetAuthentication(JwtAuthentication):
 
         for jwk in self.get_jwks()['keys']:
             if jwk['kid'] == token_kid:
-                return self.from_jwk(jwk, algorithm)
+                return jwk
 
         raise InvalidTokenError("no key found")
 
     def decode_token(self, token):
         args = self.get_jwt_decode_args()
 
-        args['key'] = self.get_key_for_token(token)
-        print(jwt.decode(token, **args))
+        unverified_header = jwt.get_unverified_header(token)
+        jwk = self.get_jwk_for_token(token)
+
+        alg = jwk['alg'] if 'alg' in jwk else unverified_header['alg']
+
+        # I'm not sure we need to re-up this check here, jwt.decoode will
+        # check and raise the the same thing
+        if alg not in args['algorithms']:
+            raise InvalidAlgorithmError(
+                'The specified alg value is not allowed'
+            )
+
+        args['key'] = self.key_from_jwk(jwk, self.algorithms[alg])
 
         return jwt.decode(token, **args)
