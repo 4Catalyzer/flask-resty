@@ -146,7 +146,7 @@ class JwkSetAuthentication(JwtAuthentication):
         # check and raise the the same thing
         if alg not in args['algorithms']:
             raise InvalidAlgorithmError(
-                'The specified alg value is not allowed'
+                'The specified alg value is not allowed',
             )
 
         args['key'] = self.key_from_jwk(jwk, self.algorithms[alg])
