@@ -107,10 +107,10 @@ class JwtAuthentication(AuthenticationBase):
 
 class JwkSetAuthentication(JwtAuthentication):
     def __init__(self, jwk_set=None, options=None, **kwargs):
-        if options:
-            options.update({'verify_aud': False, 'verify_iss': False})
-        else:
-            options = {'verify_aud': False, 'verify_iss': False}
+        if not options:
+            options = {}
+
+        options.update({'verify_aud': False, 'verify_iss': False})
 
         super(JwkSetAuthentication, self).__init__(options=options, **kwargs)
 

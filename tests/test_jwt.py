@@ -205,7 +205,7 @@ class TestJwkSet(AbstractTestJwt):
             'RESTY_JWT_DECODE_ALGORITHMS': ['RS256'],
         })
 
-        authentication = JwkSetAuthentication(issuer='resty')
+        authentication = JwkSetAuthentication()
 
         class UserAuthorization(HasAnyCredentialsAuthorization):
             def filter_query(self, query, view):
@@ -224,7 +224,7 @@ class TestJwkSet(AbstractTestJwt):
 
     @pytest.fixture
     def aud_token(self):
-        return 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6ImZvby5jb20ifQ.eyJpc3MiOiJyZXN0eSIsInN1YiI6ImZvbyIsImF1ZCI6Imh0dHA6Ly9mb28uY29tIn0.gpOKGNCZ0tHHy0Otw55LF96MaQiSUFkBEDmRB6_Gjz9la942SIhwdWWw3_Ikh4xmZpIOOLXf635TMfANoIoISZI5n4MrYeZSKG7prVKWMMBm-lkY4GAmx0v5DGc2wEPfT6x0tMA_dgJfa9ziTJ4b7tyImVn6pWEXx_rkOzQ3jb0vHXLMpe2wmd4mFyOa3Ued1E31l8Yc1x52FtwZnduprTAyrCMcWZRngBdrT-xhWu1i0RE7FvHiwvwMCk4_RNEN2Ej9iPVoxRFu_FclVlDUn7tWGTATvOcNrhGRpvLL_7blYpEIvpMc93KOdOiTEgh27YLnp6UEgAsNysDcFeyhFg'   # noqa: E501
+        return 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6ImZvby5jb20ifQ.eyJpc3MiOiJyZXN0eSIsInN1YiI6ImZvbyIsImF1ZCI6WyJodHRwOi8vZm9vLmNvbSJdfQ.l8iB0D3tAW-h4djkemnC7mheURq1wUvH75ZFRYY9A_ZhA6CDzZsTHUZDmmL-mdfj9yRzBgaifbCaYzRfsRkrXnEtpV1H72Q8rzZq3tmUr4apWQmqraqmbMrGPYEygGnYBmN9rCACssrc2h5AAka-YbRS4XbfzpMH0gDsjTjE2Bp_-R1E7_kUB7b2z3e3HKBisNlWZiImD-ZsITE-hGWGidf3_9y-I6UQCtN4BpNsiI5sWwi98g4wKsZ3fVmTtqGBVu8iWhC7__zhkUBXaQ9flKH9-uPeM8wIn9zpw89_FdXS7hv85LObQQit5wR6faxUHlbLf-JdaPW5ko5wy9a6-g'   # noqa: E501
 
     @pytest.fixture(
         params=(
@@ -234,6 +234,7 @@ class TestJwkSet(AbstractTestJwt):
             'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6Im5vcGUifQ.eyJpc3MiOiJyZXN0eSIsInN1YiI6ImZvbyJ9.dUHYJ0SVum7ZY1z7CVivLWpCIPms2FS9dukXjOMKEc7FP85l3A3-HA98ma0UFDU4AlwrEqXYbf9QFO-CNeIoLkX6A5e73XJ1H_3-rGhJTivkX3ZHXXKCk9Tizd7TWk-J8ZLSxXjLusJJrZHg_l8k1Ego89r9MPnAdk2JjB45dhawS-8jc1zFczyEaNtpimRXw_eOGuzEFz0TDeASGuK-WjPMMOSTJoD9wp-dIYubhdO5RpXbcAcQu3x0UnJPjIbUzSntmt2GNTPOE2yxtF6_VKISUHJKThRHQtYx9ePTmDyFTlLOTRI8KCuOtUYOnIHZIAtNuUrjRoJ1RPcWpgkzwQ',  # noqa: E501
             'eyJ0eXAiOiJKV1QiLCJhbGciOiJub25lIiwia2lkIjoiYmFyLmNvbSJ9.eyJpc3MiOiJyZXN0eSIsInN1YiI6ImZvbyJ9.0hkDQT1lnMoGjweZeJDeSfVMllhzlmYtSqErpeU5pp7TK5OkIoLeMCSHjqYdCOwwha8znK6hBxKO-LzT4PPuhe0LnNb_qZpEbtoX6ldN8LSkhCv3Jr8lwt_hs09-lHXxdrknuYmooICI6Q66QzOpTSF4j867UwUYtfVsMpfofxpiRCJOOvynpquYGbgXc59SGJjM5wPAgYo782uRErnRFX7YJmwt5wINjvsKhr0Ry512w_EC--jDGEpcWaNKMDXKL0UMQXWoOM5IlUMA7Kr2bF966X2xuUdRnJinVGnJvdK8yKyZg_qPA26OygLeJUqF-R4jVC-lYEfte7EOLpYBBQ',  # noqa: E501
             'eyJ0eXAiOiJKV1QiLCJraWQiOiJmb28uY29tIn0=.eyJpc3MiOiJyZXN0eSIsInN1YiI6ImZvbyJ9.0hkDQT1lnMoGjweZeJDeSfVMllhzlmYtSqErpeU5pp7TK5OkIoLeMCSHjqYdCOwwha8znK6hBxKO-LzT4PPuhe0LnNb_qZpEbtoX6ldN8LSkhCv3Jr8lwt_hs09-lHXxdrknuYmooICI6Q66QzOpTSF4j867UwUYtfVsMpfofxpiRCJOOvynpquYGbgXc59SGJjM5wPAgYo782uRErnRFX7YJmwt5wINjvsKhr0Ry512w_EC--jDGEpcWaNKMDXKL0UMQXWoOM5IlUMA7Kr2bF966X2xuUdRnJinVGnJvdK8yKyZg_qPA26OygLeJUqF-R4jVC-lYEfte7EOLpYBBQ',  # noqa: E501
+            'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6ImZvby5jb20ifQ.eyJzdWIiOiJmb28iLCJhdWQiOiJodHRwOi8vZm9vLmNvbSJ9.Z0-5uTEt_O8v9EobeP5p_7eGvwn5b34DnWXyS2cGFT3JYnFE47XC7v1mg7sa1lkg22sk69apDH_1BEEhks8ADFqznxG1mz5Ax1mX_06f9Kb3YF1e-mWfb1FGV-TcCbxkzAP60vwvFtCpN2X5Ci_Pz8f07Vf8-pW7zczPvr0Q0lh9GFzSkj_SRUrngDEQLvUtJvQTihtoyBys2e1LjmBNRWyONqhb3bXt53RpuSPpWer4j492BTWs0HOlvHb_ACq2m2kcw8Himeg21JnA7FwtqoQYn7fJVSPxMRiE5SzzA8VIhNRv9tSNcxPIQvFUV90Wriqq1A-L5bvmoIhuIO-xAQ',  # noqa: E501
         ),
         ids=(
             'malformed',
@@ -242,6 +243,7 @@ class TestJwkSet(AbstractTestJwt):
             'kid_mismatch',
             'wrong_algorithm',
             'missing_alg',
+            'missing_iss',
         ),
     )
     def invalid_token(self, request):
@@ -272,6 +274,20 @@ class TestJwkSet(AbstractTestJwt):
             '/widgets',
             headers={
                 'Authorization': 'Bearer {}'.format(aud_token),
+            },
+        )
+
+        assert_response(response, 200)
+
+    def test_verifies_issuer(self, client, token, app):
+        app.config.update({
+            'RESTY_JWT_DECODE_ISSUER': 'resty',
+        })
+
+        response = client.get(
+            '/widgets',
+            headers={
+                'Authorization': 'Bearer {}'.format(token),
             },
         )
 
