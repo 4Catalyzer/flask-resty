@@ -321,4 +321,3 @@ class TestJwkSet(AbstractTestJwt):
         )
 
         assert_response(response, 200)
-
