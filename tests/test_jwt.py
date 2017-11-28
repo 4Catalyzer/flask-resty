@@ -202,6 +202,7 @@ class TestJwkSet(AbstractTestJwt):
     def auth(self, app, jwk_set):
         app.config.update({
             'RESTY_JWT_DECODE_JWK_SET': jwk_set,
+            'RESTY_JWT_DECODE_ISSUER': 'resty',
             'RESTY_JWT_DECODE_ALGORITHMS': ['RS256'],
         })
 
@@ -306,3 +307,18 @@ class TestJwkSet(AbstractTestJwt):
         )
 
         assert_response(response, 200)
+
+    def test_no_issuers(self, client, token, app):
+        app.config.update({
+            'RESTY_JWT_DECODE_ISSUER': None,
+        })
+
+        response = client.get(
+            '/widgets',
+            headers={
+                'Authorization': 'Bearer {}'.format(token),
+            },
+        )
+
+        assert_response(response, 200)
+
