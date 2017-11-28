@@ -222,6 +222,10 @@ class TestJwkSet(AbstractTestJwt):
     def token(self):
         return 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6ImZvby5jb20ifQ.eyJpc3MiOiJyZXN0eSIsInN1YiI6ImZvbyJ9.0hkDQT1lnMoGjweZeJDeSfVMllhzlmYtSqErpeU5pp7TK5OkIoLeMCSHjqYdCOwwha8znK6hBxKO-LzT4PPuhe0LnNb_qZpEbtoX6ldN8LSkhCv3Jr8lwt_hs09-lHXxdrknuYmooICI6Q66QzOpTSF4j867UwUYtfVsMpfofxpiRCJOOvynpquYGbgXc59SGJjM5wPAgYo782uRErnRFX7YJmwt5wINjvsKhr0Ry512w_EC--jDGEpcWaNKMDXKL0UMQXWoOM5IlUMA7Kr2bF966X2xuUdRnJinVGnJvdK8yKyZg_qPA26OygLeJUqF-R4jVC-lYEfte7EOLpYBBQ'  # noqa: E501
 
+    @pytest.fixture
+    def aud_token(self):
+        return 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6ImZvby5jb20ifQ.eyJpc3MiOiJyZXN0eSIsInN1YiI6ImZvbyIsImF1ZCI6Imh0dHA6Ly9mb28uY29tIn0.gpOKGNCZ0tHHy0Otw55LF96MaQiSUFkBEDmRB6_Gjz9la942SIhwdWWw3_Ikh4xmZpIOOLXf635TMfANoIoISZI5n4MrYeZSKG7prVKWMMBm-lkY4GAmx0v5DGc2wEPfT6x0tMA_dgJfa9ziTJ4b7tyImVn6pWEXx_rkOzQ3jb0vHXLMpe2wmd4mFyOa3Ued1E31l8Yc1x52FtwZnduprTAyrCMcWZRngBdrT-xhWu1i0RE7FvHiwvwMCk4_RNEN2Ej9iPVoxRFu_FclVlDUn7tWGTATvOcNrhGRpvLL_7blYpEIvpMc93KOdOiTEgh27YLnp6UEgAsNysDcFeyhFg'   # noqa: E501
+
     @pytest.fixture(
         params=(
             'foo',
@@ -242,3 +246,47 @@ class TestJwkSet(AbstractTestJwt):
     )
     def invalid_token(self, request):
         return request.param
+
+    def test_verifies_audience(self, client, token, app):
+        app.config.update({
+            'RESTY_JWT_DECODE_AUDIENCE': 'http://foo.com',
+        })
+
+        response = client.get(
+            '/widgets',
+            headers={
+                'Authorization': 'Bearer {}'.format('eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6ImZvby5jb20ifQ.eyJpc3MiOiJyZXN0eSIsInN1YiI6ImZvbyJ9.0hkDQT1lnMoGjweZeJDeSfVMllhzlmYtSqErpeU5pp7TK5OkIoLeMCSHjqYdCOwwha8znK6hBxKO-LzT4PPuhe0LnNb_qZpEbtoX6ldN8LSkhCv3Jr8lwt_hs09-lHXxdrknuYmooICI6Q66QzOpTSF4j867UwUYtfVsMpfofxpiRCJOOvynpquYGbgXc59SGJjM5wPAgYo782uRErnRFX7YJmwt5wINjvsKhr0Ry512w_EC--jDGEpcWaNKMDXKL0UMQXWoOM5IlUMA7Kr2bF966X2xuUdRnJinVGnJvdK8yKyZg_qPA26OygLeJUqF-R4jVC-lYEfte7EOLpYBBQ'),  # noqa: E501
+            },
+        )
+
+        assert_response(response, 401, [{
+            'code': 'invalid_token',
+        }])
+
+    def test_verifies_multiple_audiences(self, client, aud_token, app):
+        app.config.update({
+            'RESTY_JWT_DECODE_AUDIENCE': ['http://foo.com', 'http://bar.com'],
+        })
+
+        response = client.get(
+            '/widgets',
+            headers={
+                'Authorization': 'Bearer {}'.format(aud_token),
+            },
+        )
+
+        assert_response(response, 200)
+
+    def test_verifies_multiple_issuers(self, client, token, app):
+        app.config.update({
+            'RESTY_JWT_DECODE_ISSUER': ['resty', '_resty'],
+        })
+
+        response = client.get(
+            '/widgets',
+            headers={
+                'Authorization': 'Bearer {}'.format(token),
+            },
+        )
+
+        assert_response(response, 200)

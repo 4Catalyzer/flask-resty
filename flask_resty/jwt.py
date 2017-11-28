@@ -8,7 +8,13 @@ from cryptography.x509 import load_der_x509_certificate
 import flask
 import jwt
 from jwt.algorithms import get_default_algorithms
-from jwt.exceptions import InvalidAlgorithmError, InvalidTokenError
+from jwt.exceptions import (
+    InvalidAlgorithmError,
+    InvalidAudienceError,
+    InvalidIssuerError,
+    InvalidTokenError,
+    MissingRequiredClaimError,
+)
 
 from .authentication import AuthenticationBase
 from .exceptions import ApiError
@@ -49,7 +55,8 @@ class JwtAuthentication(AuthenticationBase):
 
         try:
             payload = self.decode_token(token)
-        except InvalidTokenError:
+        except InvalidTokenError as e:
+            print(e)
             raise ApiError(401, {'code': 'invalid_token'})
 
         return self.get_credentials(payload)
@@ -99,8 +106,13 @@ class JwtAuthentication(AuthenticationBase):
 
 
 class JwkSetAuthentication(JwtAuthentication):
-    def __init__(self, jwk_set=None, **kwargs):
-        super(JwkSetAuthentication, self).__init__(**kwargs)
+    def __init__(self, jwk_set=None, options=None, **kwargs):
+        if options:
+            options.update({'verify_aud': False, 'verify_iss': False})
+        else:
+            options = {'verify_aud': False, 'verify_iss': False}
+
+        super(JwkSetAuthentication, self).__init__(options=options, **kwargs)
 
         self.jwk_set = jwk_set
         self.algorithms = get_default_algorithms()
@@ -136,9 +148,39 @@ class JwkSetAuthentication(JwtAuthentication):
 
         raise InvalidTokenError("no key found")
 
-    def decode_token(self, token):
-        args = self.get_jwt_decode_args()
+    def _verify_aud(self, audiences, payload):
+        if audiences is None and 'aud' not in payload:
+            return
 
+        if audiences is not None and 'aud' not in payload:
+            raise MissingRequiredClaimError('aud')
+
+        if not isinstance(audiences, list):
+            audiences = [audiences]
+
+        aud = payload['aud']
+        try:
+            aud = {aud}
+        except TypeError:
+            aud = set(aud)
+
+        if not len(aud.intersection(audiences)):
+            raise InvalidAudienceError('Invalid Audience')
+
+    def _verify_iss(self, issuers, payload):
+        if issuers is None:
+            return
+
+        if 'iss' not in payload:
+            raise MissingRequiredClaimError('iss')
+
+        if not isinstance(issuers, list):
+            issuers = [issuers]
+
+        if payload['iss'] not in issuers:
+            raise InvalidIssuerError('Invalid issuer')
+
+    def decode_token(self, token):
         unverified_header = jwt.get_unverified_header(token)
         jwk = self.get_jwk_for_token(token)
 
@@ -146,14 +188,24 @@ class JwkSetAuthentication(JwtAuthentication):
         # the algorithm whitelist.
         alg = jwk['alg'] if 'alg' in jwk else unverified_header['alg']
 
+        args = self.get_jwt_decode_args()
+        issuers = args.pop('issuer', None)
+        audiences = args.pop('audience', None)
+
         # jwt.decode will also check this, but this is more defensive.
         if alg not in args['algorithms']:
             raise InvalidAlgorithmError(
                 "The specified alg value is not allowed",
             )
 
-        return jwt.decode(
+        payload = jwt.decode(
             token,
             key=self.get_key_from_jwk(jwk, self.algorithms[alg]),
             **args
         )
+
+        self._verify_aud(audiences, payload)
+
+        self._verify_iss(issuers, payload)
+
+        return payload
