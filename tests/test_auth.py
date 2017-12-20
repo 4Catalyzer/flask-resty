@@ -239,6 +239,15 @@ def test_error_create_unauthorized(client):
 
 
 def test_error_update_unauthorized(client):
+    forbidden_save_response = client.patch('/widgets/1?user_id=foo', data={
+        'id': '1',
+        'owner_id': 'bar',
+        'name': "Updated",
+    })
+    assert_response(forbidden_save_response, 403, [{
+        'code': 'invalid_user',
+    }])
+
     not_found_response = client.patch('/widgets/1?user_id=bar', data={
         'id': '1',
         'owner_id': 'bar',
@@ -246,12 +255,12 @@ def test_error_update_unauthorized(client):
     })
     assert_response(not_found_response, 404)
 
-    forbidden_response = client.patch('/widgets/3?user_id=bar', data={
+    forbidden_update_response = client.patch('/widgets/3?user_id=foo', data={
         'id': '3',
-        'owner_id': 'bar',
+        'owner_id': 'foo',
         'name': "Updated",
     })
-    assert_response(forbidden_response, 403, [{
+    assert_response(forbidden_update_response, 403, [{
         'code': 'invalid_user',
     }])
 
