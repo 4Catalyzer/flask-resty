@@ -268,7 +268,11 @@ class ModelView(ApiView):
     def add_item(self, item):
         self.session.add(item)
 
-        self.authorization.authorize_save_item(item)
+        try:
+            self.authorization.authorize_save_item(item)
+        except Exception:
+            self.session.expunge(item)
+            raise
 
     def create_and_add_item(self, data):
         item = self.create_item(data)
@@ -281,7 +285,11 @@ class ModelView(ApiView):
         for key, value in data.items():
             setattr(item, key, value)
 
-        self.authorization.authorize_save_item(item)
+        try:
+            self.authorization.authorize_save_item(item)
+        except Exception:
+            self.session.expunge(item)
+            raise
 
     def delete_item(self, item):
         self.authorization.authorize_delete_item(item)
