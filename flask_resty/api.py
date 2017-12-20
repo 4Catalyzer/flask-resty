@@ -35,9 +35,36 @@ class Api(object):
         return app
 
     def add_resource(
-        self, base_rule, base_view, alternate_view=None,
-        alternate_rule=None, id_rule=None, app=None,
+        self,
+        base_rule,
+        base_view,
+        alternate_view=None,
+        alternate_rule=None,
+        id_rule=None,
+        app=None,
     ):
+        """Add route or routes for a resource.
+
+        :param str base_rule: The URL rule for the resource. This will be
+            prefixed by the API prefix.
+        :param base_view: Class-based view for the resource.
+        :param alternate_view: If specified, an alternate class-based view for
+            the resource. Usually, this will be a detail view, when the base
+            view is a list view.
+        :param alternate_rule: If specified, the URL rule for the alternate
+            view. This will be prefixed by the API prefix. This is mutually
+            exclusive with id_rule, and must not be specified if alternate_view
+            is not specified.
+        :type alternate_rule: str or None
+        :param id_rule: If specified, a suffix to append to base_rule to get
+            the alternate view URL rule. If alternate_view is specified, and
+            alternate_rule is not, then this defaults to '<id>'. This is
+            mutually exclusive with alternate_rule, and must not be specified
+            if alternate_view is not specified.
+        :type id_rule: str or None
+        :param app: If specified, the application to which to add the route(s).
+            Otherwise, this will be the bound application, if present.
+        """
         if alternate_view:
             if not alternate_rule:
                 id_rule = id_rule or DEFAULT_ID_RULE
@@ -95,13 +122,22 @@ class Api(object):
         else:
             return base_view_name
 
-    def add_ping(self, rule, app=None):
+    def add_ping(self, rule, status_code=200, app=None):
+        """Add a ping route.
+
+        :param str rule: The URL rule. This will not use the API prefix, as the
+            ping endpoint is not really part of the API.
+        :param int status_code: The ping response status code. The default is
+            200 rather than the more correct 204 because many health checks
+            look for 200s.
+        :param app: If specified, the application to which to add the route.
+            Otherwise, this will be the bound application, if present.
+        """
         app = self._get_app(app)
 
-        # Note that unlike actual API paths, this doesn't use the prefix.
         @app.route(rule)
         def ping():
-            return '', 200
+            return '', status_code
 
 
 # -----------------------------------------------------------------------------
