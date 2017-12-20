@@ -301,14 +301,12 @@ class ModelView(ApiView):
             # Flushing allows checking invariants without committing.
             self.session.flush()
         except IntegrityError:
-            self.session.rollback()
             raise ApiError(409, {'code': 'invalid_data.conflict'})
 
     def commit(self):
         try:
             self.session.commit()
         except IntegrityError:
-            self.session.rollback()
             raise ApiError(409, {'code': 'invalid_data.conflict'})
 
     def set_item_meta(self, item):

@@ -24,7 +24,16 @@ class ApiClient(FlaskClient):
             if kwargs['content_type'] == 'application/json':
                 kwargs['data'] = json.dumps({'data': kwargs['data']})
 
-        return super(ApiClient, self).open(full_path, *args, **kwargs)
+        response = super(ApiClient, self).open(full_path, *args, **kwargs)
+
+        if 'sqlalchemy' in self.application.extensions:
+            session = self.application.extensions['sqlalchemy'].db.session
+            if not session.is_active:
+                session.rollback()
+            else:
+                session.expunge_all()
+
+        return response
 
 
 # -----------------------------------------------------------------------------
