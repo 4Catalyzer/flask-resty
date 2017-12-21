@@ -18,15 +18,16 @@ class Operation(dict):
         if kwargs['in'] != 'body':
             kwargs.setdefault('type', 'string')
         self['parameters'].append(kwargs)
+        pass
 
     def add_property_to_response(self, code='200', prop_name='data', **kwargs):
         """Add a property (http://json-schema.org/latest/json-schema-validation.html#anchor64)  # noqa: E501
         to the schema of the response identified by the code"""
-        self['responses'] \
-            .setdefault(str(code), self._new_operation()) \
-            .setdefault('schema', {'type': 'object'}) \
-            .setdefault('properties', {}) \
-            .setdefault(prop_name, {}) \
+        self['responses']\
+            .setdefault(str(code), self._new_operation())\
+            .setdefault('schema', {'type': 'object'})\
+            .setdefault('properties', {})\
+            .setdefault(prop_name, {})\
             .update(**kwargs)
 
     def declare_response(self, code='200', **kwargs):
