@@ -242,5 +242,5 @@ def test_error_invalid_field(client):
     assert_response(response, 400, [{
         'code': 'invalid_filter',
         'detail': 'Not a valid integer.',
-        'source': {'query': 'size_min'},
+        'source': {'parameter': 'size_min'},
     }])

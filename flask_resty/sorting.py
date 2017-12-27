@@ -73,7 +73,7 @@ class Sorting(SortingBase):
         if field_name not in self._field_names:
             raise ApiError(400, {
                 'code': 'invalid_sort',
-                'source': {'query': self.sort_arg},
+                'source': {'parameter': self.sort_arg},
             })
 
         return super(Sorting, self).get_column(view, field_name)

@@ -169,7 +169,7 @@ def test_error_invalid_field(client):
 
     assert_response(response, 400, [{
         'code': 'invalid_sort',
-        'source': {'query': 'sort'},
+        'source': {'parameter': 'sort'},
     }])
 
 
@@ -177,5 +177,5 @@ def test_error_empty(client):
     response = client.get('/widgets?sort=')
     assert_response(response, 400, [{
         'code': 'invalid_sort',
-        'source': {'query': 'sort'},
+        'source': {'parameter': 'sort'},
     }])
