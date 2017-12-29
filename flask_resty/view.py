@@ -1,6 +1,6 @@
 import flask
 from flask.views import MethodView
-from sqlalchemy import and_
+from marshmallow import fields
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
 from werkzeug.exceptions import NotFound
@@ -18,6 +18,7 @@ from .utils import iter_validation_errors, settable_property
 class ApiView(MethodView):
     schema = None
     id_fields = ('id',)
+    args_schema = None
 
     authentication = NoOpAuthentication()
     authorization = NoOpAuthorization()
@@ -144,6 +145,47 @@ class ApiView(MethodView):
 
         return tuple(data[id_field] for id_field in self.id_fields)
 
+    def get_request_args(self, **kwargs):
+        args = flask.request.args
+        data_raw = {}
+
+        for field_name, field in self.args_schema.fields.items():
+            if field_name in args:
+                args_key = field_name
+            elif field.load_from and field.load_from in args:
+                args_key = field.load_from
+            else:
+                continue
+
+            value = args.getlist(args_key)
+            if not self.is_list_field(field) and len(value) == 1:
+                value = value[0]
+
+            data_raw[field_name] = value
+
+        return self.deserialize_args(data_raw, **kwargs)
+
+    def is_list_field(self, field):
+        return isinstance(field, fields.List)
+
+    def deserialize_args(self, data_raw, **kwargs):
+        data, errors = self.args_schema.load(data_raw, **kwargs)
+        if errors:
+            raise ApiError(422, *(
+                self.format_parameter_validation_error(message, parameter)
+                for parameter, messages in errors.items()
+                for message in messages
+            ))
+
+        return data
+
+    def format_parameter_validation_error(self, message, parameter):
+        return {
+            'code': 'invalid_parameter',
+            'detail': message,
+            'source': {'parameter': parameter},
+        }
+
     def get_id_dict(self, id):
         if len(self.id_fields) == 1:
             id = (id,)
@@ -211,7 +253,7 @@ class ModelView(ApiView):
     def get_item(self, id, create_missing=False, for_update=False):
         try:
             # Can't use self.query.get(), because query might be filtered.
-            item = self.query.filter(and_(
+            item = self.query.filter(*(
                 getattr(self.model, field) == value
                 for field, value in self.get_id_dict(id).items()
             )).one()
