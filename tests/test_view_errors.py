@@ -94,7 +94,7 @@ def data(db, models):
 
 
 def test_not_found(client):
-    response = client.get('/nonexistent',)
+    response = client.get('/nonexistent')
     assert_response(response, 404, [{
         'code': 'not_found',
     }])
