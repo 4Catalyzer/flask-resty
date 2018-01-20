@@ -7,6 +7,14 @@ from .exceptions import ApiError
 
 class SortingBase(object):
     def sort_query(self, query, view):
+        raise NotImplementedError()
+
+
+# -----------------------------------------------------------------------------
+
+
+class FieldSortingBase(SortingBase):
+    def sort_query(self, query, view):
         field_orderings = self.get_request_field_orderings()
         return self.sort_query_by_fields(query, view, field_orderings)
 
@@ -44,10 +52,7 @@ class SortingBase(object):
         return getattr(view.model, field_name)
 
 
-# -----------------------------------------------------------------------------
-
-
-class FixedSorting(SortingBase):
+class FixedSorting(FieldSortingBase):
     def __init__(self, fields):
         self._field_orderings = self.get_field_orderings(fields)
 
@@ -55,7 +60,7 @@ class FixedSorting(SortingBase):
         return self._field_orderings
 
 
-class Sorting(SortingBase):
+class Sorting(FieldSortingBase):
     sort_arg = 'sort'
 
     def __init__(self, *field_names, **kwargs):
