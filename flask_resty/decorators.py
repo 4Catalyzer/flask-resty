@@ -1,16 +1,14 @@
 import functools
 
-from .filtering import ModelFilterField
-
 # -----------------------------------------------------------------------------
 
 
-def get_item_or_404(function=None, **decorator_kwargs):
+def get_item_or_404(func=None, **decorator_kwargs):
     # Allow using this as either a decorator or a decorator factory.
-    if function is None:
+    if func is None:
         return functools.partial(get_item_or_404, **decorator_kwargs)
 
-    @functools.wraps(function)
+    @functools.wraps(func)
     def wrapped(self, *args, **kwargs):
         id = self.get_data_id(kwargs)
         item = self.get_item_or_404(id, **decorator_kwargs)
@@ -19,18 +17,6 @@ def get_item_or_404(function=None, **decorator_kwargs):
         for id_field in self.id_fields:
             del kwargs[id_field]
 
-        return function(self, item, *args, **kwargs)
+        return func(self, item, *args, **kwargs)
 
     return wrapped
-
-
-# -----------------------------------------------------------------------------
-
-
-def filter_function(field, **kwargs):
-    def wrapper(function):
-        filter_field = ModelFilterField(field, function, **kwargs)
-        functools.update_wrapper(filter_field, function)
-        return filter_field
-
-    return wrapper

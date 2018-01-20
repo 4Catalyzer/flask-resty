@@ -4,7 +4,13 @@ from marshmallow import fields, Schema
 import pytest
 from sqlalchemy import Column, Integer, sql, String
 
-from flask_resty import Api, filter_function, Filtering, GenericModelView
+from flask_resty import (
+    Api,
+    ColumnFilter,
+    Filtering,
+    GenericModelView,
+    model_filter,
+)
 from flask_resty.testing import assert_response
 
 # -----------------------------------------------------------------------------
@@ -42,39 +48,61 @@ def schemas():
 
 @pytest.fixture
 def filter_fields():
-    @filter_function(fields.Boolean())
+    @model_filter(fields.Boolean())
     def filter_size_is_odd(model, value):
         return model.size % 2 == int(value)
 
-    @filter_function(fields.String(), separator=None)
-    def filter_color_no_separator(model, value):
+    @model_filter(
+        fields.String(required=True),
+        separator=None,
+        empty=lambda model: model.color == 'blue',
+    )
+    def filter_color_custom(model, value):
         return model.color == value
 
     return {
         'size_is_odd': filter_size_is_odd,
-        'color_no_separator': filter_color_no_separator,
+        'color_custom': filter_color_custom,
     }
 
 
 @pytest.fixture(autouse=True)
 def routes(app, models, schemas, filter_fields):
-    class WidgetListView(GenericModelView):
+    class WidgetViewBase(GenericModelView):
         model = models['widget']
         schema = schemas['widget']
 
+    class WidgetListView(WidgetViewBase):
         filtering = Filtering(
             color=operator.eq,
-            size=(operator.eq, {
-                'separator': '|',
-                'empty': sql.false(),
-            }),
-            size_alt=(operator.eq, {
-                'empty': lambda view: view.model.size == 1,
-            }),
-            size_min=('size', operator.ge),
-            size_divides=('size', lambda size, value: size % value == 0),
+            size=ColumnFilter(operator.eq, separator='|', empty=sql.false()),
+            size_alt=ColumnFilter(
+                'size',
+                operator.eq,
+                empty=lambda size: size == 1,
+            ),
+            size_min=ColumnFilter('size', operator.ge),
+            size_divides=ColumnFilter(
+                'size',
+                lambda size, value: size % value == 0,
+            ),
             size_is_odd=filter_fields['size_is_odd'],
-            color_no_separator=filter_fields['color_no_separator'],
+        )
+
+        def get(self):
+            return self.list()
+
+    class WidgetSizeRequiredListView(WidgetViewBase):
+        filtering = Filtering(
+            size=ColumnFilter(operator.eq, required=True),
+        )
+
+        def get(self):
+            return self.list()
+
+    class WidgetColorCustomListView(WidgetViewBase):
+        filtering = Filtering(
+            color=filter_fields['color_custom'],
         )
 
         def get(self):
@@ -82,6 +110,8 @@ def routes(app, models, schemas, filter_fields):
 
     api = Api(app)
     api.add_resource('/widgets', WidgetListView)
+    api.add_resource('/widgets_size_required', WidgetSizeRequiredListView)
+    api.add_resource('/widgets_color_custom', WidgetColorCustomListView)
 
 
 @pytest.fixture(autouse=True)
@@ -199,7 +229,18 @@ def test_custom_operator(client):
     ])
 
 
-def test_filter_field(client):
+def test_error_column_filter_required_present(client):
+    response = client.get('/widgets_size_required?size=1')
+    assert_response(response, 200, [
+        {
+            'id': '1',
+            'color': 'red',
+            'size': 1,
+        },
+    ])
+
+
+def test_model_filter(client):
     response = client.get('/widgets?size_is_odd=true')
     assert_response(response, 200, [
         {
@@ -215,8 +256,8 @@ def test_filter_field(client):
     ])
 
 
-def test_filter_field_kwargs(client):
-    red_response = client.get('/widgets?color_no_separator=red')
+def test_model_filter_kwargs(client):
+    red_response = client.get('/widgets_color_custom?color=red')
     assert_response(red_response, 200, [
         {
             'id': '1',
@@ -230,8 +271,17 @@ def test_filter_field_kwargs(client):
         },
     ])
 
-    empty_response = client.get('/widgets?color_no_separator=red,blue')
-    assert_response(empty_response, 200, [])
+    separator_response = client.get('/widgets_color_custom?color=red,blue')
+    assert_response(separator_response, 200, [])
+
+    empty_response = client.get('/widgets_color_custom?color=')
+    assert_response(empty_response, 200, [
+        {
+            'id': '3',
+            'color': 'blue',
+            'size': 3,
+        },
+    ])
 
 
 # -----------------------------------------------------------------------------
@@ -244,3 +294,46 @@ def test_error_invalid_field(client):
         'detail': 'Not a valid integer.',
         'source': {'parameter': 'size_min'},
     }])
+
+
+def test_error_column_filter_required_missing(client):
+    response = client.get('/widgets_size_required')
+    assert_response(response, 400, [{
+        'code': 'invalid_filter.missing',
+        'source': {'parameter': 'size'},
+    }])
+
+
+def test_error_model_filter_required_missing(client):
+    response = client.get('/widgets_color_custom')
+    assert_response(response, 400, [{
+        'code': 'invalid_filter',
+        'detail': 'Missing data for required field.',
+        'source': {'parameter': 'color'},
+    }])
+
+
+def test_error_missing_operator():
+    ColumnFilter(operator=operator.eq)
+
+    with pytest.raises(TypeError, message="must specify operator"):
+        ColumnFilter('size')
+
+    with pytest.raises(TypeError, message="must specify operator"):
+        ColumnFilter()
+
+
+def test_error_reuse_column_filter():
+    explicit_column_filter = ColumnFilter('foo', operator.eq)
+    implicit_column_filter = ColumnFilter(operator.eq)
+
+    Filtering(
+        foo=explicit_column_filter,
+        bar=explicit_column_filter,
+    )
+
+    with pytest.raises(TypeError, match="without explicit column name"):
+        Filtering(
+            foo=implicit_column_filter,
+            bar=implicit_column_filter,
+        )
