@@ -14,6 +14,9 @@ class AuthorizationBase(object):
     def filter_query(self, query, view):
         raise NotImplementedError()
 
+    def authorize_create_item(self, item):
+        raise NotImplementedError()
+
     def authorize_save_item(self, item):
         raise NotImplementedError()
 
@@ -27,12 +30,15 @@ class AuthorizationBase(object):
 # -----------------------------------------------------------------------------
 
 
-class NoOpAuthorization(object):
+class NoOpAuthorization(AuthorizationBase):
     def authorize_request(self):
         pass
 
     def filter_query(self, query, view):
         return query
+
+    def authorize_create_item(self, item):
+        pass
 
     def authorize_save_item(self, item):
         pass
