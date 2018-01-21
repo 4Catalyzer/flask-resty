@@ -250,31 +250,40 @@ class ModelView(ApiView):
 
         return item
 
-    def get_item(self, id, create_missing=False, for_update=False):
+    def get_item(
+        self,
+        id,
+        with_for_update=False,
+        create_missing=False,
+        will_update_item=False,
+    ):
         try:
             # Can't use self.query.get(), because query might be filtered.
-            item = self.query.filter(*(
+            item_query = self.query.filter(*(
                 getattr(self.model, field) == value
                 for field, value in self.get_id_dict(id).items()
-            )).one()
+            ))
+            if with_for_update:
+                item_query = item_query.with_for_update()
+
+            item = item_query.one()
         except NoResultFound as e:
-            if create_missing:
-                item = self.create_missing_item(id)
-                if for_update:
-                    # Bypass authorizating the save if we are getting the item
-                    # for update, as update_item will make that check.
-                    self.session.add(item)
-                else:
-                    try:
-                        self.add_item(item)
-                    except ApiError:
-                        # Raise the original not found error instead of the
-                        # authorization error.
-                        raise e
+            if not create_missing:
+                raise
 
-                return item
+            item = self.create_missing_item(id)
 
-            raise
+            if will_update_item:
+                # Bypass authorizating the save if we are getting the item
+                # for update, as update_item will make that check.
+                self.session.add(item)
+            else:
+                try:
+                    self.add_item(item)
+                except ApiError:
+                    # Raise the original not found error instead of the
+                    # authorization error.
+                    raise e
 
         return item
 
@@ -375,12 +384,18 @@ class GenericModelView(ModelView):
         return self.make_created_response(item)
 
     def update(
-        self, id, create_missing=False, partial=False, return_content=False,
+        self,
+        id,
+        create_missing=False,
+        partial=False,
+        return_content=False,
     ):
         # No need to authorize creating the missing item, as we will authorize
         # before saving to database below.
         item = self.get_item_or_404(
-            id, create_missing=create_missing, for_update=True,
+            id,
+            create_missing=create_missing,
+            will_update_item=True,
         )
         data_in = self.get_request_data(expected_id=id, partial=partial)
 
