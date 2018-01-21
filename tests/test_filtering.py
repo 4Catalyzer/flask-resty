@@ -2,7 +2,7 @@ import operator
 
 from marshmallow import fields, Schema
 import pytest
-from sqlalchemy import Column, Integer, sql, String
+from sqlalchemy import Column, Integer, String
 
 from flask_resty import (
     Api,
@@ -52,11 +52,7 @@ def filter_fields():
     def filter_size_is_odd(model, value):
         return model.size % 2 == int(value)
 
-    @model_filter(
-        fields.String(required=True),
-        separator=None,
-        empty=lambda model: model.color == 'blue',
-    )
+    @model_filter(fields.String(required=True), separator=None)
     def filter_color_custom(model, value):
         return model.color == value
 
@@ -75,12 +71,12 @@ def routes(app, models, schemas, filter_fields):
     class WidgetListView(WidgetViewBase):
         filtering = Filtering(
             color=operator.eq,
-            size=ColumnFilter(operator.eq, separator='|', empty=sql.false()),
-            size_alt=ColumnFilter(
-                'size',
+            color_allow_empty=ColumnFilter(
+                'color',
                 operator.eq,
-                empty=lambda size: size == 1,
+                allow_empty=True,
             ),
+            size=ColumnFilter(operator.eq, separator='|'),
             size_min=ColumnFilter('size', operator.ge),
             size_divides=ColumnFilter(
                 'size',
@@ -176,25 +172,14 @@ def test_eq_many_custom_separator(client):
     ])
 
 
-def test_eq_empty(client):
-    response = client.get('/widgets?color=')
-    assert_response(response, 200, [])
-
-
 def test_eq_empty_custom_column_element(client):
     response = client.get('/widgets?size=')
     assert_response(response, 200, [])
 
 
-def test_eq_empty_custom_function(client):
-    response = client.get('/widgets?size_alt=')
-    assert_response(response, 200, [
-        {
-            'id': '1',
-            'color': 'red',
-            'size': 1,
-        },
-    ])
+def test_eq_empty_allow_empty(client):
+    response = client.get('/widgets?color_allow_empty=')
+    assert_response(response, 200, [])
 
 
 def test_ge(client):
@@ -273,15 +258,6 @@ def test_model_filter_kwargs(client):
 
     separator_response = client.get('/widgets_color_custom?color=red,blue')
     assert_response(separator_response, 200, [])
-
-    empty_response = client.get('/widgets_color_custom?color=')
-    assert_response(empty_response, 200, [
-        {
-            'id': '3',
-            'color': 'blue',
-            'size': 3,
-        },
-    ])
 
 
 # -----------------------------------------------------------------------------

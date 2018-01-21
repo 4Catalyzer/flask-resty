@@ -4,7 +4,6 @@ import flask
 from marshmallow import missing, ValidationError
 import sqlalchemy as sa
 from sqlalchemy import sql
-from sqlalchemy.sql import ColumnElement
 
 from . import utils
 from .exceptions import ApiError
@@ -24,10 +23,9 @@ class ArgFilterBase(object):
 
 
 class FieldFilter(ArgFilterBase):
-    def __init__(self, filter, separator=',', empty=''):
-        self._filter = filter
+    def __init__(self, separator=',', allow_empty=False):
         self._separator = separator
-        self._empty = empty
+        self._allow_empty = allow_empty
 
     def maybe_set_arg_name(self, arg_name):
         pass
@@ -37,24 +35,20 @@ class FieldFilter(ArgFilterBase):
 
     def get_filter(self, view, arg_value):
         if arg_value is None:
-            return self.get_filter_clause(view, missing)
+            return self.get_element_filter(view, missing)
 
-        if not arg_value:
-            if isinstance(self._empty, ColumnElement):
-                return self._empty
-            elif callable(self._empty):
-                return self._empty(self.get_filter_arg(view))
-            arg_value = self._empty
+        if not arg_value and not self._allow_empty:
+            return sql.false()
 
         if not self._separator or self._separator not in arg_value:
-            return self.get_filter_clause(view, arg_value)
+            return self.get_element_filter(view, arg_value)
 
         return sa.or_(
-            self.get_filter_clause(view, value)
-            for value in arg_value.split(self._separator)
+            self.get_element_filter(view, value_raw)
+            for value_raw in arg_value.split(self._separator)
         )
 
-    def get_filter_clause(self, view, value_raw):
+    def get_element_filter(self, view, value_raw):
         field = self.get_field(view)
         if value_raw is missing and not field.required:
             return sql.true()
@@ -68,7 +62,7 @@ class FieldFilter(ArgFilterBase):
             )
             raise ApiError(400, *errors)
 
-        return self._filter(self.get_filter_arg(view), value)
+        return self.get_filter_clause(view, value)
 
     def format_validation_error(self, message):
         return {
@@ -79,7 +73,7 @@ class FieldFilter(ArgFilterBase):
     def get_field(self, view):
         raise NotImplementedError()
 
-    def get_filter_arg(self, view):
+    def get_filter_clause(self, view, value):
         raise NotImplementedError()
 
 
@@ -91,6 +85,8 @@ class ColumnFilter(FieldFilter):
         required=False,
         **kwargs
     ):
+        super(ColumnFilter, self).__init__(**kwargs)
+
         if operator is None and callable(column_name):
             operator = column_name
             column_name = None
@@ -98,10 +94,9 @@ class ColumnFilter(FieldFilter):
         if not operator:
             raise TypeError("must specify operator")
 
-        super(ColumnFilter, self).__init__(operator, **kwargs)
-
         self._has_explicit_column_name = column_name is not None
         self._column_name = column_name
+        self._operator = operator
         self._required = required
 
     def maybe_set_arg_name(self, arg_name):
@@ -129,21 +124,23 @@ class ColumnFilter(FieldFilter):
     def get_field(self, view):
         return view.deserializer.fields[self._column_name]
 
-    def get_filter_arg(self, view):
-        return getattr(view.model, self._column_name)
+    def get_filter_clause(self, view, value):
+        column = getattr(view.model, self._column_name)
+        return self._operator(column, value)
 
 
 class ModelFilter(FieldFilter):
     def __init__(self, field, filter, **kwargs):
-        super(ModelFilter, self).__init__(filter, **kwargs)
+        super(ModelFilter, self).__init__(**kwargs)
 
         self._field = field
+        self._filter = filter
 
     def get_field(self, view):
         return self._field
 
-    def get_filter_arg(self, view):
-        return view.model
+    def get_filter_clause(self, view, value):
+        return self._filter(view.model, value)
 
 
 # -----------------------------------------------------------------------------
