@@ -14,7 +14,7 @@ from .fields import RelatedItem
 from .filtering import (
     ArgFilterBase,
     ColumnFilter,
-    FieldFilter,
+    FieldFilterBase,
     Filtering,
     model_filter,
     ModelFilter,

@@ -22,7 +22,7 @@ class ArgFilterBase(object):
 # -----------------------------------------------------------------------------
 
 
-class FieldFilter(ArgFilterBase):
+class FieldFilterBase(ArgFilterBase):
     def __init__(self, separator=',', allow_empty=False):
         self._separator = separator
         self._allow_empty = allow_empty
@@ -77,7 +77,7 @@ class FieldFilter(ArgFilterBase):
         raise NotImplementedError()
 
 
-class ColumnFilter(FieldFilter):
+class ColumnFilter(FieldFilterBase):
     def __init__(
         self,
         column_name=None,
@@ -129,7 +129,7 @@ class ColumnFilter(FieldFilter):
         return self._operator(column, value)
 
 
-class ModelFilter(FieldFilter):
+class ModelFilter(FieldFilterBase):
     def __init__(self, field, filter, **kwargs):
         super(ModelFilter, self).__init__(**kwargs)
 
