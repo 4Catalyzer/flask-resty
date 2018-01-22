@@ -59,6 +59,10 @@ def auth():
                 (view.model.owner_id == sql.null()),
             )
 
+        def authorize_create_item(self, item):
+            if item.name == "Updated":
+                raise ApiError(403, {'code': 'invalid_name'})
+
         def authorize_save_item(self, item):
             return self.authorize_modify_item(item)
 
@@ -229,6 +233,16 @@ def test_error_retrieve_unauthorized(client):
 
 
 def test_error_create_unauthorized(client):
+    response = client.post('/widgets?user_id=foo', data={
+        'owner_id': 'foo',
+        'name': "Updated",
+    })
+    assert_response(response, 403, [{
+        'code': 'invalid_name',
+    }])
+
+
+def test_error_create_save_unauthorized(client):
     response = client.post('/widgets?user_id=bar', data={
         'owner_id': 'foo',
         'name': "Created",

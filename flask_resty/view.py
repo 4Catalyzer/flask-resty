@@ -308,6 +308,8 @@ class ModelView(ApiView):
         return self.model(**data)
 
     def add_item(self, item):
+        self.authorization.authorize_create_item(item)
+
         self.session.add(item)
 
         self.authorization.authorize_save_item(item)
