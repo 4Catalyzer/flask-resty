@@ -60,6 +60,6 @@ class HasCredentialsAuthorizationBase(AuthorizationBase):
 
 
 class HasAnyCredentialsAuthorization(
-    HasCredentialsAuthorizationBase, NoOpAuthorization, AuthorizationBase,
+    HasCredentialsAuthorizationBase, NoOpAuthorization,
 ):
     pass
