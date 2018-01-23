@@ -1,6 +1,6 @@
 import operator
 
-from marshmallow import fields, Schema
+from marshmallow import fields, Schema, validate
 import pytest
 from sqlalchemy import Column, Integer, String
 
@@ -39,7 +39,7 @@ def schemas():
     class WidgetSchema(Schema):
         id = fields.Integer(as_string=True)
         color = fields.String()
-        size = fields.Integer()
+        size = fields.Integer(validate=validate.Range(min=1))
 
     return {
         'widget': WidgetSchema(),
@@ -83,6 +83,11 @@ def routes(app, models, schemas, filter_fields):
                 lambda size, value: size % value == 0,
             ),
             size_is_odd=filter_fields['size_is_odd'],
+            size_min_unvalidated=ColumnFilter(
+                'size',
+                operator.ge,
+                validate=False,
+            ),
         )
 
         def get(self):
@@ -214,7 +219,7 @@ def test_custom_operator(client):
     ])
 
 
-def test_error_column_filter_required_present(client):
+def test_column_filter_required_present(client):
     response = client.get('/widgets_size_required?size=1')
     assert_response(response, 200, [
         {
@@ -222,6 +227,16 @@ def test_error_column_filter_required_present(client):
             'color': 'red',
             'size': 1,
         },
+    ])
+
+
+def test_column_filter_unvalidated(client):
+    response = client.get('/widgets?size_min_unvalidated=-1')
+    assert_response(response, 200, [
+        {'id': '1'},
+        {'id': '2'},
+        {'id': '3'},
+        {'id': '4'},
     ])
 
 
@@ -263,11 +278,29 @@ def test_model_filter_kwargs(client):
 # -----------------------------------------------------------------------------
 
 
-def test_error_invalid_field(client):
+def test_error_invalid_type(client):
     response = client.get('/widgets?size_min=foo')
     assert_response(response, 400, [{
         'code': 'invalid_filter',
         'detail': 'Not a valid integer.',
+        'source': {'parameter': 'size_min'},
+    }])
+
+
+def test_error_unvalidated_invalid_type(client):
+    response = client.get('/widgets?size_min_unvalidated=foo')
+    assert_response(response, 400, [{
+        'code': 'invalid_filter',
+        'detail': 'Not a valid integer.',
+        'source': {'parameter': 'size_min_unvalidated'},
+    }])
+
+
+def test_error_invalid_value(client):
+    response = client.get('/widgets?size_min=-1')
+    assert_response(response, 400, [{
+        'code': 'invalid_filter',
+        'detail': 'Must be at least 1.',
         'source': {'parameter': 'size_min'},
     }])
 

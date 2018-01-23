@@ -54,7 +54,7 @@ class FieldFilterBase(ArgFilterBase):
             return sql.true()
 
         try:
-            value = field.deserialize(value_raw)
+            value = self.deserialize(field, value_raw)
         except ValidationError as e:
             errors = (
                 self.format_validation_error(message)
@@ -63,6 +63,9 @@ class FieldFilterBase(ArgFilterBase):
             raise ApiError(400, *errors)
 
         return self.get_filter_clause(view, value)
+
+    def deserialize(self, field, value_raw):
+        return field.deserialize(value_raw)
 
     def format_validation_error(self, message):
         return {
@@ -83,6 +86,7 @@ class ColumnFilter(FieldFilterBase):
         column_name=None,
         operator=None,
         required=False,
+        validate=True,
         **kwargs
     ):
         super(ColumnFilter, self).__init__(**kwargs)
@@ -98,6 +102,7 @@ class ColumnFilter(FieldFilterBase):
         self._column_name = column_name
         self._operator = operator
         self._required = required
+        self._validate = validate
 
     def maybe_set_arg_name(self, arg_name):
         if self._has_explicit_column_name:
@@ -127,6 +132,15 @@ class ColumnFilter(FieldFilterBase):
     def get_filter_clause(self, view, value):
         column = getattr(view.model, self._column_name)
         return self._operator(column, value)
+
+    def deserialize(self, field, value_raw):
+        if not self._validate:
+            # We may not want to apply the same validation for filters as we do
+            # on model fields. This bypasses the irrelevant handling of missing
+            # and None values, and skips the validation check.
+            return field._deserialize(value_raw, None, None)
+
+        return super(ColumnFilter, self).deserialize(field, value_raw)
 
 
 class ModelFilter(FieldFilterBase):
