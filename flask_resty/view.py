@@ -264,7 +264,7 @@ class ModelView(ApiView):
                 for field, value in self.get_id_dict(id).items()
             ))
             if with_for_update:
-                item_query = item_query.with_for_update()
+                item_query = item_query.with_for_update(of=self.model)
 
             item = item_query.one()
         except NoResultFound as e:
