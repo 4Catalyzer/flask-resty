@@ -1,7 +1,9 @@
+import functools
+
 import flask
-from marshmallow import ValidationError
+from marshmallow import missing, ValidationError
 import sqlalchemy as sa
-from sqlalchemy.sql import ColumnElement
+from sqlalchemy import sql
 
 from . import utils
 from .exceptions import ApiError
@@ -9,31 +11,50 @@ from .exceptions import ApiError
 # -----------------------------------------------------------------------------
 
 
-class FilterFieldBase(object):
-    def __init__(self, separator=',', empty=''):
-        self._separator = separator
-        self._empty = empty
+class ArgFilterBase(object):
+    def maybe_set_arg_name(self, arg_name):
+        raise NotImplementedError()
 
-    def __call__(self, view, arg_value):
-        if not arg_value:
-            if isinstance(self._empty, ColumnElement):
-                return self._empty
-            elif callable(self._empty):
-                return self._empty(view)
-            arg_value = self._empty
+    def filter_query(self, query, view, arg_value):
+        raise NotImplementedError()
+
+
+# -----------------------------------------------------------------------------
+
+
+class FieldFilterBase(ArgFilterBase):
+    def __init__(self, separator=',', allow_empty=False):
+        self._separator = separator
+        self._allow_empty = allow_empty
+
+    def maybe_set_arg_name(self, arg_name):
+        pass
+
+    def filter_query(self, query, view, arg_value):
+        return query.filter(self.get_filter(view, arg_value))
+
+    def get_filter(self, view, arg_value):
+        if arg_value is None:
+            return self.get_element_filter(view, missing)
+
+        if not arg_value and not self._allow_empty:
+            return sql.false()
 
         if not self._separator or self._separator not in arg_value:
-            return self.get_arg_clause(view, arg_value)
+            return self.get_element_filter(view, arg_value)
 
         return sa.or_(
-            self.get_arg_clause(view, value)
-            for value in arg_value.split(self._separator)
+            self.get_element_filter(view, value_raw)
+            for value_raw in arg_value.split(self._separator)
         )
 
-    def get_arg_clause(self, view, arg_value):
+    def get_element_filter(self, view, value_raw):
         field = self.get_field(view)
+        if value_raw is missing and not field.required:
+            return sql.true()
+
         try:
-            value = field.deserialize(arg_value)
+            value = self.deserialize(field, value_raw)
         except ValidationError as e:
             errors = (
                 self.format_validation_error(message)
@@ -42,6 +63,9 @@ class FilterFieldBase(object):
             raise ApiError(400, *errors)
 
         return self.get_filter_clause(view, value)
+
+    def deserialize(self, field, value_raw):
+        return field.deserialize(value_raw)
 
     def format_validation_error(self, message):
         return {
@@ -56,11 +80,51 @@ class FilterFieldBase(object):
         raise NotImplementedError()
 
 
-class ColumnFilterField(FilterFieldBase):
-    def __init__(self, column_name, operator, **kwargs):
-        super(ColumnFilterField, self).__init__(**kwargs)
+class ColumnFilter(FieldFilterBase):
+    def __init__(
+        self,
+        column_name=None,
+        operator=None,
+        required=False,
+        validate=True,
+        **kwargs
+    ):
+        super(ColumnFilter, self).__init__(**kwargs)
+
+        if operator is None and callable(column_name):
+            operator = column_name
+            column_name = None
+
+        if not operator:
+            raise TypeError("must specify operator")
+
+        self._has_explicit_column_name = column_name is not None
         self._column_name = column_name
         self._operator = operator
+        self._required = required
+        self._validate = validate
+
+    def maybe_set_arg_name(self, arg_name):
+        if self._has_explicit_column_name:
+            return
+
+        if self._column_name and self._column_name != arg_name:
+            raise TypeError(
+                "cannot use ColumnFilter without explicit column name " +
+                "for multiple arg names",
+            )
+
+        self._column_name = arg_name
+
+    def filter_query(self, query, view, arg_value):
+        # Missing value handling on the schema field is not relevant here.
+        if arg_value is None:
+            if not self._required:
+                return query
+
+            raise ApiError(400, {'code': 'invalid_filter.missing'})
+
+        return super(ColumnFilter, self).filter_query(query, view, arg_value)
 
     def get_field(self, view):
         return view.deserializer.fields[self._column_name]
@@ -69,10 +133,20 @@ class ColumnFilterField(FilterFieldBase):
         column = getattr(view.model, self._column_name)
         return self._operator(column, value)
 
+    def deserialize(self, field, value_raw):
+        if not self._validate:
+            # We may not want to apply the same validation for filters as we do
+            # on model fields. This bypasses the irrelevant handling of missing
+            # and None values, and skips the validation check.
+            return field._deserialize(value_raw, None, None)
 
-class ModelFilterField(FilterFieldBase):
+        return super(ColumnFilter, self).deserialize(field, value_raw)
+
+
+class ModelFilter(FieldFilterBase):
     def __init__(self, field, filter, **kwargs):
-        super(ModelFilterField, self).__init__(**kwargs)
+        super(ModelFilter, self).__init__(**kwargs)
+
         self._field = field
         self._filter = filter
 
@@ -86,45 +160,49 @@ class ModelFilterField(FilterFieldBase):
 # -----------------------------------------------------------------------------
 
 
+def model_filter(field, **kwargs):
+    def wrapper(func):
+        filter_field = ModelFilter(field, func, **kwargs)
+        functools.update_wrapper(filter_field, func)
+        return filter_field
+
+    return wrapper
+
+
+# -----------------------------------------------------------------------------
+
+
 class Filtering(object):
     def __init__(self, **kwargs):
-        self._filter_fields = {
-            arg_name: self.make_filter_field(arg_name, value)
-            for arg_name, value in kwargs.items()
+        self._arg_filters = {
+            arg_name: self.make_arg_filter(arg_name, arg_filter)
+            for arg_name, arg_filter in kwargs.items()
         }
 
-    def make_filter_field(self, arg_name, value):
-        if isinstance(value, FilterFieldBase):
-            return value
-        elif callable(value):
-            return ColumnFilterField(arg_name, value)
-        else:
-            args = tuple(value)
-            # Insert the column name as the implicit first argument if the
-            # specified first argument is actually the operator.
-            if callable(args[0]):
-                args = (arg_name,) + args
-            if len(args) == 2:
-                return ColumnFilterField(*args)
-            else:
-                # If present, the third element of the args tuple is the kwargs
-                # dict, which we pass into the ColumnFilterField constructor.
-                return ColumnFilterField(*args[:2], **args[2])
+    def make_arg_filter(self, arg_name, arg_filter):
+        if callable(arg_filter):
+            arg_filter = ColumnFilter(arg_name, arg_filter)
+
+        arg_filter.maybe_set_arg_name(arg_name)
+
+        return arg_filter
 
     def filter_query(self, query, view):
-        for arg_name, filter_field in self._filter_fields.items():
+        args = flask.request.args
+
+        for arg_name, arg_filter in self._arg_filters.items():
             try:
-                arg_value = flask.request.args[arg_name]
+                arg_value = args[arg_name]
             except KeyError:
-                continue
+                arg_value = None
 
             try:
-                query = query.filter(filter_field(view, arg_value))
+                query = arg_filter.filter_query(query, view, arg_value)
             except ApiError as e:
                 raise e.update({'source': {'parameter': arg_name}})
 
         return query
 
     def spec_declaration(self, path, spec, **kwargs):
-        for arg_name in self._filter_fields.keys():
+        for arg_name in self._arg_filters:
             path['get'].add_parameter(name=arg_name)
