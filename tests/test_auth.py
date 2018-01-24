@@ -1,5 +1,6 @@
 import flask
 from marshmallow import fields, Schema
+from mock import ANY, call, Mock
 import pytest
 from sqlalchemy import Column, Integer, sql, String
 
@@ -7,6 +8,7 @@ from flask_resty import (
     Api,
     ApiError,
     AuthenticationBase,
+    AuthorizeModifyMixin,
     GenericModelView,
     HasAnyCredentialsAuthorization,
     HasCredentialsAuthorizationBase,
@@ -52,7 +54,9 @@ def auth():
         def get_request_credentials(self):
             return flask.request.args.get('user_id')
 
-    class UserAuthorization(HasCredentialsAuthorizationBase):
+    class UserAuthorization(
+        AuthorizeModifyMixin, HasCredentialsAuthorizationBase,
+    ):
         def filter_query(self, query, view):
             return query.filter(
                 (view.model.owner_id == self.get_request_credentials()) |
@@ -60,25 +64,24 @@ def auth():
             )
 
         def authorize_create_item(self, item):
+            super(UserAuthorization, self).authorize_create_item(item)
+
             if item.name == "Updated":
                 raise ApiError(403, {'code': 'invalid_name'})
 
-        def authorize_save_item(self, item):
-            return self.authorize_modify_item(item)
-
-        def authorize_update_item(self, item, data):
-            return self.authorize_modify_item(item)
-
-        def authorize_delete_item(self, item):
-            return self.authorize_modify_item(item)
-
-        def authorize_modify_item(self, item):
+        def authorize_modify_item(self, item, action):
             if item.owner_id != self.get_request_credentials():
                 raise ApiError(403, {'code': 'invalid_user'})
 
+    authorization = UserAuthorization()
+    authorization.authorize_modify_item = Mock(
+        wraps=authorization.authorize_modify_item,
+        autospec=True,
+    )
+
     return {
         'authentication': FakeAuthentication(),
-        'authorization': UserAuthorization(),
+        'authorization': authorization,
     }
 
 
@@ -116,7 +119,10 @@ def routes(app, models, schemas, auth):
 
     class WidgetCreateMissingView(WidgetViewBase):
         def create_missing_item(self, id):
-            return self.model(id=id, owner_id=flask.request.args['owner_id'])
+            return self.create_item({
+                'id': id,
+                'owner_id': flask.request.args['owner_id'],
+            })
 
         def get(self, id):
             return self.retrieve(id, create_missing=True)
@@ -170,15 +176,20 @@ def test_retrieve(client):
     assert_response(response, 200)
 
 
-def test_create(client):
+def test_create(client, auth):
     response = client.post('/widgets?user_id=foo', data={
         'owner_id': 'foo',
         'name': "Created",
     })
     assert_response(response, 201)
 
+    assert auth['authorization'].authorize_modify_item.mock_calls == [
+        call(ANY, 'create'),
+        call(ANY, 'save'),
+    ]
 
-def test_update(client):
+
+def test_update(client, auth):
     response = client.patch('/widgets/1?user_id=foo', data={
         'id': '1',
         'owner_id': 'foo',
@@ -186,10 +197,19 @@ def test_update(client):
     })
     assert_response(response, 204)
 
+    assert auth['authorization'].authorize_modify_item.mock_calls == [
+        call(ANY, 'update'),
+        call(ANY, 'save'),
+    ]
 
-def test_delete(client):
+
+def test_delete(client, auth):
     response = client.delete('/widgets/1?user_id=foo')
     assert_response(response, 204)
+
+    assert auth['authorization'].authorize_modify_item.mock_calls == [
+        call(ANY, 'delete'),
+    ]
 
 
 def test_retrieve_any_credentials(client):
@@ -197,7 +217,7 @@ def test_retrieve_any_credentials(client):
     assert response.status_code == 200
 
 
-def test_retrieve_create_missing(client):
+def test_retrieve_create_missing(client, auth):
     response = client.get('/widgets_create_missing/4?user_id=foo&owner_id=foo')
     assert_response(response, 200, {
         'id': '4',
@@ -205,8 +225,13 @@ def test_retrieve_create_missing(client):
         'name': None,
     })
 
+    assert auth['authorization'].authorize_modify_item.mock_calls == [
+        call(ANY, 'create'),
+        call(ANY, 'save'),
+    ]
 
-def test_update_update_missing(client):
+
+def test_update_update_missing(client, auth):
     response = client.put(
         '/widgets_create_missing/4?user_id=foo&owner_id=foo',
         data={
@@ -215,6 +240,12 @@ def test_update_update_missing(client):
         },
     )
     assert_response(response, 204)
+
+    assert auth['authorization'].authorize_modify_item.mock_calls == [
+        call(ANY, 'create'),
+        call(ANY, 'update'),
+        call(ANY, 'save'),
+    ]
 
 
 # -----------------------------------------------------------------------------
@@ -232,7 +263,7 @@ def test_error_retrieve_unauthorized(client):
     assert_response(response, 404)
 
 
-def test_error_create_unauthorized(client):
+def test_error_create_unauthorized(client, auth):
     response = client.post('/widgets?user_id=foo', data={
         'owner_id': 'foo',
         'name': "Updated",
@@ -241,8 +272,12 @@ def test_error_create_unauthorized(client):
         'code': 'invalid_name',
     }])
 
+    assert auth['authorization'].authorize_modify_item.mock_calls == [
+        call(ANY, 'create'),
+    ]
 
-def test_error_create_save_unauthorized(client):
+
+def test_error_create_save_unauthorized(client, auth):
     response = client.post('/widgets?user_id=bar', data={
         'owner_id': 'foo',
         'name': "Created",
@@ -251,8 +286,12 @@ def test_error_create_save_unauthorized(client):
         'code': 'invalid_user',
     }])
 
+    assert auth['authorization'].authorize_modify_item.mock_calls == [
+        call(ANY, 'create'),
+    ]
 
-def test_error_update_unauthorized(client):
+
+def test_error_update_unauthorized(client, auth):
     forbidden_save_response = client.patch('/widgets/1?user_id=foo', data={
         'id': '1',
         'owner_id': 'bar',
@@ -262,12 +301,21 @@ def test_error_update_unauthorized(client):
         'code': 'invalid_user',
     }])
 
+    assert auth['authorization'].authorize_modify_item.mock_calls == [
+        call(ANY, 'update'),
+        call(ANY, 'save'),
+    ]
+    auth['authorization'].authorize_modify_item.reset_mock()
+
     not_found_response = client.patch('/widgets/1?user_id=bar', data={
         'id': '1',
         'owner_id': 'bar',
         'name': "Updated",
     })
     assert_response(not_found_response, 404)
+
+    assert auth['authorization'].authorize_modify_item.mock_calls == []
+    auth['authorization'].authorize_modify_item.reset_mock()
 
     forbidden_update_response = client.patch('/widgets/3?user_id=foo', data={
         'id': '3',
@@ -278,15 +326,26 @@ def test_error_update_unauthorized(client):
         'code': 'invalid_user',
     }])
 
+    assert auth['authorization'].authorize_modify_item.mock_calls == [
+        call(ANY, 'update'),
+    ]
 
-def test_error_delete_unauthorized(client):
+
+def test_error_delete_unauthorized(client, auth):
     not_found_response = client.delete('/widgets/1?user_id=bar')
     assert_response(not_found_response, 404)
+
+    assert auth['authorization'].authorize_modify_item.mock_calls == []
+    auth['authorization'].authorize_modify_item.reset_mock()
 
     forbidden_response = client.delete('/widgets/3?user_id=bar')
     assert_response(forbidden_response, 403, [{
         'code': 'invalid_user',
     }])
+
+    assert auth['authorization'].authorize_modify_item.mock_calls == [
+        call(ANY, 'delete'),
+    ]
 
 
 def test_error_any_credentials_unauthenticated(client):
@@ -294,19 +353,30 @@ def test_error_any_credentials_unauthenticated(client):
     assert response.status_code == 401
 
 
-def test_error_retrieve_create_missing_unauthorized(client):
+def test_error_retrieve_create_missing_unauthorized(client, auth):
     response = client.get('/widgets_create_missing/4?user_id=bar&owner_id=foo')
     assert_response(response, 404)
 
+    assert auth['authorization'].authorize_modify_item.mock_calls == [
+        call(ANY, 'create'),
+    ]
 
-def test_error_update_create_missing_unauthorized(client):
+
+def test_error_update_create_missing_unauthorized(client, auth):
     response = client.put(
-        '/widgets_create_missing/4?user_id=bar&owner_id=foo',
+        '/widgets_create_missing/4?user_id=foo&owner_id=foo',
         data={
             'id': '4',
+            'owner_id': 'bar',
             'name': "Created",
         },
     )
     assert_response(response, 403, [{
         'code': 'invalid_user',
     }])
+
+    assert auth['authorization'].authorize_modify_item.mock_calls == [
+        call(ANY, 'create'),
+        call(ANY, 'update'),
+        call(ANY, 'save'),
+    ]

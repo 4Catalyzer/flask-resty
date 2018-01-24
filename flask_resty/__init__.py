@@ -4,6 +4,7 @@ from .api import Api
 from .authentication import AuthenticationBase, NoOpAuthentication
 from .authorization import (
     AuthorizationBase,
+    AuthorizeModifyMixin,
     HasAnyCredentialsAuthorization,
     HasCredentialsAuthorizationBase,
     NoOpAuthorization,

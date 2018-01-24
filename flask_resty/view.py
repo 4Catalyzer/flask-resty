@@ -271,19 +271,19 @@ class ModelView(ApiView):
             if not create_missing:
                 raise
 
-            item = self.create_missing_item(id)
+            try:
+                item = self.create_missing_item(id)
 
-            if will_update_item:
-                # Bypass authorizating the save if we are getting the item
-                # for update, as update_item will make that check.
-                self.session.add(item)
-            else:
-                try:
+                if will_update_item:
+                    # Bypass authorizating the save if we are getting the item
+                    # for update, as update_item will make that check.
+                    self.session.add(item)
+                else:
                     self.add_item(item)
-                except ApiError:
-                    # Raise the original not found error instead of the
-                    # authorization error.
-                    raise e
+            except ApiError:
+                # Raise the original not found error instead of the
+                # authorization error.
+                raise e
 
         return item
 
@@ -314,11 +314,13 @@ class ModelView(ApiView):
         return self.create_item(self.get_id_dict(id))
 
     def create_item(self, data):
-        return self.model(**data)
+        item = self.model(**data)
 
-    def add_item(self, item):
         self.authorization.authorize_create_item(item)
 
+        return item
+
+    def add_item(self, item):
         self.session.add(item)
 
         self.authorization.authorize_save_item(item)
