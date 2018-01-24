@@ -7,6 +7,7 @@ from flask_resty import (
     Api,
     ApiError,
     AuthenticationBase,
+    AuthorizeModifyMixin,
     GenericModelView,
     HasAnyCredentialsAuthorization,
     HasCredentialsAuthorizationBase,
@@ -52,7 +53,9 @@ def auth():
         def get_request_credentials(self):
             return flask.request.args.get('user_id')
 
-    class UserAuthorization(HasCredentialsAuthorizationBase):
+    class UserAuthorization(
+        AuthorizeModifyMixin, HasCredentialsAuthorizationBase,
+    ):
         def filter_query(self, query, view):
             return query.filter(
                 (view.model.owner_id == self.get_request_credentials()) |
@@ -60,19 +63,12 @@ def auth():
             )
 
         def authorize_create_item(self, item):
+            super(UserAuthorization, self).authorize_create_item(item)
+
             if item.name == "Updated":
                 raise ApiError(403, {'code': 'invalid_name'})
 
-        def authorize_save_item(self, item):
-            return self.authorize_modify_item(item)
-
-        def authorize_update_item(self, item, data):
-            return self.authorize_modify_item(item)
-
-        def authorize_delete_item(self, item):
-            return self.authorize_modify_item(item)
-
-        def authorize_modify_item(self, item):
+        def authorize_modify_item(self, item, action):
             if item.owner_id != self.get_request_credentials():
                 raise ApiError(403, {'code': 'invalid_user'})
 
