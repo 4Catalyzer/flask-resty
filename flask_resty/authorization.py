@@ -14,10 +14,10 @@ class AuthorizationBase(object):
     def filter_query(self, query, view):
         raise NotImplementedError()
 
-    def authorize_create_item(self, item):
+    def authorize_save_item(self, item):
         raise NotImplementedError()
 
-    def authorize_save_item(self, item):
+    def authorize_create_item(self, item):
         raise NotImplementedError()
 
     def authorize_update_item(self, item, data):
@@ -37,11 +37,11 @@ class HasCredentialsAuthorizationBase(AuthorizationBase):
 
 
 class AuthorizeModifyMixin(AuthorizationBase):
-    def authorize_create_item(self, item):
-        self.authorize_modify_item(item, 'create')
-
     def authorize_save_item(self, item):
         self.authorize_modify_item(item, 'save')
+
+    def authorize_create_item(self, item):
+        self.authorize_modify_item(item, 'create')
 
     def authorize_update_item(self, item, data):
         self.authorize_modify_item(item, 'update')
@@ -63,10 +63,10 @@ class NoOpAuthorization(AuthorizationBase):
     def filter_query(self, query, view):
         return query
 
-    def authorize_create_item(self, item):
+    def authorize_save_item(self, item):
         pass
 
-    def authorize_save_item(self, item):
+    def authorize_create_item(self, item):
         pass
 
     def authorize_update_item(self, item, data):
