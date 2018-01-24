@@ -130,7 +130,8 @@ class ColumnFilter(FieldFilterBase):
         return view.deserializer.fields[self._column_name]
 
     def get_filter_clause(self, view, value):
-        column = getattr(view.model, self._column_name)
+        column_name = self.get_field(view).attribute or self._column_name
+        column = getattr(view.model, column_name)
         return self._operator(column, value)
 
     def deserialize(self, field, value_raw):
