@@ -2,6 +2,7 @@ import posixpath
 
 import flask
 from werkzeug.exceptions import default_exceptions
+from werkzeug.routing import RequestSlash, Rule
 
 from .exceptions import ApiError
 
@@ -30,15 +31,26 @@ def handle_http_exception(error):
 # -----------------------------------------------------------------------------
 
 
+class StrictRule(Rule):
+    def match(self, path, method=None):
+        try:
+            result = super(StrictRule, self).match(path, method)
+        except RequestSlash:
+            return None
+
+        return result
+
+
 class Api(object):
-    def __init__(self, app=None, prefix=''):
+    def __init__(self, app=None, prefix='', append_slash=True):
+        self.prefix = prefix
+        self.append_slash = append_slash
+
         if app:
             self._app = app
             self.init_app(app)
         else:
             self._app = None
-
-        self.prefix = prefix
 
     def init_app(self, app):
         app.extensions['resty'] = FlaskRestyState(self)
@@ -48,6 +60,9 @@ class Api(object):
         # TODO: Just handle HTTPException once pallets/flask#2314 lands.
         for exception in default_exceptions.values():
             app.register_error_handler(exception, handle_http_exception)
+
+        if not self.append_slash:
+            app.url_rule_class = StrictRule
 
     def _get_app(self, app):
         app = app or self._app
@@ -120,11 +135,15 @@ class Api(object):
                 return alternate_view_func(*args, **kwargs)
 
         app.add_url_rule(
-            base_rule_full, view_func=view_func, endpoint=endpoint,
+            base_rule_full,
+            view_func=view_func,
+            endpoint=endpoint,
             methods=base_view.methods,
         )
         app.add_url_rule(
-            alternate_rule_full, view_func=view_func, endpoint=endpoint,
+            alternate_rule_full,
+            view_func=view_func,
+            endpoint=endpoint,
             methods=alternate_view.methods,
         )
 
