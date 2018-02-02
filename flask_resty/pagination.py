@@ -5,8 +5,8 @@ from marshmallow import ValidationError
 import sqlalchemy as sa
 
 from . import meta
-from . import utils
 from .exceptions import ApiError
+from .utils import if_none, iter_validation_errors
 
 # -----------------------------------------------------------------------------
 
@@ -55,7 +55,7 @@ class LimitPagination(LimitPaginationBase):
     limit_arg = 'limit'
 
     def __init__(self, default_limit=None, max_limit=None):
-        self._default_limit = utils.if_none(default_limit, max_limit)
+        self._default_limit = if_none(default_limit, max_limit)
         self._max_limit = max_limit
 
         if self._max_limit is not None:
@@ -232,11 +232,10 @@ class CursorPaginationBase(LimitPagination):
                 for field, value in zip(column_fields, cursor)
             )
         except ValidationError as e:
-            errors = (
+            raise ApiError(400, *(
                 self.format_validation_error(message)
-                for message, path in utils.iter_validation_errors(e.messages)
-            )
-            raise ApiError(400, *errors)
+                for message, path in iter_validation_errors(e.messages)
+            ))
 
         return cursor
 
