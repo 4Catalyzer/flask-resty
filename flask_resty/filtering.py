@@ -5,8 +5,8 @@ from marshmallow import missing, ValidationError
 import sqlalchemy as sa
 from sqlalchemy import sql
 
-from . import utils
 from .exceptions import ApiError
+from .utils import iter_validation_errors
 
 # -----------------------------------------------------------------------------
 
@@ -56,11 +56,10 @@ class FieldFilterBase(ArgFilterBase):
         try:
             value = self.deserialize(field, value_raw)
         except ValidationError as e:
-            errors = (
+            raise ApiError(400, *(
                 self.format_validation_error(message)
-                for message, path in utils.iter_validation_errors(e.messages)
-            )
-            raise ApiError(400, *errors)
+                for message, path in iter_validation_errors(e.messages)
+            ))
 
         return self.get_filter_clause(view, value)
 

@@ -96,11 +96,10 @@ class ApiView(MethodView):
     def deserialize(self, data_raw, expected_id=None, **kwargs):
         data, errors = self.deserializer.load(data_raw, **kwargs)
         if errors:
-            formatted_errors = (
+            raise ApiError(422, *(
                 self.format_validation_error(error)
                 for error in iter_validation_errors(errors)
-            )
-            raise ApiError(422, *formatted_errors)
+            ))
 
         self.validate_request_id(data, expected_id)
         return data
