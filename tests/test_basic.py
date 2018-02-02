@@ -1,4 +1,5 @@
 from marshmallow import fields, Schema
+from mock import Mock
 import pytest
 from sqlalchemy import Column, Integer, String
 
@@ -38,11 +39,23 @@ def schemas():
     }
 
 
+@pytest.fixture
+def view_action_spy():
+    return Mock()
+
+
 @pytest.fixture(autouse=True)
-def routes(app, models, schemas):
+def routes(app, models, schemas, view_action_spy):
     class WidgetViewBase(GenericModelView):
         model = models['widget']
         schema = schemas['widget']
+
+        def dispatch_request(self, *args, **kwargs):
+            response = super(WidgetViewBase, self).dispatch_request(
+                *args, **kwargs
+            )
+            view_action_spy(self.action)
+            return response
 
     class WidgetListView(WidgetViewBase):
         def get(self):
@@ -80,8 +93,9 @@ def data(db, models):
 # -----------------------------------------------------------------------------
 
 
-def test_list(client):
+def test_list(client, view_action_spy):
     response = client.get('/widgets')
+
     assert_response(response, 200, [
         {
             'id': '1',
@@ -100,8 +114,10 @@ def test_list(client):
         },
     ])
 
+    view_action_spy.assert_called_once_with('list')
 
-def test_retrieve(client):
+
+def test_retrieve(client, view_action_spy):
     response = client.get('/widgets/1')
 
     assert_response(response, 200, {
@@ -110,30 +126,35 @@ def test_retrieve(client):
         'description': "foo widget",
     })
 
+    view_action_spy.assert_called_once_with('retrieve')
 
-def test_create(client):
+
+def test_create(client, view_action_spy):
     response = client.post('/widgets', data={
         'name': "Qux",
         'description': "qux widget",
     })
-    assert response.headers['Location'] == 'http://localhost/widgets/4'
 
+    assert response.headers['Location'] == 'http://localhost/widgets/4'
     assert_response(response, 201, {
         'id': '4',
         'name': "Qux",
         'description': "qux widget",
     })
 
+    view_action_spy.assert_called_once_with('create')
 
-def test_update(client):
+
+def test_update(client, view_action_spy):
     update_response = client.patch('/widgets/1', data={
         'id': '1',
         'description': "updated description",
     })
     assert_response(update_response, 204)
 
-    retrieve_response = client.get('/widgets/1')
+    view_action_spy.assert_called_once_with('update')
 
+    retrieve_response = client.get('/widgets/1')
     assert_response(retrieve_response, 200, {
         'id': '1',
         'name': "Foo",
@@ -141,9 +162,12 @@ def test_update(client):
     })
 
 
-def test_destroy(client):
+def test_destroy(client, view_action_spy):
     destroy_response = client.delete('/widgets/1')
     assert_response(destroy_response, 204)
 
+    view_action_spy.assert_called_once_with('destroy')
+
     retrieve_response = client.get('/widgets/1')
+
     assert_response(retrieve_response, 404)
