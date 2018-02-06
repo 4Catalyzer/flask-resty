@@ -1,7 +1,11 @@
 import posixpath
 
 import flask
-from werkzeug.exceptions import default_exceptions
+from werkzeug.exceptions import (
+    default_exceptions,
+    HTTPException,
+    InternalServerError,
+)
 
 from .exceptions import ApiError
 
@@ -18,6 +22,11 @@ def handle_api_error(error):
 
 
 def handle_http_exception(error):
+    # Flask calls the InternalServerError handler with any uncaught app
+    # exceptions. Re-raise those as generic internal server errors.
+    if not isinstance(error, HTTPException):
+        error = InternalServerError()
+
     body = {
         'errors': [{
             'code': '_'.join(word.lower() for word in error.name.split()),
