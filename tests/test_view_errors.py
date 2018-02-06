@@ -2,7 +2,7 @@ from marshmallow import fields, Schema
 import pytest
 from sqlalchemy import Column, Integer, String
 
-from flask_resty import Api, GenericModelView
+from flask_resty import Api, ApiView, GenericModelView
 from flask_resty.testing import assert_response, get_body, get_errors
 
 # -----------------------------------------------------------------------------
@@ -66,10 +66,15 @@ def views(models, schemas):
             super(WidgetFlushListView, self).add_item(item)
             self.flush()
 
+    class UncaughtView(ApiView):
+        def get(self):
+            raise RuntimeError()
+
     return {
         'widget_list': WidgetListView,
         'widget': WidgetView,
         'widget_flush_list': WidgetFlushListView,
+        'uncaught': UncaughtView,
     }
 
 
@@ -81,6 +86,9 @@ def routes(app, views):
     )
     api.add_resource(
         '/widgets_flush', views['widget_flush_list'],
+    )
+    api.add_resource(
+        '/uncaught', views['uncaught'],
     )
 
 
@@ -202,6 +210,16 @@ def test_flush_conflict(client):
     })
     assert_response(response, 409, [{
         'code': 'invalid_data.conflict',
+    }])
+
+
+def test_uncaught(app):
+    app.testing = False
+    client = app.test_client()
+
+    response = client.get('/uncaught')
+    assert_response(response, 500, [{
+        'code': 'internal_server_error',
     }])
 
 
