@@ -277,8 +277,6 @@ class ModelView(ApiView):
                     # Bypass authorizating the save if we are getting the item
                     # for update, as update_item will make that check.
                     self.session.add(item)
-                else:
-                    self.add_item(item)
             except ApiError:
                 # Raise the original not found error instead of the
                 # authorization error.

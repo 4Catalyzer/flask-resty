@@ -227,7 +227,6 @@ def test_retrieve_create_missing(client, auth):
 
     assert auth['authorization'].authorize_modify_item.mock_calls == [
         call(ANY, 'create'),
-        call(ANY, 'save'),
     ]
 
 
