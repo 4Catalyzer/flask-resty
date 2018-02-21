@@ -63,25 +63,27 @@ class FixedSorting(FieldSortingBase):
 class Sorting(FieldSortingBase):
     sort_arg = 'sort'
 
-    def __init__(self, *field_names, **kwargs):
+    def __init__(self, *field_names, fixed_fields=None, **kwargs):
         self._field_names = frozenset(field_names)
+        self._fixed_orderings = ()
+        if fixed_fields:
+            self._fixed_orderings = self.get_field_orderings(fixed_fields)
         self._default_sort = kwargs.get('default')
 
     def get_request_field_orderings(self):
         sort = flask.request.args.get(self.sort_arg, self._default_sort)
         if sort is None:
-            return ()
+            return self._fixed_orderings
 
-        return self.get_field_orderings(sort)
+        field_orderings = self.get_field_orderings(sort)
+        for field_name, _ in field_orderings:
+            if field_name not in self._field_names:
+                raise ApiError(400, {
+                    'code': 'invalid_sort',
+                    'source': {'parameter': self.sort_arg},
+                })
 
-    def get_column(self, view, field_name):
-        if field_name not in self._field_names:
-            raise ApiError(400, {
-                'code': 'invalid_sort',
-                'source': {'parameter': self.sort_arg},
-            })
-
-        return super(Sorting, self).get_column(view, field_name)
+        return field_orderings + self._fixed_orderings
 
     def spec_declaration(self, path, spec, **kwargs):
         path['get'].add_parameter(
