@@ -188,21 +188,52 @@ class PagePagination(LimitOffsetPagination):
 class CursorPaginationBase(LimitPagination):
     cursor_arg = 'cursor'
 
+    def ensure_query_sorting(self, query, view):
+        sorting_field_orderings, missing_field_orderings = (
+            self.get_sorting_and_missing_field_orderings(view)
+        )
+
+        query = view.sorting.sort_query_by_fields(
+            query,
+            view,
+            missing_field_orderings,
+        )
+        field_orderings = sorting_field_orderings + missing_field_orderings
+
+        return query, field_orderings
+
     def get_field_orderings(self, view):
+        sorting_field_orderings, missing_field_orderings = (
+            self.get_sorting_and_missing_field_orderings(view)
+        )
+        return sorting_field_orderings + missing_field_orderings
+
+    def get_sorting_and_missing_field_orderings(self, view):
         sorting = view.sorting
         assert sorting is not None, (
             "sorting must be defined when using cursor pagination"
         )
 
-        field_orderings = sorting.get_request_field_orderings()
-        for id_field in view.id_fields:
-            assert (
-                id_field in (field_name for field_name, _ in field_orderings)
-            ), (
-                "ordering does not include {}".format(id_field)
-            )
+        sorting_field_orderings = sorting.get_request_field_orderings(view)
 
-        return field_orderings
+        sorting_ordering_fields = frozenset(
+            field_name for field_name, _ in sorting_field_orderings,
+        )
+
+        # For convenience, use the ascending setting on the last explicit
+        # ordering when possible, such that reversing the sort will reverse
+        # the IDs as well.
+        if sorting_field_orderings:
+            last_field_asc = sorting_field_orderings[-1][1]
+        else:
+            last_field_asc = True
+
+        missing_field_orderings = tuple(
+            (id_field, last_field_asc) for id_field in view.id_fields
+            if id_field not in sorting_ordering_fields
+        )
+
+        return sorting_field_orderings, missing_field_orderings
 
     def get_request_cursor(self, view, field_orderings):
         cursor = flask.request.args.get(self.cursor_arg)
@@ -333,7 +364,7 @@ class CursorPaginationBase(LimitPagination):
 
 class RelayCursorPagination(CursorPaginationBase):
     def get_page(self, query, view):
-        field_orderings = self.get_field_orderings(view)
+        query, field_orderings = self.ensure_query_sorting(query, view)
 
         cursor_in = self.get_request_cursor(view, field_orderings)
         if cursor_in is not None:
