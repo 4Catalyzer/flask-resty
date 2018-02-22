@@ -72,16 +72,15 @@ class Sorting(FieldSortingBase):
         if sort is None:
             return ()
 
-        return self.get_field_orderings(sort)
+        field_orderings = self.get_field_orderings(sort)
+        for field_name, _ in field_orderings:
+            if field_name not in self._field_names:
+                raise ApiError(400, {
+                    'code': 'invalid_sort',
+                    'source': {'parameter': self.sort_arg},
+                })
 
-    def get_column(self, view, field_name):
-        if field_name not in self._field_names:
-            raise ApiError(400, {
-                'code': 'invalid_sort',
-                'source': {'parameter': self.sort_arg},
-            })
-
-        return super(Sorting, self).get_column(view, field_name)
+        return field_orderings
 
     def spec_declaration(self, path, spec, **kwargs):
         path['get'].add_parameter(
