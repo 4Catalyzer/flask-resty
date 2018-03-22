@@ -28,7 +28,7 @@ from .pagination import (
     PagePagination,
     RelayCursorPagination,
 )
-from .related import Related
+from .related import Related, RelatedId
 from .sorting import FieldSortingBase, FixedSorting, Sorting, SortingBase
 from .view import ApiView, GenericModelView, ModelView
 

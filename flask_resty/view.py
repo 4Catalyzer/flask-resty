@@ -300,6 +300,9 @@ class ModelView(ApiView):
         except KeyError:
             raise ApiError(422, {'code': 'invalid_related.missing_id'})
 
+        return self.resolve_related_id(id)
+
+    def resolve_related_id(self, id):
         try:
             item = self.get_item(id)
         except NoResultFound:
