@@ -30,7 +30,7 @@ def schema_path_helper(spec, path, view, **kwargs):
             'type': 'string',
         })
     if parameters:
-        path['parameters'] = parameters
+        operations['parameters'] = parameters
 
     path.path = flask_path_to_swagger(resource.rule)
     path.operations = dict(**operations)
