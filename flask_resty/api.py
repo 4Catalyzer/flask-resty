@@ -1,3 +1,4 @@
+import functools
 import posixpath
 
 import flask
@@ -122,6 +123,7 @@ class Api(object):
         alternate_rule_full = '{}{}'.format(self.prefix, alternate_rule)
         alternate_view_func = alternate_view.as_view(endpoint)
 
+        @functools.wraps(base_view_func)
         def view_func(*args, **kwargs):
             if flask.request.url_rule.rule == base_rule_full:
                 return base_view_func(*args, **kwargs)

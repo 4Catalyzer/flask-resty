@@ -162,3 +162,12 @@ def test_factory_pattern(app, views, client):
     assert_response(response, 200, [{
         'id': '1',
     }])
+
+
+def test_view_func_wrapper(app, views):
+    api = Api(app)
+    api.add_resource('/widgets', views['widget_list'], views['widget'])
+
+    # This is really a placeholder for asserting that e.g. custom New Relic
+    # view information gets passed through.
+    assert app.view_functions['WidgetView'].__name__ == 'WidgetView'
