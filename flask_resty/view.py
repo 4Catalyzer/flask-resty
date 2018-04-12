@@ -9,6 +9,7 @@ from . import meta
 from .authentication import NoOpAuthentication
 from .authorization import NoOpAuthorization
 from .exceptions import ApiError
+from .signals import got_handled_integrity_error
 from .spec import ApiViewDeclaration, ModelViewDeclaration
 from .utils import iter_validation_errors, settable_property
 
@@ -350,7 +351,6 @@ class ModelView(ApiView):
         # Don't catch DataErrors here, as they arise from bugs in validation in
         # the schema.
         except IntegrityError as e:
-            flask.current_app.logger.exception("flush failed")
             raise self.resolve_integrity_error(e)
 
     def commit(self):
@@ -359,7 +359,6 @@ class ModelView(ApiView):
         # Don't catch DataErrors here, as they arise from bugs in validation in
         # the schema.
         except IntegrityError as e:
-            flask.current_app.logger.exception("commit failed")
             raise self.resolve_integrity_error(e)
 
     def resolve_integrity_error(self, error):
@@ -375,6 +374,10 @@ class ModelView(ApiView):
             # likely an internal server error.
             return error
 
+        got_handled_integrity_error.send(
+            flask.current_app._get_current_object(),
+            error=error,
+        )
         return ApiError(409, {'code': 'invalid_data.conflict'})
 
     def set_item_meta(self, item):

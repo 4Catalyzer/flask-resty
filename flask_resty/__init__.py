@@ -29,6 +29,7 @@ from .pagination import (
     RelayCursorPagination,
 )
 from .related import Related, RelatedId
+from .signals import got_handled_integrity_error
 from .sorting import FieldSortingBase, FixedSorting, Sorting, SortingBase
 from .view import ApiView, GenericModelView, ModelView
 
