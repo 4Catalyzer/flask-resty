@@ -348,12 +348,14 @@ class ModelView(ApiView):
             # Flushing allows checking invariants without committing.
             self.session.flush()
         except IntegrityError:
+            flask.current_app.logger.exception("flush failed")
             raise ApiError(409, {'code': 'invalid_data.conflict'})
 
     def commit(self):
         try:
             self.session.commit()
         except IntegrityError:
+            flask.current_app.logger.exception("commit failed")
             raise ApiError(409, {'code': 'invalid_data.conflict'})
 
     def set_item_meta(self, item):
