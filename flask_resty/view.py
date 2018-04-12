@@ -347,16 +347,35 @@ class ModelView(ApiView):
         try:
             # Flushing allows checking invariants without committing.
             self.session.flush()
-        except IntegrityError:
+        # Don't catch DataErrors here, as they arise from bugs in validation in
+        # the schema.
+        except IntegrityError as e:
             flask.current_app.logger.exception("flush failed")
-            raise ApiError(409, {'code': 'invalid_data.conflict'})
+            raise self.resolve_integrity_error(e)
 
     def commit(self):
         try:
             self.session.commit()
-        except IntegrityError:
+        # Don't catch DataErrors here, as they arise from bugs in validation in
+        # the schema.
+        except IntegrityError as e:
             flask.current_app.logger.exception("commit failed")
-            raise ApiError(409, {'code': 'invalid_data.conflict'})
+            raise self.resolve_integrity_error(e)
+
+    def resolve_integrity_error(self, error):
+        original_error = error.orig
+
+        if (
+            hasattr(original_error, 'pgcode') and
+            original_error.pgcode != '23505'  # UNIQUE_VIOLATION.
+        ):
+            # Using the psycopg2 error code, we can tell that this was not from
+            # a unique constraint violation. That means that this was from e.g.
+            # a non-null constraint violation, which is a schema bug and thus
+            # likely an internal server error.
+            return error
+
+        return ApiError(409, {'code': 'invalid_data.conflict'})
 
     def set_item_meta(self, item):
         super(ModelView, self).set_item_meta(item)

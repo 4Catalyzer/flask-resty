@@ -32,7 +32,7 @@ def schemas():
 
     class WidgetSchema(Schema):
         id = fields.Integer(as_string=True)
-        name = fields.String(required=True)
+        name = fields.String(required=True, allow_none=True)
         nested = fields.Nested(NestedSchema)
         nested_many = fields.Nested(NestedSchema, many=True)
 
@@ -195,8 +195,9 @@ def test_id_mismatch(client):
     }])
 
 
-def test_commit_conflict(client):
-    response = client.post('/widgets', data={
+@pytest.mark.parametrize('path', ('/widgets', '/widgets_flush'))
+def test_integrity_error_conflict(client, path):
+    response = client.post(path, data={
         'name': "Foo",
     })
     assert_response(response, 409, [{
@@ -204,18 +205,23 @@ def test_commit_conflict(client):
     }])
 
 
-def test_flush_conflict(client):
-    response = client.post('/widgets_flush', data={
-        'name': "Foo",
-    })
-    assert_response(response, 409, [{
-        'code': 'invalid_data.conflict',
-    }])
+@pytest.mark.parametrize('path', ('/widgets', '/widgets_flush'))
+def test_integrity_error_uncaught(db, app, client, path):
+    if db.engine.driver != 'psycopg2':
+        pytest.xfail("IntegrityError cause detection only works with psycopg2")
 
-
-def test_uncaught(app):
     app.testing = False
-    client = app.test_client()
+
+    response = client.post(path, data={
+        'name': None,
+    })
+    assert_response(response, 500, [{
+        'code': 'internal_server_error',
+    }])
+
+
+def test_uncaught(app, client):
+    app.testing = False
 
     response = client.get('/uncaught')
     assert_response(response, 500, [{
