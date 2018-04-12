@@ -5,10 +5,12 @@ python:
   - "2.7"
   - "3.5"
   - "3.6"
-  - "pypy"
+
+services:
+  - postgresql
 
 env:
-  - TOXENV=py-jwt
+  - TOXENV=py-jwt DATABASE_URL=postgres://localhost/travis_ci_test
 
 matrix:
   include:
@@ -16,6 +18,10 @@ matrix:
       env: TOXENV=py-base
     - python: "3.6"
       env: TOXENV=py-base
+    - python: "pypy"
+      env: TOXENV=py-jwt
+    - python: "pypy3"
+      env: TOXENV=py-jwt
 
 cache:
   directories:
@@ -26,6 +32,8 @@ before_install:
 install:
   - pip install -U codecov tox
 
+before_script:
+  - psql -c 'CREATE DATABASE travis_ci_test' -U postgres
 script:
   - python setup.py test
 
