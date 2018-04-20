@@ -365,12 +365,14 @@ class ModelView(ApiView):
 
         if (
             hasattr(original_error, 'pgcode') and
-            original_error.pgcode != '23505'  # UNIQUE_VIOLATION.
+            original_error.pgcode in (
+                '23502',  # not_null_violation
+                '23514',  # check_violation
+            )
         ):
             # Using the psycopg2 error code, we can tell that this was not from
-            # a unique constraint violation. That means that this was from e.g.
-            # a non-null constraint violation, which is a schema bug and thus
-            # likely an internal server error.
+            # an integrity error that was not a conflict. This means there was
+            # a schema bug, so we emit an interal server error instead.
             return error
 
         flask.current_app.logger.exception("handled integrity error")
