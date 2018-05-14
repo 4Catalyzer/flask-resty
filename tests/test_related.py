@@ -1,7 +1,7 @@
 from marshmallow import fields, Schema
 import pytest
 from sqlalchemy import Column, ForeignKey, Integer, String
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import raiseload, relationship
 
 from flask_resty import Api, GenericModelView, Related, RelatedId, RelatedItem
 from flask_resty.testing import assert_response
@@ -47,6 +47,10 @@ def schemas():
         child_ids = fields.List(fields.Integer(as_string=True), load_only=True)
 
     class ChildSchema(Schema):
+        @classmethod
+        def get_query_options(cls, load):
+            return (load.joinedload('parent'),)
+
         id = fields.Integer(as_string=True)
         name = fields.String(required=True)
 
@@ -98,6 +102,8 @@ def routes(app, models, schemas):
     class ChildView(GenericModelView):
         model = models['child']
         schema = schemas['child']
+
+        base_query_options = (raiseload('*'),)
 
         related = Related(
             parent=RelatedId(ParentView, 'parent_id'),

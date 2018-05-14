@@ -1,7 +1,10 @@
+import itertools
+
 import flask
 from flask.views import MethodView
 from marshmallow import fields
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Load
 from sqlalchemy.orm.exc import NoResultFound
 from werkzeug.exceptions import NotFound
 
@@ -209,10 +212,46 @@ class ModelView(ApiView):
 
     @settable_property
     def query(self):
+        """The SQLAlchemy query for the view.
+
+        Override this to customize the query to fetch items in this view.
+
+        By default, this applies the filter from the view's `authorization` and
+        the query options from `base_query_options` and `query_options`.
+        """
         query = self.model.query
         query = self.authorization.filter_query(query, self)
+        query = query.options(
+            *itertools.chain(self.base_query_options, self.query_options)
+        )
 
         return query
+
+    #: Base query options to apply before `query_options`.
+    #:
+    #: Set this on a base class to define base query options for its
+    #: subclasses, while still allowing those subclasses to define their own
+    #: additional query options via `query_options`.
+    #:
+    #: For example, set this to ``(raiseload('*', sql_only=True),)`` to prevent
+    #: all implicit SQL-emitting relationship loading, and force all
+    #: relationship loading to be explicitly defined via `query_options`.
+    base_query_options = ()
+
+    @settable_property
+    def query_options(self):
+        """Options to apply to the query for the view.
+
+        Set this to configure relationship and column loading.
+
+        By default, this calls the ``get_query_options`` method on the
+        serializer with a `Load` object bound to the model, if that serializer
+        method exists.
+        """
+        if not hasattr(self.serializer, 'get_query_options'):
+            return ()
+
+        return self.serializer.get_query_options(Load(self.model))
 
     def get_list(self):
         return self.paginate_list_query(self.get_list_query())
