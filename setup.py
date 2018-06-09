@@ -54,10 +54,12 @@ setup(
         'Werkzeug >= 0.11',
     ),
     extras_require={
+        'docs': ('sphinx', 'pallets-sphinx-themes'),
         'jwt': ('PyJWT >= 1.4.0', 'cryptography >= 2.0.0'),
     },
     cmdclass={
         'clean': system('rm -rf build dist *.egg-info'),
+        'docs': system('make -C docs html'),
         'package': system('python setup.py pandoc sdist bdist_wheel'),
         'pandoc': system('pandoc README.md -o README.rst'),
         'publish': system('twine upload dist/*'),
