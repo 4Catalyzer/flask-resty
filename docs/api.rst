@@ -5,8 +5,8 @@ API
 
 .. module:: flask_resty
 
-Api Object
-----------
+Router
+------
 
 .. autoclass:: Api
   :members:
