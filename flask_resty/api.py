@@ -49,6 +49,13 @@ class Api(object):
     Once registered, Flask-RESTy will handle all default Werkzeug exceptions
     and exceptions that subclass ApiError.
 
+    By default your API will be rooted at '/'. Pass prefix to specify a custom
+    root.
+
+    You can add resources to Flask applications that are not managed by
+    Flask-RESTy by passing the application object as a keyword argument to
+    add_resource or add_ping.
+
     :param app: The Flask application object
     :param prefix: The API path prefix
     """
