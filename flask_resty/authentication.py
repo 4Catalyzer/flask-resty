@@ -28,9 +28,12 @@ class AuthenticationBase(object):
     """
     def authenticate_request(self):
         """Stores the request credentials in the
-        :py:class:`flask.ctx.AppContext`. No validation is performed by
-        Flask-RESTy. It is up to the implementor to validate the request in
-        :py:meth:`get_request_credentials`.
+        :py:class:`flask.ctx.AppContext`.
+
+        .. warning::
+
+            No validation is performed by Flask-RESTy. It is up to the implementor
+            to validate the request in :py:meth:`get_request_credentials`.
         """
         set_request_credentials(self.get_request_credentials())
 
@@ -38,8 +41,10 @@ class AuthenticationBase(object):
         """Retrieve the credentials from the current request. Typically this
         is done by inspecting :py:data:`flask.request`.
 
-        Implementing classes should raise a 401 Unauthorized
-        :py:class:`ApiError` on authentication failure.
+        .. warning::
+
+            Implementing classes **must** raise an exception on authentication
+            failure. A 401 Unauthorized :py:class:`ApiError` is recommended.
         """
         raise NotImplementedError()
 
