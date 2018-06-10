@@ -47,7 +47,7 @@ class Api(object):
     calling :py:meth:`init_app` with the Flask application object.
 
     Once registered, Flask-RESTy will handle all default Werkzeug exceptions
-    and exceptions that subclass :py:class:`flask_resty.ApiError`.
+    and exceptions that subclass :py:class:`ApiError`.
 
     By default your API will be rooted at '/'. Pass prefix to specify a custom
     root.
@@ -56,7 +56,8 @@ class Api(object):
     Flask-RESTy by passing the application object as a keyword argument to
     :py:meth:`add_resource` or :py:meth:`add_ping`.
 
-    :param flask.Flask app: The Flask application object.
+    :param app: The Flask application object.
+    :type app: :py:class:`flask.Flask`
     :param str prefix: The API path prefix.
     """
     def __init__(self, app=None, prefix=''):
@@ -71,7 +72,8 @@ class Api(object):
     def init_app(self, app):
         """Register Flask-RESTy as a Flask extension.
 
-        :param flask.Flask app: The Flask application object.
+        :param app: The Flask application object.
+        :type app: :py:class:`flask.Flask`
         """
         app.extensions['resty'] = FlaskRestyState(self)
 
@@ -115,9 +117,10 @@ class Api(object):
             mutually exclusive with alternate_rule, and must not be specified
             if alternate_view is not specified.
         :type id_rule: str or None
-        :param flask.Flask app: If specified, the application to which to add
+        :param app: If specified, the application to which to add
             the route(s). Otherwise, this will be the bound application, if
             present.
+        :type app: :py:class:`flask.Flask`
         :raises AssertionError: If no Flask application is bound or specified.
         """
         if alternate_view:
@@ -186,9 +189,10 @@ class Api(object):
         :param int status_code: The ping response status code. The default is
             200 rather than the more correct 204 because many health checks
             look for 200s.
-        :param flask.Flask app: If specified, the application to which to add
+        :param app: If specified, the application to which to add
             the route. Otherwise, this will be the bound application, if
             present.
+        :type app: :py:class:`flask.Flask`
         :raises AssertionError: If no Flask application is bound or specified.
         """
         app = self._get_app(app)

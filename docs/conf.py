@@ -16,6 +16,7 @@ release, version = get_version('Flask-RESTy')
 
 extensions = [
     'sphinx.ext.autodoc',
+    'sphinx.ext.intersphinx',
 ]
 templates_path = ['_templates']
 source_suffix = '.rst'
@@ -30,3 +31,10 @@ pygments_style = 'sphinx'
 html_theme = 'alabaster'
 html_static_path = ['_static']
 html_favicon = 'favicon.ico'
+
+# -- Intersphinx -------------------------------------------------------------
+
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/3/', None),
+    'flask': ('http://flask.pocoo.org/docs/1.0/', None),
+}
