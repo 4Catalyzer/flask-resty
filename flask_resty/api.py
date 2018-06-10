@@ -56,8 +56,8 @@ class Api(object):
     Flask-RESTy by passing the application object as a keyword argument to
     add_resource or add_ping.
 
-    :param flask.Flask app: The Flask application object
-    :param str prefix: The API path prefix
+    :param flask.Flask app: The Flask application object.
+    :param str prefix: The API path prefix.
     """
     def __init__(self, app=None, prefix=''):
         if app:
@@ -71,7 +71,7 @@ class Api(object):
     def init_app(self, app):
         """Register Flask-RESTy as a flask extension.
 
-        :param flask.Flask app: The Flask application object
+        :param flask.Flask app: The Flask application object.
         """
         app.extensions['resty'] = FlaskRestyState(self)
 
@@ -118,6 +118,7 @@ class Api(object):
         :param flask.Flask app: If specified, the application to which to add
             the route(s). Otherwise, this will be the bound application, if
             present.
+        :raises AssertionError: If no Flask application is bound or specified.
         """
         if alternate_view:
             if not alternate_rule:
@@ -188,6 +189,7 @@ class Api(object):
         :param flask.Flask app: If specified, the application to which to add
             the route. Otherwise, this will be the bound application, if
             present.
+        :raises AssertionError: If no Flask application is bound or specified.
         """
         app = self._get_app(app)
 
