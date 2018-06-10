@@ -56,8 +56,8 @@ class Api(object):
     Flask-RESTy by passing the application object as a keyword argument to
     add_resource or add_ping.
 
-    :param app: The Flask application object
-    :param prefix: The API path prefix
+    :param flask.Flask app: The Flask application object
+    :param str prefix: The API path prefix
     """
     def __init__(self, app=None, prefix=''):
         if app:
@@ -71,7 +71,7 @@ class Api(object):
     def init_app(self, app):
         """Register Flask-RESTy as a flask extension.
 
-        :param app: The Flask application object
+        :param flask.Flask app: The Flask application object
         """
         app.extensions['resty'] = FlaskRestyState(self)
 
@@ -99,10 +99,11 @@ class Api(object):
 
         :param str base_rule: The URL rule for the resource. This will be
             prefixed by the API prefix.
-        :param base_view: Class-based view for the resource.
-        :param alternate_view: If specified, an alternate class-based view for
-            the resource. Usually, this will be a detail view, when the base
-            view is a list view.
+        :param flask_resty.ApiView base_view: Class-based view for the
+            resource.
+        :param flask_resty.ApiView alternate_view: If specified, an alternate
+            class-based view for the resource. Usually, this will be a detail
+            view, when the base view is a list view.
         :param alternate_rule: If specified, the URL rule for the alternate
             view. This will be prefixed by the API prefix. This is mutually
             exclusive with id_rule, and must not be specified if alternate_view
@@ -114,8 +115,9 @@ class Api(object):
             mutually exclusive with alternate_rule, and must not be specified
             if alternate_view is not specified.
         :type id_rule: str or None
-        :param app: If specified, the application to which to add the route(s).
-            Otherwise, this will be the bound application, if present.
+        :param flask.Flask app: If specified, the application to which to add
+            the route(s). Otherwise, this will be the bound application, if
+            present.
         """
         if alternate_view:
             if not alternate_rule:
@@ -183,8 +185,9 @@ class Api(object):
         :param int status_code: The ping response status code. The default is
             200 rather than the more correct 204 because many health checks
             look for 200s.
-        :param app: If specified, the application to which to add the route.
-            Otherwise, this will be the bound application, if present.
+        :param flask.Flask app: If specified, the application to which to add
+            the route. Otherwise, this will be the bound application, if
+            present.
         """
         app = self._get_app(app)
 
