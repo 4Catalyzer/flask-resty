@@ -55,7 +55,6 @@ Fields
 
 .. autoclass:: RelatedItem
   :members:
-  :inherited-members:
 
 Filtering
 ---------

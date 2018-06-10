@@ -5,6 +5,17 @@ import marshmallow.utils
 
 
 class RelatedItem(fields.Nested):
+    """Wrapper around :py:class:`marshmallow.fields.Nested` that provides
+    simplified semantics in the context of a normalized REST API.
+
+    When interacting with a resource that has a relationship to another
+    resource we should only have to use the primary key of the related
+    resource.
+
+    A :py:class:`RelatedItem` will perform a partial load when it is
+    deserialized so that we can omit most of the data on the related resoure
+    in our API interactions.
+    """
     def _deserialize(self, value, attr, data):
         if self.many and not marshmallow.utils.is_collection(value):
             self.fail('type', input=value, type=value.__class__.__name__)
