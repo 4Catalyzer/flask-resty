@@ -28,19 +28,15 @@ Authorization
 
 .. autoclass:: AuthorizeModifyMixin
   :members:
-  :inherited-members:
 
 .. autoclass:: HasAnyCredentialsAuthorization
   :members:
-  :inherited-members:
 
 .. autoclass:: HasCredentialsAuthorizationBase
   :members:
-  :inherited-members:
 
 .. autoclass:: NoOpAuthorization
   :members:
-  :inherited-members:
 
 Decorators
 ----------
