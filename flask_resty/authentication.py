@@ -20,23 +20,26 @@ def set_request_credentials(credentials):
 
 class AuthenticationBase(object):
     """Base class for the API authentication scheme. Flask-RESTy provides an
-    implementation using JSON Web Tokens but you can use any authentication
-    scheme by extending AuthenticationBase and implementing
-    get_request_credentials.
+    implementation using `JSON Web Tokens`_  but you can use any authentication
+    scheme by extending :py:class:`AuthenticationBase` and implementing
+    :py:meth:`get_request_credentials`.
+
+    .. _JSON Web Tokens: https://jwt.io/
     """
     def authenticate_request(self):
-        """Stores the request credentials in the Flask AppContext. No
-        validation is performed by Flask-RESTy. It is up to the implementor
-        to validate the request in get_request_credentials.
+        """Stores the request credentials in the
+        :py:class:`flask.ctx.AppContext`. No validation is performed by
+        Flask-RESTy. It is up to the implementor to validate the request in
+        :py:meth:`get_request_credentials`.
         """
         set_request_credentials(self.get_request_credentials())
 
     def get_request_credentials(self):
         """Retrieve the credentials from the current request. Typically this
-        is done by inspecting flask.request.
+        is done by inspecting :py:data:`flask.request`.
 
-        Implementing classes should raise a 401 Unauthorized ApiError on
-        authentication failure.
+        Implementing classes should raise a 401 Unauthorized
+        :py:class:`ApiError` on authentication failure.
         """
         raise NotImplementedError()
 
