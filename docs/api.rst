@@ -50,8 +50,14 @@ Exceptions
   :members:
   :inherited-members:
 
-Fields
-------
+Relationships
+-------------
+
+.. autoclass:: Related
+  :members:
+
+.. autoclass:: RelatedId
+  :members:
 
 .. autoclass:: RelatedItem
   :members:
@@ -105,15 +111,6 @@ Pagination
 .. autoclass:: RelayCursorPagination
   :members:
   :inherited-members:
-
-Related
--------
-
-.. autoclass:: Related
-  :members:
-
-.. autoclass:: RelatedId
-  :members:
 
 Sorting
 -------
