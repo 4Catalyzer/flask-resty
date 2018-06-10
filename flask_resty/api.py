@@ -101,9 +101,9 @@ class Api(object):
 
         :param str base_rule: The URL rule for the resource. This will be
             prefixed by the API prefix.
-        :param flask_resty.ApiView base_view: Class-based view for the
+        :param ApiView base_view: Class-based view for the
             resource.
-        :param flask_resty.ApiView alternate_view: If specified, an alternate
+        :param ApiView alternate_view: If specified, an alternate
             class-based view for the resource. Usually, this will be a detail
             view, when the base view is a list view.
         :param alternate_rule: If specified, the URL rule for the alternate
