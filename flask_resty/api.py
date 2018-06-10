@@ -49,7 +49,7 @@ class Api(object):
     Once registered, Flask-RESTy will handle all default Werkzeug exceptions
     and exceptions that subclass :py:class:`ApiError`.
 
-    By default your API will be rooted at '/'. Pass prefix to specify a custom
+    By default your API will be rooted at '/'. Pass `prefix` to specify a custom
     root.
 
     You can add resources to Flask applications that are not managed by
@@ -108,14 +108,14 @@ class Api(object):
             view, when the base view is a list view.
         :param alternate_rule: If specified, the URL rule for the alternate
             view. This will be prefixed by the API prefix. This is mutually
-            exclusive with id_rule, and must not be specified if alternate_view
-            is not specified.
+            exclusive with `id_rule`, and must not be specified if
+            `alternate_view` is not specified.
         :type alternate_rule: str or None
-        :param id_rule: If specified, a suffix to append to base_rule to get
-            the alternate view URL rule. If alternate_view is specified, and
-            alternate_rule is not, then this defaults to '<id>'. This is
-            mutually exclusive with alternate_rule, and must not be specified
-            if alternate_view is not specified.
+        :param id_rule: If specified, a suffix to append to `base_rule` to get
+            the alternate view URL rule. If `alternate_view` is specified, and
+            `alternate_rule` is not, then this defaults to '<id>'. This is
+            mutually exclusive with `alternate_rule`, and must not be specified
+            if `alternate_view` is not specified.
         :type id_rule: str or None
         :param app: If specified, the application to which to add
             the route(s). Otherwise, this will be the bound application, if
