@@ -42,19 +42,19 @@ def handle_http_exception(error):
 
 class Api(object):
     """The central object of Flask-RESTy. Functions as a router. You can
-    eagerly register Flask-RESTy as a flask extension by providing the Flask
+    eagerly register Flask-RESTy as a Flask extension by providing the Flask
     application object in the constructor. You can also lazily register by
-    calling init_app with the Flask application object.
+    calling :py:meth:`init_app` with the Flask application object.
 
     Once registered, Flask-RESTy will handle all default Werkzeug exceptions
-    and exceptions that subclass ApiError.
+    and exceptions that subclass :py:class:`flask_resty.ApiError`.
 
     By default your API will be rooted at '/'. Pass prefix to specify a custom
     root.
 
     You can add resources to Flask applications that are not managed by
     Flask-RESTy by passing the application object as a keyword argument to
-    add_resource or add_ping.
+    :py:meth:`add_resource` or :py:meth:`add_ping`.
 
     :param flask.Flask app: The Flask application object.
     :param str prefix: The API path prefix.
@@ -69,7 +69,7 @@ class Api(object):
         self.prefix = prefix
 
     def init_app(self, app):
-        """Register Flask-RESTy as a flask extension.
+        """Register Flask-RESTy as a Flask extension.
 
         :param flask.Flask app: The Flask application object.
         """
