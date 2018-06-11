@@ -11,7 +11,24 @@ Router
 .. autoclass:: Api
   :members:
 
-Authentication
+Views
+-----
+
+.. autoclass:: ApiView
+  :members:
+  :inherited-members:
+
+.. autoclass:: GenericModelView
+  :members:
+  :inherited-members:
+
+.. autoclass:: ModelView
+  :members:
+  :inherited-members:
+
+.. autofunction:: get_item_or_404
+
+Access Control
 --------------
 
 .. autoclass:: AuthenticationBase
@@ -19,9 +36,6 @@ Authentication
 
 .. autoclass:: NoOpAuthentication
   :members:
-
-Authorization
--------------
 
 .. autoclass:: AuthorizationBase
   :members:
@@ -37,18 +51,6 @@ Authorization
 
 .. autoclass:: NoOpAuthorization
   :members:
-
-Decorators
-----------
-
-.. autofunction:: get_item_or_404
-
-Exceptions
-----------
-
-.. autoclass:: ApiError
-  :members:
-  :inherited-members:
 
 Relationships
 -------------
@@ -130,18 +132,9 @@ Sorting
 .. autoclass:: SortingBase
   :members:
 
+Exceptions
+----------
 
-View
-----
-
-.. autoclass:: ApiView
-  :members:
-  :inherited-members:
-
-.. autoclass:: GenericModelView
-  :members:
-  :inherited-members:
-
-.. autoclass:: ModelView
+.. autoclass:: ApiError
   :members:
   :inherited-members:
