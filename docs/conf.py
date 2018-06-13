@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
 
+import os
+import sys
 from pallets_sphinx_themes import get_version
 
 
@@ -10,7 +12,6 @@ project = 'Flask-RESTy'
 copyright = '2018, Jimmy Jia'
 author = 'Jimmy Jia'
 release, version = get_version('Flask-RESTy')
-
 
 # -- General configuration ---------------------------------------------------
 
@@ -25,6 +26,8 @@ language = None
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 pygments_style = 'sphinx'
 
+# Tell autodoc where the code is
+sys.path.insert(0, os.path.abspath('..'))
 
 # -- Options for HTML output -------------------------------------------------
 
