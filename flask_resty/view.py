@@ -23,7 +23,10 @@ class ApiView(MethodView):
     id_fields = ('id',)
     args_schema = None
 
+    #: The authentication scheme. See :py:class:`AuthenticationBase`.
     authentication = NoOpAuthentication()
+
+    #: The authorization scheme. See :py:class:`AuthorizationBase`.
     authorization = NoOpAuthorization()
 
     spec_declaration = ApiViewDeclaration()
