@@ -19,36 +19,58 @@ from .utils import iter_validation_errors, settable_property
 
 
 class ApiView(MethodView):
+    """Wraps :py:class:`flask.views.MethodView` ...
+    """
+
+    #: The :py:class:`marshmallow.Schema` for serialization and
+    #: deserialization.
     schema = None
+    #: The primary keys of this resource.
     id_fields = ('id',)
+    #: The :py:class:`marshmallow.Schema` for deserializing
+    #: the query params in the :py:data:`flask.Request.args`.
     args_schema = None
 
     #: The authentication scheme. See :py:class:`AuthenticationBase`.
     authentication = NoOpAuthentication()
-
     #: The authorization scheme. See :py:class:`AuthorizationBase`.
     authorization = NoOpAuthorization()
 
+    #: An :py:class:`apispec.APISpec` for generating API documentation.
     spec_declaration = ApiViewDeclaration()
 
     def dispatch_request(self, *args, **kwargs):
+        """Apply the authentication and authorization schemes before
+        delegating the dispatch to :py:meth:`flask.Flask.dispatch_request`.
+        """
         self.authentication.authenticate_request()
         self.authorization.authorize_request()
 
         return super(ApiView, self).dispatch_request(*args, **kwargs)
 
     def serialize(self, item, **kwargs):
+        """Serialize an item using the :py:attr:`serializer`."""
         return self.serializer.dump(item, **kwargs).data
 
     @settable_property
     def serializer(self):
+        """The :py:class:`marshmallow.Schema` for serialization. Overrides
+        :py:attr:`ApiView.schema`.
+        """
         return self.schema
 
     def make_items_response(self, items, *args):
+        """Serialize a collection of items using the :py:attr:`serializer`.
+        Returns an HTTP response with the serialized items in the response
+        body.
+        """
         data_out = self.serialize(items, many=True)
         return self.make_response(data_out, *args, items=items)
 
     def make_item_response(self, item, *args):
+        """Serialize an item using the :py:attr:`serializer`. Returns an HTTP
+        response with the serialized item in the response body.
+        """
         data_out = self.serialize(item)
         self.set_item_meta(item)
         return self.make_response(data_out, *args, item=item)
@@ -57,10 +79,17 @@ class ApiView(MethodView):
         pass
 
     def make_response(self, data, *args, **kwargs):
+        """Create an HTTP response with the provided `data` in the response
+        body along with any metadata from the Flask-RESTy context.
+        """
         body = self.make_response_body(data, meta.get_response_meta())
         return self.make_raw_response(flask.jsonify(body), *args, **kwargs)
 
     def make_response_body(self, data, response_meta):
+        """Prepare the response body. Stores the provided `data` in a field
+        named `data`. If `response_meta` is provided it is stored in a field
+        named `meta`.
+        """
         body = {'data': data}
         if response_meta is not None:
             body['meta'] = response_meta
@@ -68,15 +97,26 @@ class ApiView(MethodView):
         return body
 
     def make_raw_response(self, *args, **kwargs):
+        """Create a :py:class:`flask.Response`. `args` are passed to
+        :py:func:`flask.make_response`. `kwargs` are used to populate the
+        response body.
+        """
         response = flask.make_response(*args)
         for key, value in kwargs.items():
             setattr(response, key, value)
         return response
 
     def make_empty_response(self, **kwargs):
+        """Create a :py:class:`flask.Response` with an empty body and HTTP 204
+        status.
+        """
         return self.make_raw_response('', 204, **kwargs)
 
     def make_created_response(self, item):
+        """Create an HTTP response for the created `item`. The response will
+        have an HTTP 201 status and a ``Location`` header that references
+        the API endpoint where the created `item` can be retrieved.
+        """
         response = self.make_item_response(item, 201)
         location = self.get_location(item)
         if location is not None:
@@ -84,12 +124,16 @@ class ApiView(MethodView):
         return response
 
     def get_location(self, item):
+        """Create the hyperlink that will reference the given `item`."""
         id_dict = {
             id_field: getattr(item, id_field) for id_field in self.id_fields
         }
         return flask.url_for(flask.request.endpoint, _method='GET', **id_dict)
 
     def get_request_data(self, **kwargs):
+        """Retrieve the data provided under the ``data`` key in the request
+        body.
+        """
         try:
             data_raw = flask.request.get_json()['data']
         except TypeError:
@@ -100,6 +144,10 @@ class ApiView(MethodView):
         return self.deserialize(data_raw, **kwargs)
 
     def deserialize(self, data_raw, expected_id=None, **kwargs):
+        """Use the :py:attr:`deserializer` to deserialize the data provided in
+        `data_raw`. If `expected_id` is provided it is checked against the
+        corresponding field in the deserialized data.
+        """
         data, errors = self.deserializer.load(data_raw, **kwargs)
         if errors:
             raise ApiError(422, *(
@@ -112,10 +160,24 @@ class ApiView(MethodView):
 
     @settable_property
     def deserializer(self):
+        """The :py:class:`marshmallow.Schema` for deserialization. Overrides
+        :py:attr:`ApiView.schema`.
+        """
         return self.schema
 
     def format_validation_error(self, error):
+        """Create an object that describes the validation error provided in
+        `error`. The following fields are set on the object:
+
+        ``code``: Always ``invalid_data``.
+
+        ``detail``: The message from the provided `error`.
+
+        ``source``: A dict with a ``pointer`` field that includes the
+        XPath to the field that caused the error.
+        """
         message, path = error
+
         pointer = '/data/{}'.format(
             '/'.join(str(field_key) for field_key in path),
         )
@@ -127,6 +189,10 @@ class ApiView(MethodView):
         }
 
     def validate_request_id(self, data, expected_id):
+        """Check that the `expected_id` has been provided on the
+        corresponding field in `data`. If `expected_id` is False, all
+        of the fields in :py:attr:`id_fields` are checked.
+        """
         if expected_id is None:
             return
 
@@ -145,12 +211,18 @@ class ApiView(MethodView):
             raise ApiError(409, {'code': 'invalid_id.mismatch'})
 
     def get_data_id(self, data):
+        """Collect all of the values corresponding to the fields in
+        :py:attr:`id_fields`.
+        """
         if len(self.id_fields) == 1:
             return data[self.id_fields[0]]
 
         return tuple(data[id_field] for id_field in self.id_fields)
 
     def get_request_args(self, **kwargs):
+        """Retrieve the request args. `kwargs` are passed along to
+        :py:meth:`deserialize_args`.
+        """
         args = flask.request.args
         data_raw = {}
 
@@ -171,9 +243,15 @@ class ApiView(MethodView):
         return self.deserialize_args(data_raw, **kwargs)
 
     def is_list_field(self, field):
+        """Predicate that indicates if the provided `field` is an instance
+        of :py:class:`marshmallow.fields.List`.
+        """
         return isinstance(field, fields.List)
 
     def deserialize_args(self, data_raw, **kwargs):
+        """Deserialize the data provided in `data_raw` using the
+        :py:attr:`args_schema`.
+        """
         data, errors = self.args_schema.load(data_raw, **kwargs)
         if errors:
             raise ApiError(422, *(
@@ -185,6 +263,17 @@ class ApiView(MethodView):
         return data
 
     def format_parameter_validation_error(self, message, parameter):
+        """Create an object that describes a parameter validation error. The
+        following fields are set on the object:
+
+        ``code``: Always ``invalid_parameter``.
+
+        ``detail``: The provided `message`.
+
+        ``source``: A dict with a ``parameter`` field that includes the
+        XPath to the parameter that caused the error.
+
+        """
         return {
             'code': 'invalid_parameter',
             'detail': message,
@@ -192,6 +281,9 @@ class ApiView(MethodView):
         }
 
     def get_id_dict(self, id):
+        """Uses the sequence of ids provided in `id` to map the field names in
+        :py:attr:`id_fields` to their corresponding values.
+        """
         if len(self.id_fields) == 1:
             id = (id,)
 

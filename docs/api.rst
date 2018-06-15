@@ -16,15 +16,12 @@ Views
 
 .. autoclass:: ApiView
   :members:
-  :inherited-members:
 
 .. autoclass:: GenericModelView
   :members:
-  :inherited-members:
 
 .. autoclass:: ModelView
   :members:
-  :inherited-members:
 
 .. autofunction:: get_item_or_404
 
