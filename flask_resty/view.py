@@ -210,14 +210,20 @@ class ApiView(MethodView):
 
     def format_validation_error(self, error):
         """Create a dictionary that describes the validation error provided in
-        `error`. The following fields are set:
+        `error`. The response body has the following structure::
 
-        ``code``: Always ``invalid_data``.
-
-        ``detail``: The message from the provided `error`.
-
-        ``source``: A dict with a ``pointer`` field that includes the
-        XPath to the field that caused the error.
+            code:
+                type: string
+                description: Always the literal `invalid_data`
+            detail:
+                type: string
+                description: The message from the provided `error`
+            source:
+                type: object
+                properties:
+                    pointer:
+                        type: string
+                        description: An XPath to the field that caused the error
 
         :return: The formatted validation error
         :rtype: dict
@@ -324,14 +330,20 @@ class ApiView(MethodView):
 
     def format_parameter_validation_error(self, message, parameter):
         """Create a dictionary that describes a parameter validation error. The
-        following fields are set:
+        response has the following structure::
 
-        ``code``: Always ``invalid_parameter``.
-
-        ``detail``: The provided `message`.
-
-        ``source``: A dict with a ``parameter`` field that includes the
-        XPath to the parameter that caused the error.
+            code:
+                type: string
+                description: Always the literal `invalid_parameter`
+            detail:
+                type: string
+                description: The message from the provided `error`
+            source:
+                type: object
+                properties:
+                    parameter:
+                        type: string
+                        description: An XPath to the parameter that caused the error
 
         :return: The formatted parameter validation error
         :rtype: dict
