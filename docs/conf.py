@@ -26,9 +26,6 @@ language = None
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 pygments_style = 'sphinx'
 
-# Tell autodoc where the code is
-sys.path.insert(0, os.path.abspath('..'))
-
 # -- Options for HTML output -------------------------------------------------
 
 html_theme = 'alabaster'
@@ -44,3 +41,8 @@ intersphinx_mapping = {
     'django': ('http://django.readthedocs.io/en/latest/', None),
     'apispec': ('https://apispec.readthedocs.io/en/latest/', None),
 }
+
+# -- Autodoc -----------------------------------------------------------------
+
+autodoc_member_order = 'bysource'
+sys.path.insert(0, os.path.abspath('..'))
