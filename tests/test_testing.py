@@ -1,6 +1,5 @@
-import pytest
-
 import flask
+import pytest
 
 from flask_resty.testing import (
     assert_response,
