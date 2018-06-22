@@ -1,5 +1,6 @@
 [run]
-source = flask_resty
+branch = true
+include = flask_resty/*
 
 [report]
 exclude_lines =

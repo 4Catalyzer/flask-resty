@@ -1,7 +1,13 @@
+import flask
 import pytest
 
 from flask_resty.testing import (
-    assert_shape, Matching, Predicate, Shape, UNDEFINED,
+    assert_response,
+    assert_shape,
+    Matching,
+    Predicate,
+    Shape,
+    UNDEFINED,
 )
 
 # -----------------------------------------------------------------------------
@@ -141,3 +147,12 @@ def test_predicate():
 
     assert Integer == 1
     assert Integer != 1.2
+
+
+def test_assert_response_with_shape(app):
+    data = {'foo': 'bar'}
+
+    with app.test_request_context():
+        response = flask.jsonify(data=data)
+
+    assert_response(response, 200, Shape(data))

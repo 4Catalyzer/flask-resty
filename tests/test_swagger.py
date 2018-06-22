@@ -31,24 +31,10 @@ def schemas():
 
 @pytest.fixture
 def views(schemas):
-    class FooView(GenericModelView):
+    class FooViewBase(GenericModelView):
         schema = schemas['foo']()
 
-        def get(self, id):
-            pass
-
-        def put(self, id):
-            pass
-
-        def delete(self, id):
-            pass
-
-        def patch(self):
-            pass
-
-    class FooListView(GenericModelView):
-        schema = schemas['foo']()
-
+    class FooListView(FooViewBase):
         spec_declaration = ModelViewDeclaration(many=True)
 
         filtering = Filtering(
@@ -64,18 +50,40 @@ def views(schemas):
             """test the docstring"""
             pass
 
+    class FooView(FooViewBase):
+        def get(self, id):
+            pass
+
+        def put(self, id):
+            pass
+
+        def patch(self):
+            pass
+
+        def delete(self, id):
+            pass
+
+    class FooBazView(GenericModelView):
+        spec_declaration = ModelViewDeclaration(tag=False)
+
+        schema = schemas['foo']()
+
+        def put(self, id):
+            """baz a foo"""
+            pass
+
     class BarView(GenericModelView):
         spec_declaration = ModelViewDeclaration(
-            post={'204': {'description': 'request the creation of a new bar'}},
             get={'200': {}},
+            post={'204': {'description': 'request the creation of a new bar'}},
         )
 
         pagination = RelayCursorPagination(2)
 
-        def post(self):
+        def get(self):
             pass
 
-        def get(self):
+        def post(self):
             pass
 
         def put(self):
@@ -83,8 +91,9 @@ def views(schemas):
             pass
 
     return {
-        'foo': FooView,
         'foo_list': FooListView,
+        'foo': FooView,
+        'foo_baz': FooBazView,
         'bar': BarView,
     }
 
@@ -93,6 +102,7 @@ def views(schemas):
 def routes(app, views):
     api = Api(app)
     api.add_resource('/foos', views['foo_list'], views['foo'])
+    api.add_resource('/foos/<id>/baz', views['foo_baz'])
     api.add_resource('/bars', views['bar'])
 
 
@@ -114,6 +124,7 @@ def spec(schemas, views):
 
     spec.add_path(view=views['foo_list'])
     spec.add_path(view=views['foo'])
+    spec.add_path(view=views['foo_baz'])
     spec.add_path(view=views['bar'])
 
     return spec.to_dict()
@@ -174,7 +185,7 @@ def test_get_response(spec):
     foo_get = spec['paths']['/foos/{id}']['get']
     assert foo_get['responses'] == {
         '200': {
-            'description': '',
+            'description': "",
             'schema': {
                 'type': 'object',
                 'properties': {
@@ -220,15 +231,20 @@ def test_put_response(spec):
 def test_delete_response(spec):
     foo_delete = spec['paths']['/foos/{id}']['delete']
     assert foo_delete['responses'] == {
-        '204': {'description': ''},
+        '204': {'description': ""},
     }
 
 
 def test_only_requested_methods(spec):
     assert set(spec['paths']['/foos'].keys()) == {'post', 'get'}
-    assert set(spec['paths']['/foos/{id}'].keys()) == \
-        {'put', 'patch', 'delete', 'parameters', 'get'}
-    assert set(spec['paths']['/bars'].keys()) == {'put', 'post', 'get'}
+    assert set(spec['paths']['/foos/{id}'].keys()) == {
+        'get',
+        'put',
+        'patch',
+        'delete',
+        'parameters',
+    }
+    assert set(spec['paths']['/bars'].keys()) == {'get', 'put', 'post'}
 
 
 def test_path_params(spec):
@@ -261,9 +277,11 @@ def test_body_params(spec):
 def test_pagination(spec):
     foos_get = spec['paths']['/foos']['get']
 
-    pars = [('limit', 'pagination limit'),
-            ('offset', 'pagination offset'),
-            ('page', 'page number')]
+    pars = (
+        ('limit', "pagination limit"),
+        ('offset', "pagination offset"),
+        ('page', "page number"),
+    )
 
     for parameter_name, description in pars:
         parameter = {
@@ -282,7 +300,7 @@ def test_sorting(spec):
         'in': 'query',
         'name': 'sort',
         'type': 'string',
-        'description': 'field to sort by',
+        'description': "field to sort by",
     }
     assert parameter in foos_get['parameters']
 
@@ -300,14 +318,14 @@ def test_filters(spec):
 
 def test_docstring(spec):
     foos_post = spec['paths']['/foos']['post']
-    assert foos_post['description'] == 'test the docstring'
+    assert foos_post['description'] == "test the docstring"
 
 
 def test_schemaless(spec):
     bars_post = spec['paths']['/bars']['post']
     assert bars_post['responses'] == {
         '204': {
-            'description': 'request the creation of a new bar',
+            'description': "request the creation of a new bar",
         },
     }
 
@@ -315,7 +333,7 @@ def test_schemaless(spec):
     assert bars_put == {
         'responses': {},
         'parameters': [],
-        'description': 'put a bar',
+        'description': "put a bar",
     }
 
 
@@ -326,6 +344,6 @@ def test_relay_cursor_pagination(spec):
         'in': 'query',
         'name': 'cursor',
         'type': 'string',
-        'description': 'pagination cursor',
+        'description': "pagination cursor",
     }
     assert parameter in bars_get['parameters']

@@ -4,9 +4,11 @@ from .utils import get_marshmallow_schema_name, ref
 
 
 class ApiViewDeclaration(object):
-    """Simple Declaration for ApiView Classes
+    """Simple Declaration for ApiView classes.
+
     :param many: whether or not this view describes a list or a single instance
-    :param tag: whether or not the schema name should be added as a tag"""
+    :param tag: whether or not the schema name should be added as a tag
+    """
 
     def __init__(self, many=False, tag=True, **kwargs):
         self.many = many
