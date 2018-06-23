@@ -19,7 +19,7 @@ from .utils import iter_validation_errors, settable_property
 
 
 class ApiView(MethodView):
-    """Wraps :py:class:`flask.views.MethodView` and provides access control,
+    """Extends :py:class:`flask.views.MethodView` and provides access control,
     input / output contracts and a uniform structure for rendering responses
     with RESTful semantics.
 
@@ -368,14 +368,26 @@ class ApiView(MethodView):
 
 
 class ModelView(ApiView):
+    """Extends :py:class:`ApiView` and provides an interface to the ORM
+    with additional abstractions for managing the composition and order of
+    the data retrieved from the database.
+
+    ...
+    """
+    #: A sqlalchemy model that inherits the declarative base class
     model = None
 
+    #: An instance of :py:class:`filtering.Filtering`
     filtering = None
+    #: An instance of :py:class:`sorting.SortingBase`
     sorting = None
+    #: An instance of :py:class:`pagination.PaginationBase`
     pagination = None
 
+    #: A :py:class:`related.Related` class for resolving related resources
     related = None
 
+    #: An :py:class:`apispec.APISpec` for generating API documentation.
     spec_declaration = ModelViewDeclaration()
 
     @settable_property
@@ -419,6 +431,9 @@ class ModelView(ApiView):
         By default, this calls the ``get_query_options`` method on the
         serializer with a `Load` object bound to the model, if that serializer
         method exists.
+
+        :return: A sequence of query options
+        :rtype: tuple
         """
         if not hasattr(self.serializer, 'get_query_options'):
             return ()
@@ -426,33 +441,78 @@ class ModelView(ApiView):
         return self.serializer.get_query_options(Load(self.model))
 
     def get_list(self):
+        """Get a sequence of items using :py:attr:`model`. Applies pagination
+        if set in :py:attr:`pagination`.
+
+        :return: A sequence of items
+        :rtype: list
+        """
         return self.paginate_list_query(self.get_list_query())
 
     def get_list_query(self):
+        """Get the query that retrieves a sequence of items. Applies
+        filtering and sorting if set in :py:attr:`filtering` and
+        :py:attr:`sorting` respectively.
+
+        :return: The mutated query
+        :rtype: :py:class:`sqlalchemy.orm.query.Query`
+        """
         query = self.query
         query = self.filter_list_query(query)
         query = self.sort_list_query(query)
         return query
 
     def filter_list_query(self, query):
+        """Applies filtering to the provided `query` if set in
+        :py:attr:`filtering`.
+
+        :param: A SQL query
+        :type: :py:class:`sqlalchemy.orm.query.Query`
+        :return: The filtered query
+        :rtype: :py:class:`sqlalchemy.orm.query.Query`
+        """
         if not self.filtering:
             return query
 
         return self.filtering.filter_query(query, self)
 
     def sort_list_query(self, query):
+        """Applies sorting to the provided `query` if set in
+        :py:attr:`sorting`.
+
+        :param: A SQL query
+        :type: :py:class:`sqlalchemy.orm.query.Query`
+        :return: The sorted query
+        :rtype: :py:class:`sqlalchemy.orm.query.Query`
+        """
         if not self.sorting:
             return query
 
         return self.sorting.sort_query(query, self)
 
     def paginate_list_query(self, query):
+        """Applies pagination to the provided `query` if set in
+        :py:attr:`pagination`.
+
+        :param: A SQL query
+        :type: :py:class:`sqlalchemy.orm.query.Query`
+        :return: The paginated query
+        :rtype: :py:class:`sqlalchemy.orm.query.Query`
+        """
         if not self.pagination:
             return query.all()
 
         return self.pagination.get_page(query, self)
 
     def get_item_or_404(self, id, **kwargs):
+        """Similar to Django's :py:func:`django.shortcuts.get_object_or_404`.
+        `kwargs` are passed to :py:meth:`get_item`.
+
+        :param id: One or more primary keys
+        :type: str or seq
+        :return: An instance of the :py:attr:`model`
+        :rtype: object
+        """
         try:
             item = self.get_item(id, **kwargs)
         except NoResultFound:
@@ -467,6 +527,21 @@ class ModelView(ApiView):
         create_missing=False,
         will_update_item=False,
     ):
+        """Get a single item by `id`.
+
+        :param id: One or more primary keys
+        :type: str or seq
+        :param bool with_for_update: If True, a ``OR UPDATE`` clause will be
+            appended. See :py:meth:`sqlalchemy.orm.query.Query.with_for_update`.
+        :param bool create_missing: If True, the item will be created if it
+            cannot be retrieved. 
+        :param bool will_update_item: If True, no authorization will
+            be applied before adding the item to the
+            :py:class:`sqlalchemy.orm.Session`. Use this flag if you intend to
+            call :py:meth:`update_item`.
+        :return: An instance of the :py:attr:`model`
+        :rtype: object
+        """
         try:
             # Can't use self.query.get(), because query might be filtered.
             item_query = self.query.filter(*(
@@ -496,16 +571,40 @@ class ModelView(ApiView):
         return item
 
     def deserialize(self, data_raw, **kwargs):
+        """Apply the :py:attr:`deserializer` to the provided data in
+        `data_raw`. If any of the fields in the data are mapped in
+        :py:attr:`related` they will be resolved to their corresponding
+        values and included in the deserialized object. `kwargs` are
+        passed to :py:meth:`ApiView.deserialize`.
+
+        :param dict data_raw:
+        :return: The deserialized object
+        :rtype: object
+        """
         data = super(ModelView, self).deserialize(data_raw, **kwargs)
         return self.resolve_related(data)
 
     def resolve_related(self, data):
+        """Resolves any fields in `data` that have been mapped in
+        :py:attr:`related`.
+
+        :param object data: A deserialized object
+        :return: The object with related fields resolved
+        :rtype: object
+        """
         if not self.related:
             return data
 
         return self.related.resolve_related(data)
 
     def resolve_related_item(self, data):
+        """Resolves any fields in `data` that correspond to a a field in
+        :py:attr:`id_fields`.
+
+        :param object data: A deserialized object
+        :return: The object with id fields resolved
+        :rtype: object
+        """
         try:
             id = self.get_data_id(data)
         except KeyError:
@@ -514,6 +613,13 @@ class ModelView(ApiView):
         return self.resolve_related_id(id)
 
     def resolve_related_id(self, id):
+        """Get an item that corresponds to the provided `id`.
+
+        :param id: One or more primary keys
+        :type: str or seq
+        :return: An object
+        :rtype: object
+        """
         try:
             item = self.get_item(id)
         except NoResultFound:
@@ -522,9 +628,23 @@ class ModelView(ApiView):
         return item
 
     def create_missing_item(self, id):
+        """Create an item that corresponds to the provided `id`.
+
+        :param id: One or more primary keys
+        :type: str or seq
+        :return: An object
+        :rtype: object
+        """
         return self.create_item(self.get_id_dict(id))
 
     def create_item(self, data):
+        """Create an item using the deserialized `data`. Applies the
+        authorization scheme in :py:attr:`authorization`.
+
+        :param dict data: The deserialized data
+        :return: An instance of the :py:attr:`model`
+        :rtype: object
+        """
         item = self.model(**data)
 
         self.authorization.authorize_create_item(item)
@@ -532,16 +652,34 @@ class ModelView(ApiView):
         return item
 
     def add_item(self, item):
+        """Add the provided `item` to the :py:class:`sqlalchemy.orm.Session`.
+        Applies the authorization scheme in :py:attr:`authorization`.
+
+        :param object item: An instance of the :py:attr:`model`
+        """
         self.session.add(item)
 
         self.authorization.authorize_save_item(item)
 
     def create_and_add_item(self, data):
+        """Create an item using the deserialized `data` and add it to the
+        :py:class:`sqlalchemy.orm.Session`.
+
+        :param dict data: The deserialized data
+        :return: An instance of the :py:attr:`model`
+        :rtype: object
+        """
         item = self.create_item(data)
         self.add_item(item)
         return item
 
     def update_item(self, item, data):
+        """Update the `item` using provided `data`. Applies the authorization
+        scheme in :py:attr:`authorization`.
+
+        :param object item: An instance of the :py:attr:`model`
+        :param dict data: The update data
+        """
         self.authorization.authorize_update_item(item, data)
 
         for key, value in data.items():
@@ -550,11 +688,22 @@ class ModelView(ApiView):
         self.authorization.authorize_save_item(item)
 
     def delete_item(self, item):
+        """Delete the `item` from the :py:class:`sqlalchemy.orm.Session`.
+        Applies the authorization scheme in :py:attr:`authorization`.
+
+        :param object item: An instance of the :py:attr:`model`
+        """
         self.authorization.authorize_delete_item(item)
 
         self.session.delete(item)
 
     def flush(self):
+        """Calls :py:meth:`sqlalchemy.orm.Session.flush` handling any
+        :py:class:`IntegrityError`.
+
+        :raises: :py:class:`ApiError` if the flush results in an
+            :py:class:`IntegrityError`.
+        """
         try:
             # Flushing allows checking invariants without committing.
             self.session.flush()
@@ -564,6 +713,12 @@ class ModelView(ApiView):
             raise self.resolve_integrity_error(e)
 
     def commit(self):
+        """Calls :py:meth:`sqlalchemy.orm.Session.commit` handling any
+        :py:class:`IntegrityError`.
+
+        :raises: :py:class:`ApiError` if the commit results in an
+            :py:class:`IntegrityError`.
+        """
         try:
             self.session.commit()
         # Don't catch DataErrors here, as they arise from bugs in validation in
@@ -572,6 +727,14 @@ class ModelView(ApiView):
             raise self.resolve_integrity_error(e)
 
     def resolve_integrity_error(self, error):
+        """Resolves the `error`. If the postgres error code corresponds to a
+        ``not_null_violation`` or a ``check_violation`` the error is
+        returned unmodified. Otherwise, a generic conflict :py:class:`ApiError`
+        is returned.
+
+        :return: The resolved error
+        :rtype: :py:class:`Exception`
+        """
         original_error = error.orig
 
         if (
@@ -590,10 +753,19 @@ class ModelView(ApiView):
         return ApiError(409, {'code': 'invalid_data.conflict'})
 
     def set_item_meta(self, item):
+        """Uses the `item` to set metadata on the Flask-RESTy context.
+
+        :param object item: An object
+        """
         super(ModelView, self).set_item_meta(item)
         self.set_item_pagination_meta(item)
 
     def set_item_pagination_meta(self, item):
+        """If :py:attr:`pagination` is set, the `item` is used to set metadata
+        from the pagination class on the Flask-RESTy context.
+
+        :param object item: An object
+        """
         if not self.pagination:
             return
 
