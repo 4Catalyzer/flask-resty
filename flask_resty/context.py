@@ -1,4 +1,4 @@
-from flask import _app_ctx_stack as context_stack
+from flask import _request_ctx_stack as context_stack
 
 # -----------------------------------------------------------------------------
 
