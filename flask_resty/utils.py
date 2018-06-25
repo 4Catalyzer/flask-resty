@@ -1,3 +1,10 @@
+"""Internal utility helpers."""
+
+UNDEFINED = object()
+
+# -----------------------------------------------------------------------------
+
+
 def if_none(value, default):
     if value is None:
         return default
