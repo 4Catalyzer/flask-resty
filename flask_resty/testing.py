@@ -5,10 +5,7 @@ import re
 from flask.testing import FlaskClient
 
 from .compat import basestring
-
-# -----------------------------------------------------------------------------
-
-UNDEFINED = object()
+from .utils import UNDEFINED
 
 # -----------------------------------------------------------------------------
 

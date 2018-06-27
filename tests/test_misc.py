@@ -2,7 +2,7 @@ from marshmallow import fields, Schema
 import pytest
 from sqlalchemy import Column, Integer
 
-from flask_resty import Api, GenericModelView, meta
+from flask_resty import Api, GenericModelView
 from flask_resty.testing import assert_response
 
 # -----------------------------------------------------------------------------
@@ -171,8 +171,3 @@ def test_view_func_wrapper(app, views):
     # This is really a placeholder for asserting that e.g. custom New Relic
     # view information gets passed through.
     assert app.view_functions['WidgetView'].__name__ == 'WidgetView'
-
-
-def test_get_response_meta_without_request():
-    with pytest.raises(AttributeError):
-        meta.get_response_meta()

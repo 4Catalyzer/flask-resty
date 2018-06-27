@@ -25,30 +25,39 @@ def schemas():
     }
 
 
-@pytest.fixture(autouse=True)
-def routes(app, schemas):
+@pytest.fixture
+def views(app, schemas):
     class NameView(ApiView):
         args_schema = schemas['name']
 
         def get(self):
-            return self.make_response(self.get_request_args()['name'])
+            return self.make_response(self.request_args['name'])
 
     class NameListView(ApiView):
         args_schema = schemas['name_list']
 
         def get(self):
-            return self.make_response(self.get_request_args()['names'])
+            return self.make_response(self.request_args['names'])
 
     class NameDefaultView(ApiView):
         args_schema = schemas['name_default']
 
         def get(self):
-            return self.make_response(self.get_request_args()['name'])
+            return self.make_response(self.request_args['name'])
 
+    return {
+        'name': NameView,
+        'names': NameListView,
+        'name_default': NameDefaultView,
+    }
+
+
+@pytest.fixture(autouse=True)
+def routes(app, views):
     api = Api(app)
-    api.add_resource('/name', NameView)
-    api.add_resource('/names', NameListView)
-    api.add_resource('/name_default', NameDefaultView)
+    api.add_resource('/name', views['name'])
+    api.add_resource('/names', views['names'])
+    api.add_resource('/name_default', views['name_default'])
 
 
 # -----------------------------------------------------------------------------
@@ -82,6 +91,21 @@ def test_get_name_default(client):
 def test_get_name_default_specified(client):
     response = client.get('/name_default?name=bar')
     assert_response(response, 200, 'bar')
+
+
+def test_caching(app, views):
+    with app.test_request_context('/?name=foo'):
+        name_view = views['name']()
+        names_view = views['names']()
+
+        name_view_request_args = name_view.request_args
+        names_view_request_args = names_view.request_args
+
+        assert name_view_request_args == {'name': 'foo'}
+        assert names_view_request_args == {'names': ['foo']}
+
+        assert name_view.request_args is name_view_request_args
+        assert names_view.request_args is names_view_request_args
 
 
 # -----------------------------------------------------------------------------

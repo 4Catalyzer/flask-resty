@@ -11,6 +11,7 @@ from werkzeug.exceptions import NotFound
 from . import meta
 from .authentication import NoOpAuthentication
 from .authorization import NoOpAuthorization
+from .decorators import request_cached_property
 from .exceptions import ApiError
 from .spec import ApiViewDeclaration, ModelViewDeclaration
 from .utils import iter_validation_errors, settable_property
@@ -151,7 +152,9 @@ class ApiView(MethodView):
 
         return tuple(data[id_field] for id_field in self.id_fields)
 
-    def get_request_args(self, **kwargs):
+    @request_cached_property
+    def request_args(self):
+        """Use args_schema to parse request query arguments."""
         args = flask.request.args
         data_raw = {}
 
@@ -169,7 +172,7 @@ class ApiView(MethodView):
 
             data_raw[field_name] = value
 
-        return self.deserialize_args(data_raw, **kwargs)
+        return self.deserialize_args(data_raw)
 
     def is_list_field(self, field):
         return isinstance(field, fields.List)
