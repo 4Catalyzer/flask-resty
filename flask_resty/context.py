@@ -16,9 +16,9 @@ def _get_resty_context():
 # -----------------------------------------------------------------------------
 
 
-def get_context_value(key, default):
+def get(key, default=None):
     return _get_resty_context().get(key, default)
 
 
-def set_context_value(key, value):
+def set(key, value):
     _get_resty_context()[key] = value
