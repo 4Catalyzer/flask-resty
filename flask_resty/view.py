@@ -87,6 +87,10 @@ class ApiView(MethodView):
         return flask.url_for(flask.request.endpoint, _method='GET', **id_dict)
 
     def get_request_data(self, **kwargs):
+        data_raw = self.get_raw_request_data()
+        return self.deserialize(data_raw, **kwargs)
+
+    def get_raw_request_data(self):
         try:
             data_raw = flask.request.get_json()['data']
         except TypeError:
@@ -94,7 +98,7 @@ class ApiView(MethodView):
         except KeyError:
             raise ApiError(400, {'code': 'invalid_data.missing'})
 
-        return self.deserialize(data_raw, **kwargs)
+        return data_raw
 
     def deserialize(self, data_raw, expected_id=None, **kwargs):
         data, errors = self.deserializer.load(data_raw, **kwargs)
