@@ -87,10 +87,10 @@ class ApiView(MethodView):
         return flask.url_for(flask.request.endpoint, _method='GET', **id_dict)
 
     def get_request_data(self, **kwargs):
-        data_raw = self.get_raw_request_data()
+        data_raw = self.parse_request_data()
         return self.deserialize(data_raw, **kwargs)
 
-    def get_raw_request_data(self):
+    def parse_request_data(self):
         try:
             data_raw = flask.request.get_json()['data']
         except TypeError:
