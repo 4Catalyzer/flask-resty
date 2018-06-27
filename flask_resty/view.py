@@ -47,10 +47,10 @@ class ApiView(MethodView):
 
     def make_item_response(self, item, *args):
         data_out = self.serialize(item)
-        self.set_item_meta(item)
+        self.set_item_response_meta(item)
         return self.make_response(data_out, *args, item=item)
 
-    def set_item_meta(self, item):
+    def set_item_response_meta(self, item):
         pass
 
     def make_response(self, data, *args, **kwargs):
@@ -421,17 +421,15 @@ class ModelView(ApiView):
         flask.current_app.logger.exception("handled integrity error")
         return ApiError(409, {'code': 'invalid_data.conflict'})
 
-    def set_item_meta(self, item):
-        super(ModelView, self).set_item_meta(item)
-        self.set_item_pagination_meta(item)
+    def set_item_response_meta(self, item):
+        super(ModelView, self).set_item_response_meta(item)
+        self.set_item_response_meta_pagination(item)
 
-    def set_item_pagination_meta(self, item):
+    def set_item_response_meta_pagination(self, item):
         if not self.pagination:
             return
 
-        pagination_meta = self.pagination.get_item_meta(item, self)
-        if pagination_meta is not None:
-            meta.set_response_meta(**pagination_meta)
+        meta.update_response_meta(self.pagination.get_item_meta(item, self))
 
 
 class GenericModelView(ModelView):

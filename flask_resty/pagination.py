@@ -36,7 +36,7 @@ class LimitPaginationBase(PaginationBase):
         else:
             has_next_page = False
 
-        meta.set_response_meta(has_next_page=has_next_page)
+        meta.update_response_meta({'has_next_page': has_next_page})
         return items
 
     def get_limit(self):
@@ -376,7 +376,7 @@ class RelayCursorPagination(CursorPaginationBase):
 
         # Relay expects a cursor for each item.
         cursors_out = self.make_cursors(items, view, field_orderings)
-        meta.set_response_meta(cursors=cursors_out)
+        meta.update_response_meta({'cursors': cursors_out})
 
         return items
 
