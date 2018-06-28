@@ -99,7 +99,6 @@ def get_meta(response):
     return get_body(response)['meta']
 
 
-
 def assert_response(response, expected_status_code, expected_data=UNDEFINED):
     """Assert on the status and contents of a response.
 
