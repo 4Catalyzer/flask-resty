@@ -80,20 +80,24 @@ def Shape(expected):
 
 
 def get_body(response):
-    assert response.mimetype == 'application/json'
-    return json.loads(response.get_data(as_text=True))
+    body = response.get_data(as_text=True)
+    return json.loads(body) if response.mimetype == 'application/json' else body
 
 
 def get_data(response):
+    assert response.mimetype == 'application/json'
     return get_body(response)['data']
 
 
 def get_errors(response):
+    assert response.mimetype == 'application/json'
     return get_body(response)['errors']
 
 
 def get_meta(response):
+    assert response.mimetype == 'application/json'
     return get_body(response)['meta']
+
 
 
 def assert_response(response, expected_status_code, expected_data=UNDEFINED):
@@ -108,10 +112,13 @@ def assert_response(response, expected_status_code, expected_data=UNDEFINED):
     if expected_data is UNDEFINED:
         return
 
-    if 200 <= response.status_code < 300:
-        response_data = get_data(response)
+    if response.mimetype == 'application/json':
+        if 200 <= response.status_code < 300:
+            response_data = get_data(response)
+        else:
+            response_data = get_errors(response)
     else:
-        response_data = get_errors(response)
+        response_data = get_body(response)
 
     if not isinstance(expected_data, Predicate):
         expected_data = Shape(expected_data)
