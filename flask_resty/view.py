@@ -775,15 +775,43 @@ class ModelView(ApiView):
 
 
 class GenericModelView(ModelView):
+    """Extends :py:class:`ModelView` exposing a generic CRUD interface.
+
+    ...
+    """
     def list(self):
+        """Composes :py:meth:`get_list` and :py:meth:`make_items_response` to
+        fetch a list of items.
+
+        :return: The HTTP response
+        :rtype: :py:class:`flask.Response`
+        """
         items = self.get_list()
         return self.make_items_response(items)
 
     def retrieve(self, id, create_missing=False):
+        """Composes :py:meth:`get_item_or_404` and
+        :py:meth:`make_item_response` to fetch a single item.
+
+        :param id: One or more primary keys
+        :type id: str or seq
+        :param bool create_missing: Passed to :py:meth:`get_item_or_404`
+        :return: The HTTP response
+        :rtype: :py:class:`flask.Response`
+        """
         item = self.get_item_or_404(id, create_missing=create_missing)
         return self.make_item_response(item)
 
     def create(self, allow_client_id=False):
+        """Create a new item by composing :py:meth:`get_request_data`,
+        :py:meth:`create_and_add_item` and :py:meth:`make_created_response`.
+
+        :param allow_client_id: If True, the :py:attr:`id_fields` are
+            permitted to be present in the request data.
+        :type allow_client_id: bool
+        :return: The HTTP response
+        :rtype: :py:class:`flask.Response`
+        """
         expected_id = None if allow_client_id else False
         data_in = self.get_request_data(expected_id=expected_id)
 
@@ -799,6 +827,22 @@ class GenericModelView(ModelView):
         partial=False,
         return_content=False,
     ):
+        """Update an item by calling :py:meth:`update_item` on the item and
+        update data, which are retrieved with :py:meth:`get_item_or_404` and
+        :py:meth:`get_request_data` respectively.
+
+        :param id: One or more primary keys
+        :type id: str or seq
+        :param create_missing: Passed to :py:meth:`get_item_or_404`
+        :type create_missing: bool
+        :param partial: Passed to :py:meth:`get_request_data`
+        :type partial: bool
+        :param return_content: If True, the updated item will be included in
+            the response body.
+        :type return_content: bool
+        :return: The HTTP response
+        :rtype: :py:class:`flask.Response`
+        """
         # No need to authorize creating the missing item, as we will authorize
         # before saving to database below.
         item = self.get_item_or_404(
@@ -817,6 +861,14 @@ class GenericModelView(ModelView):
         return self.make_empty_response(item=item)
 
     def destroy(self, id):
+        """Composes :py:meth:`get_item_or_404` and :py:meth:`delete_item`
+        to destroy a single item. An empty response is returned.
+
+        :param id: One or more primary keys
+        :type id: str or seq
+        :return: The HTTP response
+        :rtype: :py:class:`flask.Response`
+        """
         item = self.get_item_or_404(id)
 
         self.delete_item(item)
