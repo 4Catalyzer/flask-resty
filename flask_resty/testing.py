@@ -11,6 +11,9 @@ from .utils import UNDEFINED
 
 
 class ApiClient(FlaskClient):
+    def __init__(self, *args, json_encoder=json.JSONEncoder, **kwargs):
+        self._json_encoder = kwargs.pop("json_encoder")
+
     def open(self, path, *args, **kwargs):
         full_path = '{}{}'.format(
             self.application.extensions['resty'].api.prefix, path,
@@ -19,7 +22,9 @@ class ApiClient(FlaskClient):
         if 'data' in kwargs:
             kwargs.setdefault('content_type', 'application/json')
             if kwargs['content_type'] == 'application/json':
-                kwargs['data'] = json.dumps({'data': kwargs['data']})
+                kwargs['data'] = json.dumps(
+                    {'data': kwargs['data']}, cls=self._json_encoder,
+                )
 
         return super(ApiClient, self).open(full_path, *args, **kwargs)
 
