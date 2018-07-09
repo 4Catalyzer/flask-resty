@@ -188,7 +188,7 @@ class Sorting(FieldSortingBase):
     For example, to sort `name` and `date` based on the `sort_arg` request
     parameter, specify the following in your :py:class:`ModelView`::
 
-        sorting = Sorting('name', date')
+        sorting = Sorting('name', 'date')
 
     One or both of `name` or `date` can be formatted in the `sort_arg` request
     parameter to determine the sort order.
