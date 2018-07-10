@@ -12,7 +12,7 @@ from flask_resty import (
     RelayCursorPagination,
     Sorting,
 )
-from flask_resty.spec import ModelViewDeclaration
+from flask_resty.spec import FlaskRestyPlugin, ModelViewDeclaration
 
 # -----------------------------------------------------------------------------
 
@@ -117,7 +117,7 @@ def spec(schemas, views):
     spec = APISpec(
         title='test api',
         version='0.1.0',
-        plugins=('apispec.ext.marshmallow', 'flask_resty.spec'),
+        plugins=(FlaskRestyPlugin(),),
     )
 
     spec.definition('Foo', schema=schemas['foo'])
@@ -137,7 +137,7 @@ def test_definition_autogeneration(views):
     spec = APISpec(
         title='test api',
         version='0.1.0',
-        plugins=('apispec.ext.marshmallow', 'flask_resty.spec'),
+        plugins=(FlaskRestyPlugin(),),
     )
 
     spec.add_path(view=views['foo_list'])
@@ -149,7 +149,7 @@ def test_tagging(views):
     spec = APISpec(
         title='test api',
         version='0.1.0',
-        plugins=('apispec.ext.marshmallow', 'flask_resty.spec'),
+        plugins=(FlaskRestyPlugin(),),
     )
 
     spec.add_path(view=views['foo_list'])

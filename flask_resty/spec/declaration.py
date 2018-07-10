@@ -1,6 +1,6 @@
 from flask.views import http_method_funcs
 
-from .utils import get_marshmallow_schema_name, ref
+# -----------------------------------------------------------------------------
 
 
 class ApiViewDeclaration(object):
@@ -21,7 +21,7 @@ class ApiViewDeclaration(object):
 
         self.overrides = kwargs
 
-    def __call__(self, view, path, spec):
+    def __call__(self, view, path, plugin):
         view_methods = set(view.__dict__.keys()) \
             .intersection(http_method_funcs)
 
@@ -32,15 +32,15 @@ class ApiViewDeclaration(object):
                 operation['description'] = getattr(view, method).__doc__
 
         if view.schema:
-            self.declare_schema(view, view_methods, path, spec)
+            self.declare_schema(view, view_methods, path, plugin)
 
         for method in view_methods.intersection(self.overrides.keys()):
             for code, response in self.overrides[method].items():
                 path[method].declare_response(code, **response)
 
-    def declare_schema(self, view, view_methods, path, spec):
-        schema = get_marshmallow_schema_name(spec, type(view.schema))
-        schema_ref = ref(schema)
+    def declare_schema(self, view, view_methods, path, plugin):
+        schema = self.get_marshmallow_schema_name(plugin, type(view.schema))
+        schema_ref = {'$ref': '#/definitions/{}'.format(schema)}
 
         if 'get' in view_methods:
             if not self.many:
@@ -82,16 +82,27 @@ class ApiViewDeclaration(object):
             for method in view_methods:
                 path[method].add_tag(schema)
 
+    def get_marshmallow_schema_name(self, plugin, schema):
+        """Get the schema name.
+
+        If the schema doesn't exist, create it.
+        """
+        try:
+            return plugin.openapi.refs[schema]
+        except KeyError:
+            plugin.spec.definition(schema.__name__, schema=schema)
+            return schema.__name__
+
 
 class ModelViewDeclaration(ApiViewDeclaration):
     """Declaration for Views that specify a model"""
 
-    def __call__(self, view, path, spec):
+    def __call__(self, view, path, plugin):
         super(ModelViewDeclaration, self)\
-            .__call__(view, path, spec)
+            .__call__(view, path, plugin)
 
         for item in (view.pagination, view.filtering, view.sorting):
             try:
-                item.spec_declaration(path, spec)
+                item.spec_declaration(path, plugin)
             except AttributeError:
                 pass
