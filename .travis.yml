@@ -1,4 +1,5 @@
-sudo: false
+# TODO: Remove this once travis-ci/travis-ci#9815 is fixed.
+dist: xenial
 
 language: python
 python:
