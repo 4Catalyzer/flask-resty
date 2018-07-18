@@ -28,7 +28,7 @@ class FieldSortingBase(SortingBase):
     def get_field_orderings(self, fields):
         return tuple(
             self.get_field_ordering(field)
-            for field in fields.split(','),
+            for field in fields.split(',')
         )
 
     def get_field_ordering(self, field):
@@ -40,7 +40,7 @@ class FieldSortingBase(SortingBase):
     def get_criteria(self, view, field_orderings):
         return tuple(
             self.get_criterion(view, field_ordering)
-            for field_ordering in field_orderings,
+            for field_ordering in field_orderings
         )
 
     def get_criterion(self, view, field_ordering):
