@@ -6,5 +6,9 @@ Allows passing a Flask-Resty `view` to
 `APISpec.add_path <apispec.APISpec.add_path>`
 """
 
-from .plugin import FlaskRestyPlugin
 from .declaration import ApiViewDeclaration, ModelViewDeclaration
+
+try:
+    from .plugin import FlaskRestyPlugin
+except ImportError:
+    pass
