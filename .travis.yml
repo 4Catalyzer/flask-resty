@@ -1,12 +1,10 @@
-# TODO: Remove this once travis-ci/travis-ci#9815 is fixed.
-dist: xenial
+sudo: false
 
 language: python
 python:
   - "2.7"
   - "3.5"
   - "3.6"
-  - "3.7"
 
 services:
   - postgresql
@@ -18,8 +16,13 @@ matrix:
   include:
     - python: "2.7"
       env: TOXENV=py-base
-    - python: "3.7"
+    - python: "3.6"
       env: TOXENV=py-base
+    - # TODO: Remove this workaround once travis-ci/travis-ci#9815 is fixed.
+      sudo: true
+      dist: xenial
+      python: "3.7"
+      env: TOXENV=py-jwt DATABASE_URL=postgres://localhost/travis_ci_test
     - python: "pypy"
       env: TOXENV=py-jwt
     - python: "pypy3"
