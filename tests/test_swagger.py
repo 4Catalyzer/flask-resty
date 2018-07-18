@@ -1,6 +1,5 @@
 import operator
 
-from apispec import APISpec
 from marshmallow import fields, Schema
 import pytest
 
@@ -12,7 +11,14 @@ from flask_resty import (
     RelayCursorPagination,
     Sorting,
 )
-from flask_resty.spec import FlaskRestyPlugin, ModelViewDeclaration
+
+# -----------------------------------------------------------------------------
+
+try:
+    from apispec import APISpec
+    from flask_resty.spec import FlaskRestyPlugin, ModelViewDeclaration
+except ImportError:
+    pytestmark = pytest.mark.skip(reason="apispec support not installed")
 
 # -----------------------------------------------------------------------------
 

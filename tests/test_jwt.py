@@ -10,7 +10,7 @@ from flask_resty.testing import assert_response
 # -----------------------------------------------------------------------------
 
 try:
-    from flask_resty import JwkSetAuthentication, JwtAuthentication
+    from flask_resty import JwtAuthentication, JwkSetAuthentication
 except ImportError:
     pytestmark = pytest.mark.skip(reason="JWT support not installed")
 

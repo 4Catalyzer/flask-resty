@@ -10,7 +10,7 @@ services:
   - postgresql
 
 env:
-  - TOXENV=py-jwt DATABASE_URL=postgres://localhost/travis_ci_test
+  - TOXENV=py-full DATABASE_URL=postgres://localhost/travis_ci_test
 
 matrix:
   include:
@@ -22,11 +22,11 @@ matrix:
       sudo: true
       dist: xenial
       python: "3.7"
-      env: TOXENV=py-jwt DATABASE_URL=postgres://localhost/travis_ci_test
+      env: TOXENV=py-full DATABASE_URL=postgres://localhost/travis_ci_test
     - python: "pypy"
-      env: TOXENV=py-jwt
+      env: TOXENV=py-full
     - python: "pypy3"
-      env: TOXENV=py-jwt
+      env: TOXENV=py-full
 
 cache:
   directories:
