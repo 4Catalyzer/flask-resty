@@ -43,6 +43,8 @@ api.add_resource('/widgets', WidgetListView, WidgetView)
 ```
 The recommended way of creating models is to use `flask_sqlalchemy` to create a base `Model` class:
 ```python
+from flask_sqlalchemy import SQLAlchemy
+
 db = SQLAlchemy(app)
 
 class Widget(db.Model):
