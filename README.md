@@ -41,6 +41,13 @@ class WidgetView(WidgetViewBase):
 api = Api(app, '/api')
 api.add_resource('/widgets', WidgetListView, WidgetView)
 ```
+The recommended way of creating models is to use `flask_sqlalchemy` to create a base `Model` class:
+```python
+db = SQLAlchemy(app)
+
+class Widget(db.Model):
+   ...
+```
 
 [build-badge]: https://img.shields.io/travis/4Catalyzer/flask-resty/master.svg
 [build]: https://travis-ci.org/4Catalyzer/flask-resty
