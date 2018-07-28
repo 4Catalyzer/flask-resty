@@ -36,7 +36,7 @@ class LimitPaginationBase(PaginationBase):
         else:
             has_next_page = False
 
-        meta.set_response_meta(has_next_page=has_next_page)
+        meta.update_response_meta({'has_next_page': has_next_page})
         return items
 
     def get_limit(self):
@@ -217,7 +217,7 @@ class CursorPaginationBase(LimitPagination):
         sorting_field_orderings = sorting.get_request_field_orderings(view)
 
         sorting_ordering_fields = frozenset(
-            field_name for field_name, _ in sorting_field_orderings,
+            field_name for field_name, _ in sorting_field_orderings
         )
 
         # For convenience, use the ascending setting on the last explicit
@@ -296,7 +296,7 @@ class CursorPaginationBase(LimitPagination):
 
         column_cursors = tuple(
             (sorting.get_column(view, field_name), asc, value)
-            for (field_name, asc), value in zip(field_orderings, cursor),
+            for (field_name, asc), value in zip(field_orderings, cursor)
         )
 
         return sa.or_(
@@ -306,7 +306,7 @@ class CursorPaginationBase(LimitPagination):
 
     def get_filter_clause(self, column_cursors):
         previous_clauses = sa.and_(
-            column == value for column, _, value in column_cursors[:-1],
+            column == value for column, _, value in column_cursors[:-1]
         )
 
         column, asc, value = column_cursors[-1]
@@ -320,7 +320,7 @@ class CursorPaginationBase(LimitPagination):
     def make_cursors(self, items, view, field_orderings):
         column_fields = self.get_column_fields(view, field_orderings)
         return tuple(
-            self.render_cursor(item, column_fields) for item in items,
+            self.render_cursor(item, column_fields) for item in items
         )
 
     def make_cursor(self, item, view, field_orderings):
@@ -331,13 +331,13 @@ class CursorPaginationBase(LimitPagination):
         serializer = view.serializer
         return tuple(
             serializer.fields[field_name]
-            for field_name, _ in field_orderings,
+            for field_name, _ in field_orderings
         )
 
     def render_cursor(self, item, column_fields):
         cursor = tuple(
             field._serialize(getattr(item, field.name), field.name, item)
-            for field in column_fields,
+            for field in column_fields
         )
 
         return self.encode_cursor(cursor)
@@ -376,7 +376,7 @@ class RelayCursorPagination(CursorPaginationBase):
 
         # Relay expects a cursor for each item.
         cursors_out = self.make_cursors(items, view, field_orderings)
-        meta.set_response_meta(cursors=cursors_out)
+        meta.update_response_meta({'cursors': cursors_out})
 
         return items
 

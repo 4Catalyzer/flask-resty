@@ -11,6 +11,7 @@ from werkzeug.exceptions import NotFound
 from . import meta
 from .authentication import NoOpAuthentication
 from .authorization import NoOpAuthorization
+from .decorators import request_cached_property
 from .exceptions import ApiError
 from .spec import ApiViewDeclaration, ModelViewDeclaration
 from .utils import iter_validation_errors, settable_property
@@ -90,10 +91,10 @@ class ApiView(MethodView):
         :rtype: :py:class:`flask.Response`
         """
         data_out = self.serialize(item)
-        self.set_item_meta(item)
+        self.set_item_response_meta(item)
         return self.make_response(data_out, *args, item=item)
 
-    def set_item_meta(self, item):
+    def set_item_response_meta(self, item):
         pass
 
     def make_response(self, data, *args, **kwargs):
@@ -114,11 +115,15 @@ class ApiView(MethodView):
         :return: The HTTP response body
         :rtype: dict
         """
+        body = self.render_response_body(data, meta.get_response_meta())
+        return self.make_raw_response(body, *args, **kwargs)
+
+    def render_response_body(self, data, response_meta):
         body = {'data': data}
         if response_meta is not None:
             body['meta'] = response_meta
 
-        return body
+        return flask.jsonify(body)
 
     def make_raw_response(self, *args, **kwargs):
         """Create a :py:class:`flask.Response`. `args` are passed to
@@ -174,6 +179,10 @@ class ApiView(MethodView):
         :return: The deserialized request data
         :rtype: object
         """
+        data_raw = self.parse_request_data()
+        return self.deserialize(data_raw, **kwargs)
+
+    def parse_request_data(self):
         try:
             data_raw = flask.request.get_json()['data']
         except TypeError:
@@ -181,7 +190,7 @@ class ApiView(MethodView):
         except KeyError:
             raise ApiError(400, {'code': 'invalid_data.missing'})
 
-        return self.deserialize(data_raw, **kwargs)
+        return data_raw
 
     def deserialize(self, data_raw, expected_id=None, **kwargs):
         """Use the :py:attr:`deserializer` to deserialize the data provided in
@@ -276,13 +285,9 @@ class ApiView(MethodView):
 
         return tuple(data[id_field] for id_field in self.id_fields)
 
-    def get_request_args(self, **kwargs):
-        """Retrieve the request parameters. `kwargs` are passed along to
-        :py:meth:`deserialize_args`.
-
-        :return: The request parameters
-        :rtype: object
-        """
+    @request_cached_property
+    def request_args(self):
+        """Use args_schema to parse request query arguments."""
         args = flask.request.args
         data_raw = {}
 
@@ -300,7 +305,7 @@ class ApiView(MethodView):
 
             data_raw[field_name] = value
 
-        return self.deserialize_args(data_raw, **kwargs)
+        return self.deserialize_args(data_raw)
 
     def is_list_field(self, field):
         """Predicate that indicates if the provided `field` is an instance
@@ -752,15 +757,15 @@ class ModelView(ApiView):
         flask.current_app.logger.exception("handled integrity error")
         return ApiError(409, {'code': 'invalid_data.conflict'})
 
-    def set_item_meta(self, item):
+    def set_item_response_meta(self, item):
         """Uses the `item` to set metadata on the Flask-RESTy context.
 
         :param object item: An object
         """
-        super(ModelView, self).set_item_meta(item)
-        self.set_item_pagination_meta(item)
+        super(ModelView, self).set_item_response_meta(item)
+        self.set_item_response_meta_pagination(item)
 
-    def set_item_pagination_meta(self, item):
+    def set_item_response_meta_pagination(self, item):
         """If :py:attr:`pagination` is set, the `item` is used to set metadata
         from the pagination class on the Flask-RESTy context.
 
@@ -769,9 +774,7 @@ class ModelView(ApiView):
         if not self.pagination:
             return
 
-        pagination_meta = self.pagination.get_item_meta(item, self)
-        if pagination_meta is not None:
-            meta.set_response_meta(**pagination_meta)
+        meta.update_response_meta(self.pagination.get_item_meta(item, self))
 
 
 class GenericModelView(ModelView):

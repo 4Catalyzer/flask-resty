@@ -23,9 +23,10 @@ class ArgFilterBase(object):
 
 
 class FieldFilterBase(ArgFilterBase):
-    def __init__(self, separator=',', allow_empty=False):
+    def __init__(self, separator=',', allow_empty=False, skip_invalid=False):
         self._separator = separator
         self._allow_empty = allow_empty
+        self._skip_invalid = skip_invalid
 
     def maybe_set_arg_name(self, arg_name):
         pass
@@ -56,6 +57,9 @@ class FieldFilterBase(ArgFilterBase):
         try:
             value = self.deserialize(field, value_raw)
         except ValidationError as e:
+            if self._skip_invalid:
+                return sql.false()
+
             raise ApiError(400, *(
                 self.format_validation_error(message)
                 for message, path in iter_validation_errors(e.messages)

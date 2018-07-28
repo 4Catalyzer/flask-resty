@@ -88,6 +88,11 @@ def routes(app, models, schemas, filter_fields):
                 operator.ge,
                 validate=False,
             ),
+            size_skip_invalid=ColumnFilter(
+                'size',
+                operator.eq,
+                skip_invalid=True,
+            ),
         )
 
         def get(self):
@@ -238,6 +243,11 @@ def test_column_filter_unvalidated(client):
         {'id': '3'},
         {'id': '4'},
     ])
+
+
+def test_column_filter_skip_invalid(client):
+    response = client.get('/widgets?size_skip_invalid=foo')
+    assert_response(response, 200, [])
 
 
 def test_model_filter(client):

@@ -2,16 +2,18 @@ from . import context
 
 # -----------------------------------------------------------------------------
 
-META_KEY = 'meta'
-
-# -----------------------------------------------------------------------------
-
 
 def get_response_meta():
-    return context.get_context_value(META_KEY, None)
+    return context.get('response_meta')
 
 
-def set_response_meta(**kwargs):
-    meta = context.get_context_value(META_KEY, {})
-    meta.update(kwargs)
-    context.set_context_value(META_KEY, meta)
+def update_response_meta(next_meta):
+    if next_meta is None:
+        return
+
+    meta = get_response_meta()
+    if meta is None:
+        meta = {}
+
+    meta.update(next_meta)
+    context.set('response_meta', meta)

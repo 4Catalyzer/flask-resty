@@ -5,10 +5,7 @@ import re
 from flask.testing import FlaskClient
 
 from .compat import basestring
-
-# -----------------------------------------------------------------------------
-
-UNDEFINED = object()
+from .utils import UNDEFINED
 
 # -----------------------------------------------------------------------------
 
@@ -108,7 +105,7 @@ def assert_response(response, expected_status_code, expected_data=UNDEFINED):
     """
     assert response.status_code == expected_status_code
 
-    if expected_data == UNDEFINED:
+    if expected_data is UNDEFINED:
         return
 
     if 200 <= response.status_code < 300:

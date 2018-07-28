@@ -25,7 +25,7 @@ def system(command):
 
 setup(
     name="Flask-RESTy",
-    version='0.16.3',
+    version='0.19.1',
     description="Building blocks for REST APIs for Flask",
     url='https://github.com/4Catalyzer/flask-resty',
     author="Jimmy Jia",
@@ -55,6 +55,7 @@ setup(
     ),
     extras_require={
         'docs': ('sphinx', 'pallets-sphinx-themes'),
+        'apispec': ('apispec >= 0.39.0',),
         'jwt': ('PyJWT >= 1.4.0', 'cryptography >= 2.0.0'),
     },
     cmdclass={
