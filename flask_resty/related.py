@@ -6,25 +6,55 @@ from .exceptions import ApiError
 
 
 class RelatedId(object):
+    """A facility for resolving model fields by id.
+
+    :param view_class: The :py:class:`ModelView` corresponding to the related model.
+    :param str field_name: The name of the field on the related model.
+    """
+
     def __init__(self, view_class, field_name):
         self._view_class = view_class
         self.field_name = field_name
 
     def create_view(self):
-        # Separating this out saves instantiating the view multiple times for
-        # list fields.
+        """Create an instance of the stored view. Separating this out saves
+        instantiating the view multiple times for list fields.
+
+        :return: The :py:class:`ModelView` instance.
+        :rtype: object
+        """
         return self._view_class()
 
     def resolve_related_id(self, view, id):
+        """Resolves `id` by calling :py:meth:`ModelView.resolve_related_id`
+        on the given `view`.
+
+        :return: The resolved item.
+        :rtype: object
+        """
         return view.resolve_related_id(id)
 
 
 class Related(object):
+    """A facility for recursively resolving model fields.
+
+    :param item_class: The SQLAlchemy mapper corresponding to the related item.
+    :param kwargs: A mapping from related fields to a callable resolver. 
+    :type kwargs: dict 
+    """
+
     def __init__(self, item_class=None, **kwargs):
         self._item_class = item_class
         self._resolvers = kwargs
 
     def resolve_related(self, data):
+        """Substitutes any related fields present in `data` with the result of
+        calling :py:meth:`resolve_field` on the field's value.
+
+        :param data object: The deserialized request data.
+        :return: The deserialized data with related fields resolved.
+        :rtype: object
+        """
         for field_name, resolver in self._resolvers.items():
             if isinstance(resolver, RelatedId):
                 data_field_name = resolver.field_name
@@ -59,6 +89,13 @@ class Related(object):
         return data
 
     def resolve_field(self, value, resolver):
+        """Applies `resolver` to the given value to resolve the related field.
+        If `value` is a list, each item in the list will be resolved.
+
+        :param value: The value corresponding to the field we are resolving.
+        :param resolver: A callable capable of resolving the given `value`.
+        :type resolver: :py:class:`Related` | :py:class:`RelatedId` | func
+        """
         # marshmallow always uses lists here.
         many = isinstance(value, list)
         if many and not value:
