@@ -28,7 +28,7 @@ setup(
     version='0.19.1',
     description="Building blocks for REST APIs for Flask",
     url='https://github.com/4Catalyzer/flask-resty',
-    author="Jimmy Jia",
+    author="4Catalyzer",
     author_email='tesrin@gmail.com',
     license='MIT',
     classifiers=(

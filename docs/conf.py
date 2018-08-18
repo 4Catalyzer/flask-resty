@@ -9,8 +9,8 @@ from pallets_sphinx_themes import get_version
 # -- Project information -----------------------------------------------------
 
 project = 'Flask-RESTy'
-copyright = '2018, Jimmy Jia'
-author = 'Jimmy Jia'
+copyright = '2015-present, 4Catalyzer'
+author = '4Catalyzer'
 release, version = get_version('Flask-RESTy')
 
 # -- General configuration ---------------------------------------------------
