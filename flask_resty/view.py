@@ -340,17 +340,17 @@ class ModelView(ApiView):
 
         return self.related.resolve_related(data)
 
-    def resolve_related_item(self, data):
+    def resolve_related_item(self, data, **kwargs):
         try:
             id = self.get_data_id(data)
         except KeyError:
             raise ApiError(422, {'code': 'invalid_related.missing_id'})
 
-        return self.resolve_related_id(id)
+        return self.resolve_related_id(id, **kwargs)
 
-    def resolve_related_id(self, id):
+    def resolve_related_id(self, id, **kwargs):
         try:
-            item = self.get_item(id)
+            item = self.get_item(id, **kwargs)
         except NoResultFound:
             raise ApiError(422, {'code': 'invalid_related.not_found'})
 
