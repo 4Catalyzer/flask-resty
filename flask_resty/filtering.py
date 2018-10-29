@@ -113,8 +113,8 @@ class ColumnFilter(FieldFilterBase):
 
         if self._column_name and self._column_name != arg_name:
             raise TypeError(
-                "cannot use ColumnFilter without explicit column name " +
-                "for multiple arg names",
+                "cannot use ColumnFilter without explicit column name for " +
+                "multiple arg names",
             )
 
         self._column_name = arg_name
