@@ -2,11 +2,7 @@ import functools
 import posixpath
 
 import flask
-from werkzeug.exceptions import (
-    default_exceptions,
-    HTTPException,
-    InternalServerError,
-)
+from werkzeug.exceptions import HTTPException
 
 from .exceptions import ApiError
 
@@ -19,22 +15,18 @@ DEFAULT_ID_RULE = '<id>'
 
 
 def handle_api_error(error):
-    return flask.jsonify(error.body), error.status_code
+    return error.response
 
 
 def handle_http_exception(error):
     # Flask calls the InternalServerError handler with any uncaught app
     # exceptions. Re-raise those as generic internal server errors.
     if not isinstance(error, HTTPException):
-        error = InternalServerError()
+        error = ApiError(500)
+    else:
+        error = ApiError.from_http_exception(error)
 
-    body = {
-        'errors': [{
-            'code': '_'.join(word.lower() for word in error.name.split()),
-            'details': error.description,
-        }],
-    }
-    return flask.jsonify(body), error.code
+    return error.response
 
 
 # -----------------------------------------------------------------------------
@@ -54,10 +46,7 @@ class Api(object):
         app.extensions['resty'] = FlaskRestyState(self)
 
         app.register_error_handler(ApiError, handle_api_error)
-
-        # TODO: Just handle HTTPException once pallets/flask#2314 lands.
-        for exception in default_exceptions.values():
-            app.register_error_handler(exception, handle_http_exception)
+        app.register_error_handler(HTTPException, handle_http_exception)
 
     def _get_app(self, app):
         app = app or self._app
