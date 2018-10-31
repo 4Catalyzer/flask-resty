@@ -47,7 +47,7 @@ setup(
     keywords='rest flask',
     packages=find_packages(exclude=('tests',)),
     install_requires=(
-        'Flask >= 0.10',
+        'Flask >= 1.0',
         'Flask-SQLAlchemy >= 1.0',
         'marshmallow >= 2.2.0',
         'SQLAlchemy >= 1.0.0',

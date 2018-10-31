@@ -1,8 +1,9 @@
+import flask
 from marshmallow import fields, Schema
 import pytest
 from sqlalchemy import Column, Integer, String
 
-from flask_resty import Api, ApiView, GenericModelView
+from flask_resty import Api, ApiError, ApiView, GenericModelView
 from flask_resty.testing import assert_response, get_body, get_errors
 
 # -----------------------------------------------------------------------------
@@ -66,6 +67,14 @@ def views(models, schemas):
             super(WidgetFlushListView, self).add_item(item)
             self.flush()
 
+    class DefaultErrorView(ApiView):
+        def get(self):
+            raise ApiError(400)
+
+    class AbortView(ApiView):
+        def get(self):
+            flask.abort(400)
+
     class UncaughtView(ApiView):
         def get(self):
             raise RuntimeError()
@@ -74,6 +83,8 @@ def views(models, schemas):
         'widget_list': WidgetListView,
         'widget': WidgetView,
         'widget_flush_list': WidgetFlushListView,
+        'default_error': DefaultErrorView,
+        'abort': AbortView,
         'uncaught': UncaughtView,
     }
 
@@ -86,6 +97,12 @@ def routes(app, views):
     )
     api.add_resource(
         '/widgets_flush', views['widget_flush_list'],
+    )
+    api.add_resource(
+        '/default_error', views['default_error'],
+    )
+    api.add_resource(
+        '/abort', views['abort'],
     )
     api.add_resource(
         '/uncaught', views['uncaught'],
@@ -218,6 +235,22 @@ def test_integrity_error_uncaught(db, app, client, path):
     assert_response(response, 500, [{
         'code': 'internal_server_error',
     }])
+
+
+@pytest.mark.parametrize('path', ('/default_error', '/abort'))
+def test_default_code(client, path):
+    response = client.get(path)
+    assert_response(response, 400, [{
+        'code': 'bad_request',
+    }])
+
+
+@pytest.mark.parametrize('path', ('/default_error', '/abort'))
+def test_trap_api_errors(monkeypatch, app, client, path):
+    monkeypatch.setitem(app.config, 'RESTY_TRAP_API_ERRORS', True)
+
+    with pytest.raises(ApiError):
+        client.get(path)
 
 
 def test_uncaught(app, client):
