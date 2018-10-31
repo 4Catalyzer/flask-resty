@@ -69,7 +69,7 @@ def views(models, schemas):
 
     class DefaultErrorView(ApiView):
         def get(self):
-            raise ApiError(400)
+            raise ApiError(int(flask.request.args.get('status_code', 400)))
 
     class AbortView(ApiView):
         def get(self):
@@ -243,6 +243,11 @@ def test_default_code(client, path):
     assert_response(response, 400, [{
         'code': 'bad_request',
     }])
+
+
+def test_unknown_code(client):
+    response = client.get('/default_error?status_code=600')
+    assert_response(response, 600, [])
 
 
 @pytest.mark.parametrize('path', ('/default_error', '/abort'))
