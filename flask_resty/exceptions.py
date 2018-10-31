@@ -25,12 +25,8 @@ class ApiError(Exception):
         if status_code not in default_exceptions:
             return ()
 
-        error = default_exceptions[status_code]()
-
-        return ({
-            'code': '_'.join(word.lower() for word in error.name.split()),
-            'details': error.description,
-        },)
+        exc = default_exceptions[status_code]()
+        return (cls.get_error_from_http_exception(exc),)
 
     @classmethod
     def get_error_from_http_exception(cls, exc):
