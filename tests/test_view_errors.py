@@ -79,6 +79,10 @@ def views(models, schemas):
         def get(self):
             raise RuntimeError()
 
+    class SlashView(ApiView):
+        def get(self):
+            return self.make_empty_response()
+
     return {
         'widget_list': WidgetListView,
         'widget': WidgetView,
@@ -86,6 +90,7 @@ def views(models, schemas):
         'default_error': DefaultErrorView,
         'abort': AbortView,
         'uncaught': UncaughtView,
+        'slash': SlashView,
     }
 
 
@@ -106,6 +111,9 @@ def routes(app, views):
     )
     api.add_resource(
         '/uncaught', views['uncaught'],
+    )
+    api.add_resource(
+        '/slash/', views['slash'],
     )
 
 
@@ -265,6 +273,11 @@ def test_uncaught(app, client):
     assert_response(response, 500, [{
         'code': 'internal_server_error',
     }])
+
+
+def test_slash_redirect(client):
+    response = client.get('/slash')
+    assert response.location.endswith('/slash/')
 
 
 def test_debug(app, client):
