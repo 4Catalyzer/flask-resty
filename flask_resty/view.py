@@ -360,16 +360,19 @@ class ModelView(ApiView):
         return self.create_item(self.get_id_dict(id))
 
     def create_item(self, data):
-        item = self.model(**data)
-
+        item = self.create_item_raw(data)
         self.authorization.authorize_create_item(item)
-
         return item
 
-    def add_item(self, item):
-        self.session.add(item)
+    def create_item_raw(self, data):
+        return self.model(**data)
 
+    def add_item(self, item):
+        self.add_item_raw(item)
         self.authorization.authorize_save_item(item)
+
+    def add_item_raw(self, item):
+        self.session.add(item)
 
     def create_and_add_item(self, data):
         item = self.create_item(data)
@@ -378,15 +381,18 @@ class ModelView(ApiView):
 
     def update_item(self, item, data):
         self.authorization.authorize_update_item(item, data)
+        self.update_item_raw(item, data)
+        self.authorization.authorize_save_item(item)
 
+    def update_item_raw(self, item, data):
         for key, value in data.items():
             setattr(item, key, value)
 
-        self.authorization.authorize_save_item(item)
-
     def delete_item(self, item):
         self.authorization.authorize_delete_item(item)
+        self.delete_item_raw(item)
 
+    def delete_item_raw(self, item):
         self.session.delete(item)
 
     def flush(self):
