@@ -456,6 +456,7 @@ class GenericModelView(ModelView):
     def update(
         self,
         id,
+        with_for_update=False,
         create_missing=False,
         partial=False,
         return_content=False,
@@ -464,6 +465,7 @@ class GenericModelView(ModelView):
         # before saving to database below.
         item = self.get_item_or_404(
             id,
+            with_for_update=with_for_update,
             create_missing=create_missing,
             will_update_item=True,
         )
