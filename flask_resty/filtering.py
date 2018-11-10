@@ -140,8 +140,11 @@ class ColumnFilter(FieldFilterBase):
 
         self._column_name = arg_name
 
+    def get_deserializer(self, view):
+        return view.deserializer
+
     def get_field(self, view):
-        base_field = view.deserializer.fields[self._column_name]
+        base_field = self.get_deserializer(view).fields[self._column_name]
 
         try:
             field = self._fields[base_field]

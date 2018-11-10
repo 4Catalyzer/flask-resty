@@ -25,6 +25,7 @@ def models(db):
         id = Column(Integer, primary_key=True)
         color = Column(String)
         size = Column(Integer)
+        shape = Column(String)
 
     db.create_all()
 
@@ -63,6 +64,13 @@ def routes(app, models, schemas, filter_fields):
     class WidgetViewBase(GenericModelView):
         model = models['widget']
         schema = schemas['widget']
+
+    class WidgetShapeSchema(Schema):
+        shape = fields.String()
+
+    class WidgetShapeFilter(ColumnFilter):
+        def get_deserializer(self, view):
+            return WidgetShapeSchema()
 
     class WidgetListView(WidgetViewBase):
         filtering = Filtering(
@@ -125,18 +133,27 @@ def routes(app, models, schemas, filter_fields):
         def get(self):
             return self.list()
 
+    class WidgetWithShapeFiltersView(WidgetViewBase):
+        filtering = Filtering(
+            shape=WidgetShapeFilter(operator.eq),
+        )
+
+        def get(self):
+            return self.list()
+
     api = Api(app)
     api.add_resource('/widgets', WidgetListView)
     api.add_resource('/widgets_size_required', WidgetSizeRequiredListView)
     api.add_resource('/widgets_color_custom', WidgetColorCustomListView)
     api.add_resource('/widgets_default_filters', WidgetDefaultFiltersView)
+    api.add_resource('/widgets_shape_filter', WidgetWithShapeFiltersView)
 
 
 @pytest.fixture(autouse=True)
 def data(db, models):
     db.session.add_all((
         models['widget'](color='red', size=1),
-        models['widget'](color='green', size=2),
+        models['widget'](color='green', size=2, shape='round'),
         models['widget'](color='blue', size=3),
         models['widget'](color='red', size=6),
     ))
@@ -315,6 +332,16 @@ def test_model_filter_default_override(client):
             'id': '3',
             'color': 'blue',
             'size': 3,
+        },
+    ])
+
+
+def test_column_filter_deserializer(client):
+    response = client.get('/widgets_shape_filter?shape=round')
+    assert_response(response, 200, [
+        {
+            'color': 'green',
+            'size': 2,
         },
     ])
 
