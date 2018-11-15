@@ -395,10 +395,10 @@ class ModelView(ApiView):
     def delete_item_raw(self, item):
         self.session.delete(item)
 
-    def flush(self):
+    def flush(self, objects=None):
         try:
             # Flushing allows checking invariants without committing.
-            self.session.flush()
+            self.session.flush(objects=objects)
         # Don't catch DataErrors here, as they arise from bugs in validation in
         # the schema.
         except IntegrityError as e:
