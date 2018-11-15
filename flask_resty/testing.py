@@ -96,6 +96,13 @@ def get_meta(response):
     return get_body(response)['meta']
 
 
+def get_status_code_mismatch_message(response):
+    if response.status_code >= 400:
+        return get_errors(response)
+    else:
+        return get_data(response)
+
+
 def assert_response(response, expected_status_code, expected_data=UNDEFINED):
     """Assert on the status and contents of a response.
 
@@ -103,7 +110,7 @@ def assert_response(response, expected_status_code, expected_data=UNDEFINED):
     errors in the response body, depending on the response status. This check
     ignores extra keys dictionaries in the response contents.
     """
-    assert response.status_code == expected_status_code
+    assert response.status_code == expected_status_code, get_status_code_mismatch_message(response)
 
     if expected_data is UNDEFINED:
         return
