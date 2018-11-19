@@ -165,7 +165,12 @@ class ColumnFilter(FieldFilterBase):
             # We may not want to apply the same validation for filters as we do
             # on model fields. This bypasses the irrelevant handling of missing
             # and None values, and skips the validation check.
-            return field._deserialize(value_raw, None, None)
+            try:
+                return field._deserialize(value_raw, None, None)
+            # Some concrete implementations of `_deserialize`, e.g UUID, apply
+            # additional validation that we want to ignore.
+            except ValidationError:
+                return value_raw
 
         return super(ColumnFilter, self).deserialize(field, value_raw)
 
