@@ -3,6 +3,7 @@ import itertools
 import flask
 from flask.views import MethodView
 from marshmallow import fields
+import sqlalchemy as sa
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Load
 from sqlalchemy.orm.exc import NoResultFound
@@ -415,20 +416,45 @@ class ModelView(ApiView):
     def resolve_integrity_error(self, error):
         original_error = error.orig
 
-        if (
-            hasattr(original_error, 'pgcode') and
-            original_error.pgcode in (
+        if hasattr(original_error, 'pgcode'):
+            if original_error.pgcode in (
                 '23502',  # not_null_violation
                 '23514',  # check_violation
-            )
-        ):
-            # Using the psycopg2 error code, we can tell that this was not from
-            # an integrity error that was not a conflict. This means there was
-            # a schema bug, so we emit an interal server error instead.
-            return error
+            ):
+                # Using the psycopg2 error code, we can tell that this was not
+                # from an integrity error that was not a conflict. This means
+                # there was a schema bug, so we emit an internal server error
+                # instead.
+                return error
+            else:
+                diag = original_error.diag
+
+                schema_name = diag.schema_name
+                table_name = diag.table_name
+                constraint_name = diag.constraint_name
+
+                insp = sa.inspect(self.session.bind)
+                unique_constraints = insp.get_unique_constraints(
+                    table_name,
+                    schema=schema_name,
+                )
+
+                for unique_constraint in unique_constraints:
+                    if unique_constraint['name'] == constraint_name:
+                        column_names = unique_constraint['column_names']
+                        break
+                else:
+                    column_names = ()
+        else:
+            column_names = ()
 
         flask.current_app.logger.exception("handled integrity error")
-        return ApiError(409, {'code': 'invalid_data.conflict'})
+
+        error = {'code': 'invalid_data.conflict'}
+        if column_names:
+            error['source'] = {'pointer': '/data/{}'.format(column_names[-1])}
+
+        return ApiError(409, error)
 
     def set_item_response_meta(self, item):
         super(ModelView, self).set_item_response_meta(item)
