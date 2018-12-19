@@ -81,6 +81,15 @@ class ApiView(MethodView):
             response.headers['Location'] = location
         return response
 
+    def make_updated_response(self, item, return_content=False):
+        if return_content:
+            return self.make_item_response(item)
+
+        return self.make_empty_response(item=item)
+
+    def make_deleted_response(self, item):
+        return self.make_empty_response(item=item)
+
     def get_location(self, item):
         id_dict = {
             id_field: getattr(item, id_field) for id_field in self.id_fields
@@ -381,8 +390,9 @@ class ModelView(ApiView):
 
     def update_item(self, item, data):
         self.authorization.authorize_update_item(item, data)
-        self.update_item_raw(item, data)
+        item = self.update_item_raw(item, data) or item
         self.authorization.authorize_save_item(item)
+        return item
 
     def update_item_raw(self, item, data):
         for key, value in data.items():
@@ -390,7 +400,8 @@ class ModelView(ApiView):
 
     def delete_item(self, item):
         self.authorization.authorize_delete_item(item)
-        self.delete_item_raw(item)
+        item = self.delete_item_raw(item) or item
+        return item
 
     def delete_item_raw(self, item):
         self.session.delete(item)
@@ -477,18 +488,15 @@ class GenericModelView(ModelView):
         )
         data_in = self.get_request_data(expected_id=id, partial=partial)
 
-        self.update_item(item, data_in)
+        item = self.update_item(item, data_in) or item
         self.commit()
 
-        if return_content:
-            return self.make_item_response(item)
-
-        return self.make_empty_response(item=item)
+        return self.make_updated_response(item, return_content=return_content)
 
     def destroy(self, id):
         item = self.get_item_or_404(id)
 
-        self.delete_item(item)
+        item = self.delete_item(item) or item
         self.commit()
 
-        return self.make_empty_response()
+        return self.make_deleted_response(item)

@@ -51,9 +51,26 @@ def views(models, schemas):
         def get(self, id):
             return self.retrieve(id)
 
+    class CustomWidgetView(WidgetViewBase):
+        def patch(self, id):
+            return self.update(id, partial=True, return_content=True)
+
+        def delete(self, id):
+            return self.destroy(id)
+
+        def update_item_raw(self, widget, data):
+            return self.model(id=9)
+
+        def delete_item_raw(self, widget):
+            return self.model(id=9)
+
+        def make_deleted_response(self, widget):
+            return self.make_item_response(widget)
+
     return {
         'widget_list': WidgetListView,
         'widget': WidgetView,
+        'custom_widget': CustomWidgetView,
     }
 
 
@@ -171,3 +188,25 @@ def test_view_func_wrapper(app, views):
     # This is really a placeholder for asserting that e.g. custom New Relic
     # view information gets passed through.
     assert app.view_functions['WidgetView'].__name__ == 'WidgetView'
+
+
+def test_update_return_item(app, views, client):
+    api = Api(app)
+    api.add_resource('/widgets/<int:id>', views['custom_widget'])
+
+    response = client.patch('/widgets/1', data={
+        'id': '1',
+    })
+    assert_response(response, 200, {
+        'id': '9',
+    })
+
+
+def test_delete_return_item(app, views, client):
+    api = Api(app)
+    api.add_resource('/widgets/<int:id>', views['custom_widget'])
+
+    response = client.delete('/widgets/1')
+    assert_response(response, 200, {
+        'id': '9',
+    })
