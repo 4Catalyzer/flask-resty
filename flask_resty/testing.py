@@ -40,6 +40,10 @@ class Predicate(object):
         return not self.predicate(other)
 
 
+def InstanceOf(type):
+    return Predicate(lambda value: isinstance(value, type))
+
+
 def Matching(expected_regex):
     return Predicate(re.compile(expected_regex).match)
 

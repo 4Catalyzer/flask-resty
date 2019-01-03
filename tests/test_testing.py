@@ -4,6 +4,7 @@ import pytest
 from flask_resty.testing import (
     assert_response,
     assert_shape,
+    InstanceOf,
     Matching,
     Predicate,
     Shape,
@@ -98,6 +99,10 @@ def test_shape_mapping(assert_shape_func):
 
     assert_shape_func(actual_mapping, {
         'foo': UNDEFINED,
+    })
+
+    assert_shape_func(actual_mapping, {
+        'b': InstanceOf(list),
     })
 
     assert_shape_func(actual_mapping, {
