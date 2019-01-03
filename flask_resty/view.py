@@ -227,6 +227,16 @@ class ModelView(ApiView):
         return flask.current_app.extensions['sqlalchemy'].db.session
 
     @settable_property
+    def query_raw(self):
+        """The raw SQLAlchemy query for the view.
+
+        This is the base query, without authorization filters or query options.
+        By default, this is the query property on the model class. This can be
+        overridden to remove filters attached to that query.
+        """
+        return self.model.query
+
+    @settable_property
     def query(self):
         """The SQLAlchemy query for the view.
 
@@ -235,7 +245,7 @@ class ModelView(ApiView):
         By default, this applies the filter from the view's `authorization` and
         the query options from `base_query_options` and `query_options`.
         """
-        query = self.model.query
+        query = self.query_raw
         query = self.authorization.filter_query(query, self)
         query = query.options(
             *itertools.chain(self.base_query_options, self.query_options)
