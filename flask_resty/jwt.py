@@ -122,13 +122,16 @@ class JwkSetAuthentication(JwtAuthentication):
         # awkward
         return algorithm.from_jwk(json.dumps(jwk))
 
-    def get_jwk_for_token(self, token):
+    def get_kid_for_token(self, token):
         unverified_header = jwt.get_unverified_header(token)
 
         try:
-            token_kid = unverified_header['kid']
+            return unverified_header['kid']
         except KeyError:
             raise InvalidTokenError("Key ID header parameter is missing")
+
+    def get_jwk_for_token(self, token):
+        token_kid = self.get_kid_for_token(token)
 
         for jwk in self.get_jwk_set()['keys']:
             if jwk['kid'] == token_kid:
