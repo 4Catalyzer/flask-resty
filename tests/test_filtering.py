@@ -368,10 +368,10 @@ def test_error_model_filter_required_missing(client):
 def test_error_missing_operator():
     ColumnFilter(operator=operator.eq)
 
-    with pytest.raises(TypeError, message="must specify operator"):
+    with pytest.raises(TypeError, match="must specify operator"):
         ColumnFilter('size')
 
-    with pytest.raises(TypeError, message="must specify operator"):
+    with pytest.raises(TypeError, match="must specify operator"):
         ColumnFilter()
 
 

@@ -170,7 +170,7 @@ def test_factory_pattern(app, views, client):
     api = Api()
     api.init_app(app)
 
-    with pytest.raises(AssertionError, message="no application specified"):
+    with pytest.raises(AssertionError, match="no application specified"):
         api.add_resource('/widgets', views['widget_list'])
 
     api.add_resource('/widgets', views['widget_list'], app=app)
