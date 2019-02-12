@@ -1,7 +1,7 @@
 from collections import defaultdict
 
-from apispec.ext.flask import FlaskPlugin
 from apispec.ext.marshmallow import MarshmallowPlugin
+from apispec_webframeworks.flask import FlaskPlugin
 import flask
 
 from .operation import Operation
@@ -26,11 +26,11 @@ class FlaskRestyPlugin(MarshmallowPlugin):
 
         :param view: An `ApiView` object.
         """
-        super(FlaskRestyPlugin, self).path_helper(
-            path=path,
-            view=view,
-            **kwargs
-        )
+        # super(FlaskRestyPlugin, self).path_helper(
+        #     path=path,
+        #     view=view,
+        #     **kwargs
+        # )
 
         resource = self.get_state().views[view]
         rule = self._rules[resource.rule]
@@ -51,6 +51,7 @@ class FlaskRestyPlugin(MarshmallowPlugin):
         if parameters:
             operations['parameters'] = parameters
 
+        import pdb; pdb.set_trace()
         path.path = FlaskPlugin.flaskpath2openapi(resource.rule)
         path.operations = dict(**operations)
 

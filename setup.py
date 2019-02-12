@@ -54,8 +54,14 @@ setup(
         'Werkzeug >= 0.11',
     ),
     extras_require={
-        'apispec': ('apispec >= 0.39.0',),
-        'jwt': ('PyJWT >= 1.4.0', 'cryptography >= 2.0.0'),
+        'apispec': (
+            'apispec[yaml] >= 1.0.0',
+            'apispec-webframeworks >= 0.3.0',
+        ),
+        'jwt': (
+            'cryptography >= 2.0.0',
+            'PyJWT >= 1.4.0',
+        ),
     },
     cmdclass={
         'clean': system('rm -rf build dist *.egg-info'),

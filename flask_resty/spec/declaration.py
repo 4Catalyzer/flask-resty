@@ -80,7 +80,7 @@ class ApiViewDeclaration(object):
 
         if self.tag:
             for method in view_methods:
-                path[method].add_tag(schema)
+                path[method].tag(schema)
 
     def get_marshmallow_schema_name(self, plugin, schema):
         """Get the schema name.
@@ -90,7 +90,7 @@ class ApiViewDeclaration(object):
         try:
             return plugin.openapi.refs[schema]
         except KeyError:
-            plugin.spec.definition(schema.__name__, schema=schema)
+            plugin.spec.components.schema(schema.__name__, schema=schema)
             return schema.__name__
 
 

@@ -34,7 +34,7 @@ class Operation(dict):
         https://github.com/swagger-api/swagger-spec/blob/master/versions/2.0.md#responseObject"""  # noqa: E501
         self['responses'][str(code)] = self._new_operation(**kwargs)
 
-    def add_tag(self, tag):
+    def tag(self, tag):
         """Add a tag to the operation"""
         self.setdefault('tags', []).append(tag)
 

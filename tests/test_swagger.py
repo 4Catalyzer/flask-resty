@@ -123,15 +123,16 @@ def spec(schemas, views):
     spec = APISpec(
         title='test api',
         version='0.1.0',
+        openapi_version='2.0',
         plugins=(FlaskRestyPlugin(),),
     )
 
-    spec.definition('Foo', schema=schemas['foo'])
+    spec.components.schema('Foo', schema=schemas['foo'])
 
-    spec.add_path(view=views['foo_list'])
-    spec.add_path(view=views['foo'])
-    spec.add_path(view=views['foo_baz'])
-    spec.add_path(view=views['bar'])
+    spec.path(view=views['foo_list'])
+    spec.path(view=views['foo'])
+    spec.path(view=views['foo_baz'])
+    spec.path(view=views['bar'])
 
     return spec.to_dict()
 
@@ -143,10 +144,11 @@ def test_definition_autogeneration(views):
     spec = APISpec(
         title='test api',
         version='0.1.0',
+        openapi_version='2.0',
         plugins=(FlaskRestyPlugin(),),
     )
 
-    spec.add_path(view=views['foo_list'])
+    spec.path(view=views['foo_list'])
 
     assert 'FooSchema' in spec.to_dict()['definitions']
 
@@ -155,10 +157,11 @@ def test_tagging(views):
     spec = APISpec(
         title='test api',
         version='0.1.0',
+        openapi_version='2.0',
         plugins=(FlaskRestyPlugin(),),
     )
 
-    spec.add_path(view=views['foo_list'])
+    spec.path(view=views['foo_list'])
 
     assert 'FooSchema' in spec.to_dict()['paths']['/foos']['get']['tags']
 

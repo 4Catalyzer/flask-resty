@@ -2,8 +2,7 @@
 
 """Flask-Resty plugin for apispec.
 
-Allows passing a Flask-Resty `view` to
-`APISpec.add_path <apispec.APISpec.add_path>`
+Allows passing a Flask-Resty `view` to `APISpec.path <apispec.APISpec.path>`.
 """
 
 from .declaration import ApiViewDeclaration, ModelViewDeclaration
