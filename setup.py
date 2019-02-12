@@ -54,7 +54,7 @@ setup(
         'Werkzeug >= 0.11',
     ),
     extras_require={
-        'apispec': ('apispec >= 0.39.0',),
+        'apispec': ('apispec >= 0.39.0, < 0.40.0',),
         'jwt': ('PyJWT >= 1.4.0', 'cryptography >= 2.0.0'),
     },
     cmdclass={
