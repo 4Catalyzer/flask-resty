@@ -65,4 +65,7 @@ setup(
         'release': system('python setup.py clean package publish'),
         'test': system('tox'),
     },
+    entry_points={
+        "pytest11": ("flask-resty = flask_resty.testing",),
+    },
 )
