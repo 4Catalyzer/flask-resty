@@ -69,7 +69,7 @@ class JwtAuthentication(AuthenticationBase):
         except ValueError:
             raise ApiError(401, {'code': 'invalid_authorization'})
 
-        if scheme != self.header_scheme:
+        if scheme.lower() != self.header_scheme.lower():
             raise ApiError(401, {'code': 'invalid_authorization.scheme'})
 
         return token
