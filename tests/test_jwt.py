@@ -79,11 +79,12 @@ class AbstractTestJwt(object):
     def invalid_token(self, request):
         raise NotImplementedError()
 
-    def test_header(self, client, token):
+    @pytest.mark.parametrize('scheme', ('Bearer', 'bearer'))
+    def test_header(self, client, scheme, token):
         response = client.get(
             '/widgets',
             headers={
-                'Authorization': 'Bearer {}'.format(token),
+                'Authorization': '{} {}'.format(scheme, token),
             },
         )
 
