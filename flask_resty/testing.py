@@ -121,3 +121,4 @@ def assert_response(response, expected_status_code, expected_data=UNDEFINED):
         expected_data = Shape(expected_data)
 
     assert response_data == expected_data
+    return response_data
