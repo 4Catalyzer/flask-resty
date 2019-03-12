@@ -162,3 +162,13 @@ def test_assert_response_with_shape(app):
 
     response_data = assert_response(response, 200, Shape(data))
     assert response_data == data
+
+
+def test_assert_response_returns_data(app):
+    data = {'foo': 'bar'}
+
+    with app.test_request_context():
+        response = flask.jsonify(data=data)
+
+    response_data = assert_response(response, 200)
+    assert response_data == data

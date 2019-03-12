@@ -109,16 +109,15 @@ def assert_response(response, expected_status_code, expected_data=UNDEFINED):
     """
     assert response.status_code == expected_status_code
 
-    if expected_data is UNDEFINED:
-        return
-
     if 200 <= response.status_code < 300:
         response_data = get_data(response)
     else:
         response_data = get_errors(response)
 
-    if not isinstance(expected_data, Predicate):
-        expected_data = Shape(expected_data)
+    if expected_data is not UNDEFINED:
+        if not isinstance(expected_data, Predicate):
+            expected_data = Shape(expected_data)
 
-    assert response_data == expected_data
+        assert response_data == expected_data
+
     return response_data
