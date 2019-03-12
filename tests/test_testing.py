@@ -160,4 +160,5 @@ def test_assert_response_with_shape(app):
     with app.test_request_context():
         response = flask.jsonify(data=data)
 
-    assert_response(response, 200, Shape(data))
+    response_data = assert_response(response, 200, Shape(data))
+    assert response_data == data
