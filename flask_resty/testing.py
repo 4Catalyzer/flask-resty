@@ -107,9 +107,12 @@ def assert_response(response, expected_status_code, expected_data=UNDEFINED):
     errors in the response body, depending on the response status. This check
     ignores extra keys dictionaries in the response contents.
     """
-    assert response.status_code == expected_status_code
+    status_code = response.status_code
+    assert status_code == expected_status_code
 
-    if 200 <= response.status_code < 300:
+    if response.content_length == 0:
+        response_data = UNDEFINED
+    elif 200 <= response.status_code < 300:
         response_data = get_data(response)
     else:
         response_data = get_errors(response)
