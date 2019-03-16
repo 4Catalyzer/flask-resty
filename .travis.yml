@@ -12,8 +12,8 @@ matrix:
     - { python: "2.7",   env: "TOXENV=py-base" }
     - { python: "3.6",   env: "TOXENV=py-base" }
 
-    - { python: "pypy",  env: "TOXENV=py-full" }
-    - { python: "pypy3", env: "TOXENV=py-full" }
+    - { python: "pypy2.7-6.0",  env: "TOXENV=py-full" }
+    - { python: "pypy3.5-6.0", env: "TOXENV=py-full" }
 
 cache:
   directories:
