@@ -56,6 +56,14 @@ setup(
     extras_require={
         'apispec': ('apispec >= 0.39.0, < 0.40.0',),
         'jwt': ('PyJWT >= 1.4.0', 'cryptography >= 2.0.0'),
+        'tests': (
+            'coverage',
+            'flake8',
+            'flake8-config-4catalyzer',
+            'mock',
+            'psycopg2-binary',
+            'pytest',
+        ),
     },
     cmdclass={
         'clean': system('rm -rf build dist *.egg-info'),
