@@ -463,15 +463,26 @@ class ModelView(ApiView):
 
 
 class GenericModelView(ModelView):
+    def __init__(self):
+        super(GenericModelView, self).__init__()
+
+        self.action = None
+
     def list(self):
+        self.action = 'list'
+
         items = self.get_list()
         return self.make_items_response(items)
 
     def retrieve(self, id, create_missing=False):
+        self.action = 'retrieve'
+
         item = self.get_item_or_404(id, create_missing=create_missing)
         return self.make_item_response(item)
 
     def create(self, allow_client_id=False):
+        self.action = 'create'
+
         expected_id = None if allow_client_id else False
         data_in = self.get_request_data(expected_id=expected_id)
 
@@ -488,6 +499,8 @@ class GenericModelView(ModelView):
         partial=False,
         return_content=False,
     ):
+        self.action = 'update'
+
         # No need to authorize creating the missing item, as we will authorize
         # before saving to database below.
         item = self.get_item_or_404(
@@ -504,6 +517,8 @@ class GenericModelView(ModelView):
         return self.make_updated_response(item, return_content=return_content)
 
     def destroy(self, id):
+        self.action = 'destroy'
+
         item = self.get_item_or_404(id)
 
         item = self.delete_item(item) or item

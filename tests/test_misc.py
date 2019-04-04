@@ -124,7 +124,7 @@ def test_create_no_location(app, views, client):
     })
 
 
-def test_training_slash(app, views, client):
+def test_trailing_slash(app, views, client):
     api = Api(app)
     api.add_resource(
         '/widgets/', views['widget_list'], views['widget'], id_rule='<id>/',
