@@ -231,9 +231,23 @@ def test_integrity_error_conflict(client, path):
 
 
 @pytest.mark.parametrize('path', ('/widgets', '/widgets_flush'))
+def test_integrity_error_conflict_with_source(db, client, path):
+    if db.engine.driver != 'psycopg2':
+        pytest.xfail("IntegrityError source detection requires psycopg2")
+
+    response = client.post(path, data={
+        'name': "Foo",
+    })
+    assert_response(response, 409, [{
+        'code': 'invalid_data.conflict',
+        'source': {'pointer': '/data/name'},
+    }])
+
+
+@pytest.mark.parametrize('path', ('/widgets', '/widgets_flush'))
 def test_integrity_error_uncaught(db, app, client, path):
     if db.engine.driver != 'psycopg2':
-        pytest.xfail("IntegrityError cause detection only works with psycopg2")
+        pytest.xfail("IntegrityError cause detection requires psycopg2")
 
     app.testing = False
 
