@@ -23,6 +23,7 @@ def _strict_run(method, obj_or_data, **kwargs):
             raise marshmallow.ValidationError(errors, data=data)
     else:
         data = result
+
     return data
 
 

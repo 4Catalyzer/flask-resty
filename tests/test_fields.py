@@ -128,6 +128,7 @@ def test_load_many(many_schema):
 def test_error_load_single_missing(single_schema, error_messages):
     with pytest.raises(ValidationError) as excinfo:
         schema_load(single_schema, {})
+
     errors = excinfo.value.messages
     assert errors == {
         'child': [error_messages['required']],
@@ -141,6 +142,7 @@ def test_error_load_single_field_type(single_schema):
                 'id': 'foo',
             },
         })
+
     errors = excinfo.value.messages
     assert errors == {
         'child': {
@@ -152,6 +154,7 @@ def test_error_load_single_field_type(single_schema):
 def test_error_load_many_missing(many_schema, error_messages):
     with pytest.raises(ValidationError) as excinfo:
         schema_load(many_schema, {})
+
     errors = excinfo.value.messages
     assert errors == {
         'children': [error_messages['required']],
@@ -165,6 +168,7 @@ def test_error_load_many_type(many_schema, error_messages):
                 'id': 1,
             },
         })
+
     errors = excinfo.value.messages
     assert errors == {
         'children': [error_messages['type']],
