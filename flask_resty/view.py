@@ -2,7 +2,7 @@ import itertools
 
 import flask
 from flask.views import MethodView
-from marshmallow import fields
+from marshmallow import fields, ValidationError
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Load
 from sqlalchemy.orm.exc import NoResultFound
@@ -11,6 +11,7 @@ from werkzeug.exceptions import NotFound
 from . import meta
 from .authentication import NoOpAuthentication
 from .authorization import NoOpAuthorization
+from .compat import MA2, schema_dump, schema_load
 from .decorators import request_cached_property
 from .exceptions import ApiError
 from .spec import ApiViewDeclaration, ModelViewDeclaration
@@ -36,7 +37,7 @@ class ApiView(MethodView):
         return super(ApiView, self).dispatch_request(*args, **kwargs)
 
     def serialize(self, item, **kwargs):
-        return self.serializer.dump(item, **kwargs).data
+        return schema_dump(self.serializer, item, **kwargs)
 
     @settable_property
     def serializer(self):
@@ -111,11 +112,12 @@ class ApiView(MethodView):
         return data_raw
 
     def deserialize(self, data_raw, expected_id=None, **kwargs):
-        data, errors = self.deserializer.load(data_raw, **kwargs)
-        if errors:
+        try:
+            data = schema_load(self.deserializer, data_raw, **kwargs)
+        except ValidationError as e:
             raise ApiError(422, *(
                 self.format_validation_error(error)
-                for error in iter_validation_errors(errors)
+                for error in iter_validation_errors(e.messages)
             ))
 
         self.validate_request_id(data, expected_id)
@@ -170,8 +172,11 @@ class ApiView(MethodView):
         for field_name, field in self.args_schema.fields.items():
             if field_name in args:
                 args_key = field_name
-            elif field.load_from and field.load_from in args:
+            elif MA2 and field.load_from and field.load_from in args:
                 args_key = field.load_from
+            elif not MA2 and field.data_key and field.data_key in args:
+                args_key = field.data_key
+                field_name = field.data_key
             else:
                 continue
 
@@ -187,11 +192,12 @@ class ApiView(MethodView):
         return isinstance(field, fields.List)
 
     def deserialize_args(self, data_raw, **kwargs):
-        data, errors = self.args_schema.load(data_raw, **kwargs)
-        if errors:
+        try:
+            data = schema_load(self.args_schema, data_raw, **kwargs)
+        except ValidationError as e:
             raise ApiError(422, *(
                 self.format_parameter_validation_error(message, parameter)
-                for parameter, messages in errors.items()
+                for parameter, messages in e.messages.items()
                 for message in messages
             ))
 
