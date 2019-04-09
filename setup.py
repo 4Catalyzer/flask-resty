@@ -1,6 +1,6 @@
 import subprocess
 
-from setuptools import Command, find_packages, setup
+from setuptools import Command, setup
 
 # -----------------------------------------------------------------------------
 
@@ -45,7 +45,7 @@ setup(
         'Topic :: Software Development :: Libraries :: Python Modules',
     ),
     keywords='rest flask',
-    packages=find_packages(exclude=('tests',)),
+    packages=('flask_resty',),
     install_requires=(
         'Flask >= 1.0',
         'Flask-SQLAlchemy >= 1.0',
@@ -54,7 +54,6 @@ setup(
         'Werkzeug >= 0.11',
     ),
     extras_require={
-        'apispec': ('apispec >= 0.39.0, < 0.40.0',),
         'jwt': ('PyJWT >= 1.4.0', 'cryptography >= 2.0.0'),
         'tests': (
             'coverage',

@@ -14,7 +14,6 @@ from .authorization import NoOpAuthorization
 from .compat import MA2, schema_dump, schema_load
 from .decorators import request_cached_property
 from .exceptions import ApiError
-from .spec import ApiViewDeclaration, ModelViewDeclaration
 from .utils import iter_validation_errors, settable_property
 
 # -----------------------------------------------------------------------------
@@ -27,8 +26,6 @@ class ApiView(MethodView):
 
     authentication = NoOpAuthentication()
     authorization = NoOpAuthorization()
-
-    spec_declaration = ApiViewDeclaration()
 
     def dispatch_request(self, *args, **kwargs):
         self.authentication.authenticate_request()
@@ -225,8 +222,6 @@ class ModelView(ApiView):
     pagination = None
 
     related = None
-
-    spec_declaration = ModelViewDeclaration()
 
     @settable_property
     def session(self):

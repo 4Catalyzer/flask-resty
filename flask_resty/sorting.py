@@ -81,10 +81,3 @@ class Sorting(FieldSortingBase):
                 })
 
         return field_orderings
-
-    def spec_declaration(self, path, spec, **kwargs):
-        path['get'].add_parameter(
-            name='sort',
-            type='string',
-            description="field to sort by",
-        )

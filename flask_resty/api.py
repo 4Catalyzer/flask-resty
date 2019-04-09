@@ -102,16 +102,11 @@ class Api(object):
         app = self._get_app(app)
         endpoint = self._get_endpoint(base_view, alternate_view)
 
-        # Store the view rules for reference. Doesn't support multiple routes
-        # mapped to same view.
-        views = app.extensions['resty'].views
-
         base_rule_full = '{}{}'.format(self.prefix, base_rule)
         base_view_func = base_view.as_view(endpoint)
 
         if not alternate_view:
             app.add_url_rule(base_rule_full, view_func=base_view_func)
-            views[base_view] = Resource(base_view, base_rule_full)
             return
 
         alternate_rule_full = '{}{}'.format(self.prefix, alternate_rule)
@@ -132,9 +127,6 @@ class Api(object):
             alternate_rule_full, view_func=view_func, endpoint=endpoint,
             methods=alternate_view.methods,
         )
-
-        views[base_view] = Resource(base_view, base_rule_full)
-        views[alternate_view] = Resource(alternate_view, alternate_rule_full)
 
     def _get_endpoint(self, base_view, alternate_view):
         base_view_name = base_view.__name__
@@ -171,12 +163,3 @@ class Api(object):
 class FlaskRestyState(object):
     def __init__(self, api):
         self.api = api
-        self.views = {}
-
-
-class Resource(object):
-    """Simple object to store information about an added resource"""
-
-    def __init__(self, view, rule):
-        self.rule = rule
-        self.view = view
