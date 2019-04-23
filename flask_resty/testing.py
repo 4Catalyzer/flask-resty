@@ -83,9 +83,13 @@ def Shape(expected):
 # -----------------------------------------------------------------------------
 
 
+def get_raw_body(response):
+    return response.get_data(as_text=True)
+
+
 def get_body(response):
     assert response.mimetype == 'application/json'
-    return json.loads(response.get_data(as_text=True))
+    return json.loads(get_raw_body(response))
 
 
 def get_data(response):
