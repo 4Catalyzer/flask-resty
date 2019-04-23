@@ -172,3 +172,10 @@ def test_assert_response_returns_data(app):
 
     response_data = assert_response(response, 200)
     assert response_data == data
+
+
+def test_assert_response_on_redirect(app):
+    with app.test_request_context():
+        response = flask.redirect('/foo')
+
+    assert_response(response, 302)

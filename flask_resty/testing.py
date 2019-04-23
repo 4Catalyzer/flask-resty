@@ -110,12 +110,12 @@ def assert_response(response, expected_status_code, expected_data=UNDEFINED):
     status_code = response.status_code
     assert status_code == expected_status_code
 
-    if not response.content_length:
-        response_data = UNDEFINED
-    elif 200 <= response.status_code < 300:
-        response_data = get_data(response)
-    else:
+    if response.mimetype != 'application/json':
+        response_data = response.data
+    elif response.status_code >= 400:
         response_data = get_errors(response)
+    else:
+        response_data = get_data(response)
 
     if expected_data is not UNDEFINED:
         if not isinstance(expected_data, Predicate):
