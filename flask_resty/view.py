@@ -170,17 +170,16 @@ class ApiView(MethodView):
         data_raw = {}
 
         for field_name, field in self.args_schema.fields.items():
-            if field_name in args:
-                args_key = field_name
-            elif MA2 and field.load_from and field.load_from in args:
-                args_key = field.load_from
-            elif not MA2 and field.data_key and field.data_key in args:
-                args_key = field.data_key
-                field_name = field.data_key
-            else:
+            alternate_field_name = field.load_from if MA2 else field.data_key
+
+            if alternate_field_name and alternate_field_name in args:
+                field_name = alternate_field_name
+            elif field_name not in args:
+                # getlist will return an empty list instead of raising a
+                # KeyError for args that aren't present.
                 continue
 
-            value = args.getlist(args_key)
+            value = args.getlist(field_name)
             if not self.is_list_field(field) and len(value) == 1:
                 value = value[0]
 
