@@ -157,11 +157,15 @@ class JwkSetAuthentication(JwtAuthentication):
     def __init__(self, jwk_set=None, **kwargs):
         super(JwkSetAuthentication, self).__init__(**kwargs)
 
-        self.jwk_set = jwk_set
+        self._jwk_set = jwk_set
 
     @property
     def pyjwt(self):
-        return JwkSetPyJwt(
-            self.jwk_set or
+        return JwkSetPyJwt(self.jwk_set)
+
+    @property
+    def jwk_set(self):
+        return (
+            self._jwk_set or
             flask.current_app.config[self.get_config_key('jwk_set')]
         )
