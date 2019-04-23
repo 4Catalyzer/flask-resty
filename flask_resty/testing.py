@@ -100,7 +100,13 @@ def get_meta(response):
     return get_body(response)['meta']
 
 
-def assert_response(response, expected_status_code, expected_data=UNDEFINED):
+def assert_response(
+    response,
+    expected_status_code,
+    expected_data=UNDEFINED,
+    get_data=get_data,
+    get_errors=get_errors,
+):
     """Assert on the status and contents of a response.
 
     If specified, expected_data is checked against either the data or the
@@ -110,12 +116,14 @@ def assert_response(response, expected_status_code, expected_data=UNDEFINED):
     status_code = response.status_code
     assert status_code == expected_status_code
 
-    if response.mimetype != 'application/json':
-        response_data = response.data
+    if not response.content_length:
+        response_data = UNDEFINED
+    elif 200 <= response.status_code < 300:
+        response_data = get_data(response)
     elif response.status_code >= 400:
         response_data = get_errors(response)
     else:
-        response_data = get_data(response)
+        response_data = response.data
 
     if expected_data is not UNDEFINED:
         if not isinstance(expected_data, Predicate):
