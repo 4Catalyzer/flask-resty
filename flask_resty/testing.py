@@ -4,7 +4,6 @@ import re
 
 from flask.testing import FlaskClient
 
-from .compat import basestring
 from .utils import UNDEFINED
 
 # -----------------------------------------------------------------------------
@@ -59,7 +58,7 @@ def assert_shape(actual, expected):
                 assert_shape(actual[key], value)
             else:
                 assert key not in actual
-    elif isinstance(expected, basestring):
+    elif isinstance(expected, (str, bytes)):
         assert expected == actual
     elif isinstance(expected, Sequence):
         assert isinstance(actual, Sequence)
