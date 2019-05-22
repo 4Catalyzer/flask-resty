@@ -5,7 +5,7 @@ from .exceptions import ApiError
 # -----------------------------------------------------------------------------
 
 
-class SortingBase(object):
+class SortingBase:
     def sort_query(self, query, view):
         raise NotImplementedError()
 

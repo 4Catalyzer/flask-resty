@@ -4,7 +4,7 @@ from .exceptions import ApiError
 # -----------------------------------------------------------------------------
 
 
-class AuthorizationBase(object):
+class AuthorizationBase:
     def get_request_credentials(self):
         return authentication.get_request_credentials()
 

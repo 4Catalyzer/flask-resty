@@ -11,7 +11,7 @@ from .utils import if_none, iter_validation_errors
 # -----------------------------------------------------------------------------
 
 
-class PaginationBase(object):
+class PaginationBase:
     def get_page(self, query, view):
         raise NotImplementedError()
 
@@ -107,7 +107,7 @@ class LimitOffsetPagination(LimitPagination):
     def get_page(self, query, view):
         offset = self.get_offset()
         query = query.offset(offset)
-        return super(LimitOffsetPagination, self).get_page(query, view)
+        return super().get_page(query, view)
 
     def get_offset(self):
         offset = flask.request.args.get(self.offset_arg)
@@ -130,7 +130,7 @@ class LimitOffsetPagination(LimitPagination):
         return offset
 
     def spec_declaration(self, path, spec, **kwargs):
-        super(LimitOffsetPagination, self).spec_declaration(path, spec)
+        super().spec_declaration(path, spec)
 
         path['get'].add_parameter(
             name='offset',
@@ -143,7 +143,7 @@ class PagePagination(LimitOffsetPagination):
     page_arg = 'page'
 
     def __init__(self, page_size):
-        super(PagePagination, self).__init__()
+        super().__init__()
         self._page_size = page_size
 
     def get_offset(self):
@@ -173,7 +173,7 @@ class PagePagination(LimitOffsetPagination):
         return self._page_size
 
     def spec_declaration(self, path, spec, **kwargs):
-        super(PagePagination, self).spec_declaration(path, spec)
+        super().spec_declaration(path, spec)
 
         path['get'].add_parameter(
             name='page',
@@ -353,7 +353,7 @@ class CursorPaginationBase(LimitPagination):
         return value.decode('ascii')
 
     def spec_declaration(self, path, spec, **kwargs):
-        super(CursorPaginationBase, self).spec_declaration(path, spec)
+        super().spec_declaration(path, spec)
 
         path['get'].add_parameter(
             name='cursor',
@@ -372,7 +372,7 @@ class RelayCursorPagination(CursorPaginationBase):
                 self.get_filter(view, field_orderings, cursor_in),
             )
 
-        items = super(RelayCursorPagination, self).get_page(query, view)
+        items = super().get_page(query, view)
 
         # Relay expects a cursor for each item.
         cursors_out = self.make_cursors(items, view, field_orderings)

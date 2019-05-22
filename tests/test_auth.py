@@ -64,7 +64,7 @@ def auth():
             )
 
         def authorize_create_item(self, item):
-            super(UserAuthorization, self).authorize_create_item(item)
+            super().authorize_create_item(item)
 
             if item.name == "Updated":
                 raise ApiError(403, {'code': 'invalid_name'})

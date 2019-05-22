@@ -13,7 +13,7 @@ from .utils import iter_validation_errors
 # -----------------------------------------------------------------------------
 
 
-class ArgFilterBase(object):
+class ArgFilterBase:
     def maybe_set_arg_name(self, arg_name):
         raise NotImplementedError()
 
@@ -108,7 +108,7 @@ class ColumnFilter(FieldFilterBase):
         validate=True,
         **kwargs
     ):
-        super(ColumnFilter, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         if operator is None and callable(column_name):
             operator = column_name
@@ -167,12 +167,12 @@ class ColumnFilter(FieldFilterBase):
             # and None values, and skips the validation check.
             return field._deserialize(value_raw, None, None)
 
-        return super(ColumnFilter, self).deserialize(field, value_raw)
+        return super().deserialize(field, value_raw)
 
 
 class ModelFilter(FieldFilterBase):
     def __init__(self, field, filter, **kwargs):
-        super(ModelFilter, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         self._field = field
         self._filter = filter
@@ -199,7 +199,7 @@ def model_filter(field, **kwargs):
 # -----------------------------------------------------------------------------
 
 
-class Filtering(object):
+class Filtering:
     def __init__(self, **kwargs):
         self._arg_filters = {
             arg_name: self.make_arg_filter(arg_name, arg_filter)

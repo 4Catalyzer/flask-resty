@@ -64,7 +64,7 @@ def views(models, schemas):
             return self.create()
 
         def add_item(self, widget):
-            super(WidgetFlushListView, self).add_item(widget)
+            super().add_item(widget)
             self.flush()
 
     class DefaultErrorView(ApiView):

@@ -20,13 +20,13 @@ class ApiClient(FlaskClient):
             if kwargs['content_type'] == 'application/json':
                 kwargs['data'] = json.dumps({'data': kwargs['data']})
 
-        return super(ApiClient, self).open(full_path, *args, **kwargs)
+        return super().open(full_path, *args, **kwargs)
 
 
 # -----------------------------------------------------------------------------
 
 
-class Predicate(object):
+class Predicate:
     """A helper object to do predicate assertion"""
 
     def __init__(self, predicate):
