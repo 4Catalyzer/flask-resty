@@ -488,7 +488,7 @@ class GenericModelView(ModelView):
         with_for_update=False,
         create_missing=False,
         partial=False,
-        return_content=False,
+        return_content=False
     ):
         # No need to authorize creating the missing item, as we will authorize
         # before saving to database below.
