@@ -25,12 +25,13 @@ def system(command):
 
 setup(
     name="Flask-RESTy",
-    version='0.20.12',
+    version='0.20.13',
     description="Building blocks for REST APIs for Flask",
     url='https://github.com/4Catalyzer/flask-resty',
     author="Jimmy Jia",
     author_email='tesrin@gmail.com',
     license='MIT',
+    python_requires='>=3.5',
     classifiers=(
         'Development Status :: 3 - Alpha',
         'Framework :: Flask',
@@ -39,8 +40,11 @@ setup(
         'License :: OSI Approved :: MIT License',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3 :: Only',
         'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
         'Topic :: Software Development :: Libraries :: Python Modules',
     ),

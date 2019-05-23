@@ -37,7 +37,7 @@ def handle_http_exception(error):
 # -----------------------------------------------------------------------------
 
 
-class Api(object):
+class Api:
     def __init__(self, app=None, prefix=''):
         if app:
             self._app = app
@@ -160,6 +160,6 @@ class Api(object):
 # -----------------------------------------------------------------------------
 
 
-class FlaskRestyState(object):
+class FlaskRestyState:
     def __init__(self, api):
         self.api = api

@@ -1,18 +1,10 @@
-import sys
-
 import marshmallow
 
 # -----------------------------------------------------------------------------
 
-PY2 = int(sys.version_info[0]) == 2
 MA2 = int(marshmallow.__version__[0]) == 2
 
 # -----------------------------------------------------------------------------
-
-if PY2:
-    basestring = basestring  # noqa: F821
-else:
-    basestring = (str, bytes)
 
 
 def _strict_run(method, obj_or_data, **kwargs):
