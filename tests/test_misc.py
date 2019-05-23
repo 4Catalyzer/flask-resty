@@ -98,6 +98,39 @@ def test_api_prefix(app, views, client, base_client):
     }])
 
 
+def test_rule_without_slash(app, views, client):
+    api = Api(app, '/api')
+    api.add_resource('/widgets', views['widget_list'])
+
+    response = client.get('/widgets')
+    assert_response(response, 200)
+
+    response = client.get('/widgets/')
+    assert_response(response, 404)
+
+
+def test_rule_with_slash(app, views, client):
+    api = Api(app, '/api')
+    api.add_resource('/widgets/', views['widget_list'])
+
+    response = client.get('/widgets')
+    assert_response(response, 308)
+
+    response = client.get('/widgets/')
+    assert_response(response, 200)
+
+
+def test_no_append_slash(app, views, client):
+    api = Api(app, '/api', append_slash=False)
+    api.add_resource('/widgets/', views['widget_list'])
+
+    response = client.get('/widgets')
+    assert_response(response, 404)
+
+    response = client.get('/widgets/')
+    assert_response(response, 200)
+
+
 def test_create_client_id(app, views, client):
     api = Api(app)
     api.add_resource('/widgets', views['widget_list'], views['widget'])
