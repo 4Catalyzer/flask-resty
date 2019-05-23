@@ -4,7 +4,6 @@ import re
 
 from flask.testing import FlaskClient
 
-from .compat import basestring
 from .utils import UNDEFINED
 
 # -----------------------------------------------------------------------------
@@ -21,13 +20,13 @@ class ApiClient(FlaskClient):
             if kwargs['content_type'] == 'application/json':
                 kwargs['data'] = json.dumps({'data': kwargs['data']})
 
-        return super(ApiClient, self).open(full_path, *args, **kwargs)
+        return super().open(full_path, *args, **kwargs)
 
 
 # -----------------------------------------------------------------------------
 
 
-class Predicate(object):
+class Predicate:
     """A helper object to do predicate assertion"""
 
     def __init__(self, predicate):
@@ -59,7 +58,7 @@ def assert_shape(actual, expected):
                 assert_shape(actual[key], value)
             else:
                 assert key not in actual
-    elif isinstance(expected, basestring):
+    elif isinstance(expected, (str, bytes)):
         assert expected == actual
     elif isinstance(expected, Sequence):
         assert isinstance(actual, Sequence)

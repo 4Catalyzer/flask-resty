@@ -34,7 +34,7 @@ class ApiView(MethodView):
         self.authentication.authenticate_request()
         self.authorization.authorize_request()
 
-        return super(ApiView, self).dispatch_request(*args, **kwargs)
+        return super().dispatch_request(*args, **kwargs)
 
     def serialize(self, item, **kwargs):
         return schema_dump(self.serializer, item, **kwargs)
@@ -355,7 +355,7 @@ class ModelView(ApiView):
         return item
 
     def deserialize(self, data_raw, **kwargs):
-        data = super(ModelView, self).deserialize(data_raw, **kwargs)
+        data = super().deserialize(data_raw, **kwargs)
         return self.resolve_related(data)
 
     def resolve_related(self, data):
@@ -457,7 +457,7 @@ class ModelView(ApiView):
         return ApiError(409, {'code': 'invalid_data.conflict'})
 
     def set_item_response_meta(self, item):
-        super(ModelView, self).set_item_response_meta(item)
+        super().set_item_response_meta(item)
         self.set_item_response_meta_pagination(item)
 
     def set_item_response_meta_pagination(self, item):

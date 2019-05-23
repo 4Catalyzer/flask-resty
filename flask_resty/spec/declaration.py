@@ -3,7 +3,7 @@ from flask.views import http_method_funcs
 # -----------------------------------------------------------------------------
 
 
-class ApiViewDeclaration(object):
+class ApiViewDeclaration:
     """Simple Declaration for ApiView classes.
 
     :param many: whether or not this view describes a list or a single instance
@@ -98,7 +98,7 @@ class ModelViewDeclaration(ApiViewDeclaration):
     """Declaration for Views that specify a model"""
 
     def __call__(self, view, path, plugin):
-        super(ModelViewDeclaration, self)\
+        super()\
             .__call__(view, path, plugin)
 
         for item in (view.pagination, view.filtering, view.sorting):

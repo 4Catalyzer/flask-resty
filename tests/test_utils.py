@@ -4,7 +4,7 @@ from flask_resty.utils import settable_property, SettableProperty
 
 
 def test_settable_property():
-    class Foo(object):
+    class Foo:
         @settable_property
         def value(self):
             return 3

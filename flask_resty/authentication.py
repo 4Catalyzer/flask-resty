@@ -14,7 +14,7 @@ def set_request_credentials(credentials):
 # -----------------------------------------------------------------------------
 
 
-class AuthenticationBase(object):
+class AuthenticationBase:
     def authenticate_request(self):
         set_request_credentials(self.get_request_credentials())
 
@@ -25,6 +25,6 @@ class AuthenticationBase(object):
 # -----------------------------------------------------------------------------
 
 
-class NoOpAuthentication(object):
+class NoOpAuthentication:
     def authenticate_request(self):
         pass

@@ -15,7 +15,7 @@ RESTY_PLUGIN_NAME = 'resty'
 
 class FlaskRestyPlugin(MarshmallowPlugin):
     def __init__(self, *args, **kwargs):
-        super(FlaskRestyPlugin, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         self._rules = {
             rule.rule: rule for rule in flask.current_app.url_map.iter_rules()
@@ -26,7 +26,7 @@ class FlaskRestyPlugin(MarshmallowPlugin):
 
         :param view: An `ApiView` object.
         """
-        super(FlaskRestyPlugin, self).path_helper(
+        super().path_helper(
             path=path,
             view=view,
             **kwargs

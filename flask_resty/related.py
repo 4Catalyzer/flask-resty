@@ -5,7 +5,7 @@ from .exceptions import ApiError
 # -----------------------------------------------------------------------------
 
 
-class RelatedId(object):
+class RelatedId:
     def __init__(self, view_class, field_name):
         self._view_class = view_class
         self.field_name = field_name
@@ -19,7 +19,7 @@ class RelatedId(object):
         return view.resolve_related_id(id)
 
 
-class Related(object):
+class Related:
     def __init__(self, item_class=None, **kwargs):
         self._item_class = item_class
         self._resolvers = kwargs

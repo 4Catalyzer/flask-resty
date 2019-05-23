@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import base64
 import json
 
@@ -35,7 +33,7 @@ class JwtAuthentication(AuthenticationBase):
     id_token_arg = 'id_token'
 
     def __init__(self, **kwargs):
-        super(JwtAuthentication, self).__init__()
+        super().__init__()
 
         self._decode_args = {
             key: kwargs[key] for key in JWT_DECODE_ARG_KEYS if key in kwargs
@@ -103,7 +101,7 @@ class JwtAuthentication(AuthenticationBase):
 
 class JwkSetPyJwt(PyJWT):
     def __init__(self, jwk_set, *args, **kwargs):
-        super(JwkSetPyJwt, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         self.jwk_set = jwk_set
 
@@ -122,7 +120,7 @@ class JwkSetPyJwt(PyJWT):
                 "The specified alg value is not allowed",
             )
 
-        return super(JwkSetPyJwt, self).decode(
+        return super().decode(
             jwt,
             key=self.get_key_from_jwk(jwk, alg),
             **kwargs
@@ -155,7 +153,7 @@ class JwkSetPyJwt(PyJWT):
 
 class JwkSetAuthentication(JwtAuthentication):
     def __init__(self, jwk_set=None, **kwargs):
-        super(JwkSetAuthentication, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         self._jwk_set = jwk_set
 
