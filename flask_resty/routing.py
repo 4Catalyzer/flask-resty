@@ -1,4 +1,4 @@
-from werkzeug.routing import RequestSlash, RoutingException, Rule
+from werkzeug.routing import RequestSlash, Rule
 
 # -----------------------------------------------------------------------------
 
