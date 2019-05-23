@@ -3,7 +3,7 @@ import posixpath
 
 import flask
 from werkzeug.exceptions import HTTPException
-from werkzeug.routing import RequestSlash, RoutingException, Rule
+from werkzeug.routing import RoutingException
 
 from .exceptions import ApiError
 
@@ -37,35 +37,21 @@ def handle_http_exception(error):
 # -----------------------------------------------------------------------------
 
 
-class StrictRule(Rule):
-    def match(self, path, method=None):
-        try:
-            result = super(StrictRule, self).match(path, method)
-        except RequestSlash:
-            return None
-
-        return result
-
-
 class Api:
-    def __init__(self, app=None, prefix='', append_slash=True):
-        self.prefix = prefix
-        self.append_slash = append_slash
-
+    def __init__(self, app=None, prefix=''):
         if app:
             self._app = app
             self.init_app(app)
         else:
             self._app = None
 
+        self.prefix = prefix
+
     def init_app(self, app):
         app.extensions['resty'] = FlaskRestyState(self)
 
         app.register_error_handler(ApiError, handle_api_error)
         app.register_error_handler(HTTPException, handle_http_exception)
-
-        if not self.append_slash:
-            app.url_rule_class = StrictRule
 
     def _get_app(self, app):
         app = app or self._app

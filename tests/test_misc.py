@@ -2,7 +2,7 @@ from marshmallow import fields, Schema
 import pytest
 from sqlalchemy import Column, Integer
 
-from flask_resty import Api, GenericModelView
+from flask_resty import Api, GenericModelView, StrictRule
 from flask_resty.testing import assert_response
 
 # -----------------------------------------------------------------------------
@@ -120,8 +120,10 @@ def test_rule_with_slash(app, views, client):
     assert_response(response, 200)
 
 
-def test_no_append_slash(app, views, client):
-    api = Api(app, '/api', append_slash=False)
+def test_no_append_slash(monkeypatch, app, views, client):
+    monkeypatch.setattr(app, "url_rule_class", StrictRule)
+
+    api = Api(app, '/api')
     api.add_resource('/widgets/', views['widget_list'])
 
     response = client.get('/widgets')
