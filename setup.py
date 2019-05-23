@@ -32,7 +32,7 @@ setup(
     author_email='tesrin@gmail.com',
     license='MIT',
     python_requires='>=3.5',
-    classifiers=(
+    classifiers=[
         'Development Status :: 3 - Alpha',
         'Framework :: Flask',
         'Environment :: Web Environment',
@@ -47,7 +47,7 @@ setup(
         'Programming Language :: Python :: 3 :: Only',
         'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
         'Topic :: Software Development :: Libraries :: Python Modules',
-    ),
+    ],
     keywords='rest flask',
     packages=('flask_resty',),
     install_requires=(
