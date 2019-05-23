@@ -1,17 +1,19 @@
+import copy
 import functools
 
 import flask
-from marshmallow import missing, ValidationError
+import marshmallow
+from marshmallow import ValidationError
 import sqlalchemy as sa
 from sqlalchemy import sql
 
-from . import utils
 from .exceptions import ApiError
+from .utils import iter_validation_errors
 
 # -----------------------------------------------------------------------------
 
 
-class ArgFilterBase(object):
+class ArgFilterBase:
     def maybe_set_arg_name(self, arg_name):
         raise NotImplementedError()
 
@@ -23,19 +25,24 @@ class ArgFilterBase(object):
 
 
 class FieldFilterBase(ArgFilterBase):
-    def __init__(self, separator=',', allow_empty=False):
+    def __init__(self, separator=',', allow_empty=False, skip_invalid=False):
         self._separator = separator
         self._allow_empty = allow_empty
+        self._skip_invalid = skip_invalid
 
     def maybe_set_arg_name(self, arg_name):
         pass
 
     def filter_query(self, query, view, arg_value):
-        return query.filter(self.get_filter(view, arg_value))
+        filter = self.get_filter(view, arg_value)
+        if filter is None:
+            return query
+
+        return query.filter(filter)
 
     def get_filter(self, view, arg_value):
         if arg_value is None:
-            return self.get_element_filter(view, missing)
+            return self.get_default_filter(view)
 
         if not arg_value and not self._allow_empty:
             return sql.false()
@@ -48,19 +55,30 @@ class FieldFilterBase(ArgFilterBase):
             for value_raw in arg_value.split(self._separator)
         )
 
-    def get_element_filter(self, view, value_raw):
+    def get_default_filter(self, view):
         field = self.get_field(view)
-        if value_raw is missing and not field.required:
-            return sql.true()
+        if field.required:
+            raise ApiError(400, {'code': 'invalid_filter.missing'})
+
+        value = field.missing() if callable(field.missing) else field.missing
+        if value is marshmallow.missing:
+            return None
+
+        return self.get_element_filter(view, value)
+
+    def get_element_filter(self, view, value):
+        field = self.get_field(view)
 
         try:
-            value = self.deserialize(field, value_raw)
+            value = self.deserialize(field, value)
         except ValidationError as e:
-            errors = (
+            if self._skip_invalid:
+                return sql.false()
+
+            raise ApiError(400, *(
                 self.format_validation_error(message)
-                for message, path in utils.iter_validation_errors(e.messages)
-            )
-            raise ApiError(400, *errors)
+                for message, path in iter_validation_errors(e.messages)
+            ))
 
         return self.get_filter_clause(view, value)
 
@@ -86,10 +104,11 @@ class ColumnFilter(FieldFilterBase):
         column_name=None,
         operator=None,
         required=False,
+        missing=marshmallow.missing,
         validate=True,
         **kwargs
     ):
-        super(ColumnFilter, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         if operator is None and callable(column_name):
             operator = column_name
@@ -100,8 +119,13 @@ class ColumnFilter(FieldFilterBase):
 
         self._has_explicit_column_name = column_name is not None
         self._column_name = column_name
+
         self._operator = operator
+
+        self._fields = {}
         self._required = required
+        self._missing = missing
+
         self._validate = validate
 
     def maybe_set_arg_name(self, arg_name):
@@ -110,24 +134,27 @@ class ColumnFilter(FieldFilterBase):
 
         if self._column_name and self._column_name != arg_name:
             raise TypeError(
-                "cannot use ColumnFilter without explicit column name " +
-                "for multiple arg names",
+                "cannot use ColumnFilter without explicit column name for " +
+                "multiple arg names",
             )
 
         self._column_name = arg_name
 
-    def filter_query(self, query, view, arg_value):
-        # Missing value handling on the schema field is not relevant here.
-        if arg_value is None:
-            if not self._required:
-                return query
-
-            raise ApiError(400, {'code': 'invalid_filter.missing'})
-
-        return super(ColumnFilter, self).filter_query(query, view, arg_value)
-
     def get_field(self, view):
-        return view.deserializer.fields[self._column_name]
+        base_field = view.deserializer.fields[self._column_name]
+
+        try:
+            field = self._fields[base_field]
+        except KeyError:
+            # We don't want the default value handling on the original field,
+            # as that's only relevant for object deserialization.
+            field = copy.deepcopy(base_field)
+            field.required = self._required
+            field.missing = self._missing
+
+            self._fields[base_field] = field
+
+        return field
 
     def get_filter_clause(self, view, value):
         column = getattr(view.model, self._column_name)
@@ -140,12 +167,12 @@ class ColumnFilter(FieldFilterBase):
             # and None values, and skips the validation check.
             return field._deserialize(value_raw, None, None)
 
-        return super(ColumnFilter, self).deserialize(field, value_raw)
+        return super().deserialize(field, value_raw)
 
 
 class ModelFilter(FieldFilterBase):
     def __init__(self, field, filter, **kwargs):
-        super(ModelFilter, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         self._field = field
         self._filter = filter
@@ -172,7 +199,7 @@ def model_filter(field, **kwargs):
 # -----------------------------------------------------------------------------
 
 
-class Filtering(object):
+class Filtering:
     def __init__(self, **kwargs):
         self._arg_filters = {
             arg_name: self.make_arg_filter(arg_name, arg_filter)

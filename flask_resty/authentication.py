@@ -2,23 +2,19 @@ from . import context
 
 # -----------------------------------------------------------------------------
 
-REQUEST_CREDENTIALS_KEY = 'request_credentials'
-
-# -----------------------------------------------------------------------------
-
 
 def get_request_credentials():
-    return context.get_context_value(REQUEST_CREDENTIALS_KEY, None)
+    return context.get('request_credentials')
 
 
 def set_request_credentials(credentials):
-    context.set_context_value(REQUEST_CREDENTIALS_KEY, credentials)
+    context.set('request_credentials', credentials)
 
 
 # -----------------------------------------------------------------------------
 
 
-class AuthenticationBase(object):
+class AuthenticationBase:
     def authenticate_request(self):
         set_request_credentials(self.get_request_credentials())
 
@@ -29,6 +25,6 @@ class AuthenticationBase(object):
 # -----------------------------------------------------------------------------
 
 
-class NoOpAuthentication(object):
+class NoOpAuthentication:
     def authenticate_request(self):
         pass

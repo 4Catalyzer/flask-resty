@@ -10,14 +10,14 @@ from flask_resty.testing import assert_response
 # -----------------------------------------------------------------------------
 
 try:
-    from flask_resty import JwkSetAuthentication, JwtAuthentication
+    from flask_resty import JwtAuthentication, JwkSetAuthentication
 except ImportError:
     pytestmark = pytest.mark.skip(reason="JWT support not installed")
 
 # -----------------------------------------------------------------------------
 
 
-class AbstractTestJwt(object):
+class AbstractTestJwt:
     @pytest.yield_fixture
     def models(self, db):
         class Widget(db.Model):
@@ -79,11 +79,12 @@ class AbstractTestJwt(object):
     def invalid_token(self, request):
         raise NotImplementedError()
 
-    def test_header(self, client, token):
+    @pytest.mark.parametrize('scheme', ('Bearer', 'bearer'))
+    def test_header(self, client, scheme, token):
         response = client.get(
             '/widgets',
             headers={
-                'Authorization': 'Bearer {}'.format(token),
+                'Authorization': '{} {}'.format(scheme, token),
             },
         )
 

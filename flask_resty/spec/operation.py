@@ -4,7 +4,7 @@ class Operation(dict):
     """
 
     def __init__(self):
-        super(Operation, self).__init__({
+        super().__init__({
             'responses': {},
             'parameters': [],
         })

@@ -1,8 +1,9 @@
+import flask
 from marshmallow import fields, Schema
 import pytest
 from sqlalchemy import Column, Integer, String
 
-from flask_resty import Api, GenericModelView
+from flask_resty import Api, ApiError, ApiView, GenericModelView
 from flask_resty.testing import assert_response, get_body, get_errors
 
 # -----------------------------------------------------------------------------
@@ -32,7 +33,7 @@ def schemas():
 
     class WidgetSchema(Schema):
         id = fields.Integer(as_string=True)
-        name = fields.String(required=True)
+        name = fields.String(required=True, allow_none=True)
         nested = fields.Nested(NestedSchema)
         nested_many = fields.Nested(NestedSchema, many=True)
 
@@ -62,14 +63,34 @@ def views(models, schemas):
         def post(self):
             return self.create()
 
-        def add_item(self, item):
-            super(WidgetFlushListView, self).add_item(item)
+        def add_item(self, widget):
+            super().add_item(widget)
             self.flush()
+
+    class DefaultErrorView(ApiView):
+        def get(self):
+            raise ApiError(int(flask.request.args.get('status_code', 400)))
+
+    class AbortView(ApiView):
+        def get(self):
+            flask.abort(400)
+
+    class UncaughtView(ApiView):
+        def get(self):
+            raise RuntimeError()
+
+    class SlashView(ApiView):
+        def get(self):
+            return self.make_empty_response()
 
     return {
         'widget_list': WidgetListView,
         'widget': WidgetView,
         'widget_flush_list': WidgetFlushListView,
+        'default_error': DefaultErrorView,
+        'abort': AbortView,
+        'uncaught': UncaughtView,
+        'slash': SlashView,
     }
 
 
@@ -81,6 +102,18 @@ def routes(app, views):
     )
     api.add_resource(
         '/widgets_flush', views['widget_flush_list'],
+    )
+    api.add_resource(
+        '/default_error', views['default_error'],
+    )
+    api.add_resource(
+        '/abort', views['abort'],
+    )
+    api.add_resource(
+        '/uncaught', views['uncaught'],
+    )
+    api.add_resource(
+        '/slash/', views['slash'],
     )
 
 
@@ -187,8 +220,9 @@ def test_id_mismatch(client):
     }])
 
 
-def test_commit_conflict(client):
-    response = client.post('/widgets', data={
+@pytest.mark.parametrize('path', ('/widgets', '/widgets_flush'))
+def test_integrity_error_conflict(client, path):
+    response = client.post(path, data={
         'name': "Foo",
     })
     assert_response(response, 409, [{
@@ -196,13 +230,54 @@ def test_commit_conflict(client):
     }])
 
 
-def test_flush_conflict(client):
-    response = client.post('/widgets_flush', data={
-        'name': "Foo",
+@pytest.mark.parametrize('path', ('/widgets', '/widgets_flush'))
+def test_integrity_error_uncaught(db, app, client, path):
+    if db.engine.driver != 'psycopg2':
+        pytest.xfail("IntegrityError cause detection only works with psycopg2")
+
+    app.testing = False
+
+    response = client.post(path, data={
+        'name': None,
     })
-    assert_response(response, 409, [{
-        'code': 'invalid_data.conflict',
+    assert_response(response, 500, [{
+        'code': 'internal_server_error',
     }])
+
+
+@pytest.mark.parametrize('path', ('/default_error', '/abort'))
+def test_default_code(client, path):
+    response = client.get(path)
+    assert_response(response, 400, [{
+        'code': 'bad_request',
+    }])
+
+
+def test_unknown_code(client):
+    response = client.get('/default_error?status_code=600')
+    assert_response(response, 600, [])
+
+
+@pytest.mark.parametrize('path', ('/default_error', '/abort'))
+def test_trap_api_errors(monkeypatch, app, client, path):
+    monkeypatch.setitem(app.config, 'RESTY_TRAP_API_ERRORS', True)
+
+    with pytest.raises(ApiError):
+        client.get(path)
+
+
+def test_uncaught(app, client):
+    app.testing = False
+
+    response = client.get('/uncaught')
+    assert_response(response, 500, [{
+        'code': 'internal_server_error',
+    }])
+
+
+def test_slash_redirect(client):
+    response = client.get('/slash')
+    assert response.location.endswith('/slash/')
 
 
 def test_debug(app, client):

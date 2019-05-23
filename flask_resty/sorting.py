@@ -5,7 +5,7 @@ from .exceptions import ApiError
 # -----------------------------------------------------------------------------
 
 
-class SortingBase(object):
+class SortingBase:
     def sort_query(self, query, view):
         raise NotImplementedError()
 
@@ -15,20 +15,20 @@ class SortingBase(object):
 
 class FieldSortingBase(SortingBase):
     def sort_query(self, query, view):
-        field_orderings = self.get_request_field_orderings()
+        field_orderings = self.get_request_field_orderings(view)
         return self.sort_query_by_fields(query, view, field_orderings)
 
     def sort_query_by_fields(self, query, view, field_orderings):
         criteria = self.get_criteria(view, field_orderings)
         return query.order_by(*criteria)
 
-    def get_request_field_orderings(self):
+    def get_request_field_orderings(self, view):
         raise NotImplementedError()
 
     def get_field_orderings(self, fields):
         return tuple(
             self.get_field_ordering(field)
-            for field in fields.split(','),
+            for field in fields.split(',')
         )
 
     def get_field_ordering(self, field):
@@ -40,7 +40,7 @@ class FieldSortingBase(SortingBase):
     def get_criteria(self, view, field_orderings):
         return tuple(
             self.get_criterion(view, field_ordering)
-            for field_ordering in field_orderings,
+            for field_ordering in field_orderings
         )
 
     def get_criterion(self, view, field_ordering):
@@ -56,7 +56,7 @@ class FixedSorting(FieldSortingBase):
     def __init__(self, fields):
         self._field_orderings = self.get_field_orderings(fields)
 
-    def get_request_field_orderings(self):
+    def get_request_field_orderings(self, view):
         return self._field_orderings
 
 
@@ -67,21 +67,20 @@ class Sorting(FieldSortingBase):
         self._field_names = frozenset(field_names)
         self._default_sort = kwargs.get('default')
 
-    def get_request_field_orderings(self):
+    def get_request_field_orderings(self, view):
         sort = flask.request.args.get(self.sort_arg, self._default_sort)
         if sort is None:
             return ()
 
-        return self.get_field_orderings(sort)
+        field_orderings = self.get_field_orderings(sort)
+        for field_name, _ in field_orderings:
+            if field_name not in self._field_names:
+                raise ApiError(400, {
+                    'code': 'invalid_sort',
+                    'source': {'parameter': self.sort_arg},
+                })
 
-    def get_column(self, view, field_name):
-        if field_name not in self._field_names:
-            raise ApiError(400, {
-                'code': 'invalid_sort',
-                'source': {'parameter': self.sort_arg},
-            })
-
-        return super(Sorting, self).get_column(view, field_name)
+        return field_orderings
 
     def spec_declaration(self, path, spec, **kwargs):
         path['get'].add_parameter(

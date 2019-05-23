@@ -1,8 +1,9 @@
+import functools
 import posixpath
 
 import flask
-from werkzeug.exceptions import default_exceptions
-from werkzeug.routing import RequestSlash, Rule
+from werkzeug.exceptions import HTTPException
+from werkzeug.routing import RequestSlash, RoutingException, Rule
 
 from .exceptions import ApiError
 
@@ -15,17 +16,22 @@ DEFAULT_ID_RULE = '<id>'
 
 
 def handle_api_error(error):
-    return flask.jsonify(error.body), error.status_code
+    return error.response
 
 
 def handle_http_exception(error):
-    body = {
-        'errors': [{
-            'code': '_'.join(word.lower() for word in error.name.split()),
-            'details': error.description,
-        }],
-    }
-    return flask.jsonify(body), error.code
+    if isinstance(error, RoutingException):
+        # This is not actually an error. Forward it to properly redirect.
+        return error
+
+    # Flask calls the InternalServerError handler with any uncaught app
+    # exceptions. Re-raise those as generic internal server errors.
+    if not isinstance(error, HTTPException):
+        error = ApiError(500)
+    else:
+        error = ApiError.from_http_exception(error)
+
+    return error.response
 
 
 # -----------------------------------------------------------------------------
@@ -41,7 +47,7 @@ class StrictRule(Rule):
         return result
 
 
-class Api(object):
+class Api:
     def __init__(self, app=None, prefix='', append_slash=True):
         self.prefix = prefix
         self.append_slash = append_slash
@@ -56,10 +62,7 @@ class Api(object):
         app.extensions['resty'] = FlaskRestyState(self)
 
         app.register_error_handler(ApiError, handle_api_error)
-
-        # TODO: Just handle HTTPException once pallets/flask#2314 lands.
-        for exception in default_exceptions.values():
-            app.register_error_handler(exception, handle_http_exception)
+        app.register_error_handler(HTTPException, handle_http_exception)
 
         if not self.append_slash:
             app.url_rule_class = StrictRule
@@ -128,6 +131,7 @@ class Api(object):
         alternate_rule_full = '{}{}'.format(self.prefix, alternate_rule)
         alternate_view_func = alternate_view.as_view(endpoint)
 
+        @functools.wraps(base_view_func)
         def view_func(*args, **kwargs):
             if flask.request.url_rule.rule == base_rule_full:
                 return base_view_func(*args, **kwargs)
@@ -182,13 +186,13 @@ class Api(object):
 # -----------------------------------------------------------------------------
 
 
-class FlaskRestyState(object):
+class FlaskRestyState:
     def __init__(self, api):
         self.api = api
         self.views = {}
 
 
-class Resource(object):
+class Resource:
     """Simple object to store information about an added resource"""
 
     def __init__(self, view, rule):

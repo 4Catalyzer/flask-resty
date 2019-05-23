@@ -1,7 +1,8 @@
-from marshmallow import fields, Schema
+from marshmallow import fields, Schema, ValidationError
 import pytest
 
 from flask_resty import RelatedItem
+from flask_resty.compat import schema_dump, schema_load
 
 # -----------------------------------------------------------------------------
 
@@ -40,7 +41,7 @@ def error_messages():
 
 
 def test_dump_single(single_schema):
-    data, errors = single_schema.dump({
+    data = schema_dump(single_schema, {
         'child': {
             'id': 1,
             'name': "Foo",
@@ -53,11 +54,10 @@ def test_dump_single(single_schema):
             'name': "Foo",
         },
     }
-    assert not errors
 
 
 def test_dump_many(many_schema):
-    data, errors = many_schema.dump({
+    data = schema_dump(many_schema, {
         'children': [
             {
                 'id': 1,
@@ -82,11 +82,10 @@ def test_dump_many(many_schema):
             },
         ],
     }
-    assert not errors
 
 
 def test_load_single(single_schema):
-    data, errors = single_schema.load({
+    data = schema_load(single_schema, {
         'child': {
             'id': '1',
         },
@@ -97,11 +96,10 @@ def test_load_single(single_schema):
             'id': 1,
         },
     }
-    assert not errors
 
 
 def test_load_many(many_schema):
-    data, errors = many_schema.load({
+    data = schema_load(many_schema, {
         'children': [
             {
                 'id': '1',
@@ -122,29 +120,30 @@ def test_load_many(many_schema):
             },
         ],
     }
-    assert not errors
 
 
 # -----------------------------------------------------------------------------
 
 
 def test_error_load_single_missing(single_schema, error_messages):
-    data, errors = single_schema.load({})
+    with pytest.raises(ValidationError) as excinfo:
+        schema_load(single_schema, {})
 
-    assert not data
+    errors = excinfo.value.messages
     assert errors == {
         'child': [error_messages['required']],
     }
 
 
 def test_error_load_single_field_type(single_schema):
-    data, errors = single_schema.load({
-        'child': {
-            'id': 'foo',
-        },
-    })
+    with pytest.raises(ValidationError) as excinfo:
+        schema_load(single_schema, {
+            'child': {
+                'id': 'foo',
+            },
+        })
 
-    assert not data
+    errors = excinfo.value.messages
     assert errors == {
         'child': {
             'id': [fields.Integer().error_messages['invalid']],
@@ -153,22 +152,24 @@ def test_error_load_single_field_type(single_schema):
 
 
 def test_error_load_many_missing(many_schema, error_messages):
-    data, errors = many_schema.load({})
+    with pytest.raises(ValidationError) as excinfo:
+        schema_load(many_schema, {})
 
-    assert not data
+    errors = excinfo.value.messages
     assert errors == {
         'children': [error_messages['required']],
     }
 
 
 def test_error_load_many_type(many_schema, error_messages):
-    data, errors = many_schema.load({
-        'children': {
-            'id': 1,
-        },
-    })
+    with pytest.raises(ValidationError) as excinfo:
+        schema_load(many_schema, {
+            'children': {
+                'id': 1,
+            },
+        })
 
-    assert not data
+    errors = excinfo.value.messages
     assert errors == {
         'children': [error_messages['type']],
     }

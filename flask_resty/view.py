@@ -1,13 +1,18 @@
+import itertools
+
 import flask
 from flask.views import MethodView
-from marshmallow import fields
+from marshmallow import fields, ValidationError
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Load
 from sqlalchemy.orm.exc import NoResultFound
 from werkzeug.exceptions import NotFound
 
 from . import meta
 from .authentication import NoOpAuthentication
 from .authorization import NoOpAuthorization
+from .compat import MA2, schema_dump, schema_load
+from .decorators import request_cached_property
 from .exceptions import ApiError
 from .spec import ApiViewDeclaration, ModelViewDeclaration
 from .utils import iter_validation_errors, settable_property
@@ -29,10 +34,10 @@ class ApiView(MethodView):
         self.authentication.authenticate_request()
         self.authorization.authorize_request()
 
-        return super(ApiView, self).dispatch_request(*args, **kwargs)
+        return super().dispatch_request(*args, **kwargs)
 
     def serialize(self, item, **kwargs):
-        return self.serializer.dump(item, **kwargs).data
+        return schema_dump(self.serializer, item, **kwargs)
 
     @settable_property
     def serializer(self):
@@ -44,22 +49,22 @@ class ApiView(MethodView):
 
     def make_item_response(self, item, *args):
         data_out = self.serialize(item)
-        self.set_item_meta(item)
+        self.set_item_response_meta(item)
         return self.make_response(data_out, *args, item=item)
 
-    def set_item_meta(self, item):
+    def set_item_response_meta(self, item):
         pass
 
     def make_response(self, data, *args, **kwargs):
-        body = self.make_response_body(data, meta.get_response_meta())
-        return self.make_raw_response(flask.jsonify(body), *args, **kwargs)
+        body = self.render_response_body(data, meta.get_response_meta())
+        return self.make_raw_response(body, *args, **kwargs)
 
-    def make_response_body(self, data, response_meta):
+    def render_response_body(self, data, response_meta):
         body = {'data': data}
         if response_meta is not None:
             body['meta'] = response_meta
 
-        return body
+        return flask.jsonify(body)
 
     def make_raw_response(self, *args, **kwargs):
         response = flask.make_response(*args)
@@ -77,6 +82,15 @@ class ApiView(MethodView):
             response.headers['Location'] = location
         return response
 
+    def make_updated_response(self, item, return_content=False):
+        if return_content:
+            return self.make_item_response(item)
+
+        return self.make_empty_response(item=item)
+
+    def make_deleted_response(self, item):
+        return self.make_empty_response(item=item)
+
     def get_location(self, item):
         id_dict = {
             id_field: getattr(item, id_field) for id_field in self.id_fields
@@ -84,6 +98,10 @@ class ApiView(MethodView):
         return flask.url_for(flask.request.endpoint, _method='GET', **id_dict)
 
     def get_request_data(self, **kwargs):
+        data_raw = self.parse_request_data()
+        return self.deserialize(data_raw, **kwargs)
+
+    def parse_request_data(self):
         try:
             data_raw = flask.request.get_json()['data']
         except TypeError:
@@ -91,16 +109,16 @@ class ApiView(MethodView):
         except KeyError:
             raise ApiError(400, {'code': 'invalid_data.missing'})
 
-        return self.deserialize(data_raw, **kwargs)
+        return data_raw
 
     def deserialize(self, data_raw, expected_id=None, **kwargs):
-        data, errors = self.deserializer.load(data_raw, **kwargs)
-        if errors:
-            formatted_errors = (
+        try:
+            data = schema_load(self.deserializer, data_raw, **kwargs)
+        except ValidationError as e:
+            raise ApiError(422, *(
                 self.format_validation_error(error)
-                for error in iter_validation_errors(errors)
-            )
-            raise ApiError(422, *formatted_errors)
+                for error in iter_validation_errors(e.messages)
+            ))
 
         self.validate_request_id(data, expected_id)
         return data
@@ -145,35 +163,40 @@ class ApiView(MethodView):
 
         return tuple(data[id_field] for id_field in self.id_fields)
 
-    def get_request_args(self, **kwargs):
+    @request_cached_property
+    def request_args(self):
+        """Use args_schema to parse request query arguments."""
         args = flask.request.args
         data_raw = {}
 
         for field_name, field in self.args_schema.fields.items():
-            if field_name in args:
-                args_key = field_name
-            elif field.load_from and field.load_from in args:
-                args_key = field.load_from
-            else:
+            alternate_field_name = field.load_from if MA2 else field.data_key
+
+            if alternate_field_name and alternate_field_name in args:
+                field_name = alternate_field_name
+            elif field_name not in args:
+                # getlist will return an empty list instead of raising a
+                # KeyError for args that aren't present.
                 continue
 
-            value = args.getlist(args_key)
+            value = args.getlist(field_name)
             if not self.is_list_field(field) and len(value) == 1:
                 value = value[0]
 
             data_raw[field_name] = value
 
-        return self.deserialize_args(data_raw, **kwargs)
+        return self.deserialize_args(data_raw)
 
     def is_list_field(self, field):
         return isinstance(field, fields.List)
 
     def deserialize_args(self, data_raw, **kwargs):
-        data, errors = self.args_schema.load(data_raw, **kwargs)
-        if errors:
+        try:
+            data = schema_load(self.args_schema, data_raw, **kwargs)
+        except ValidationError as e:
             raise ApiError(422, *(
                 self.format_parameter_validation_error(message, parameter)
-                for parameter, messages in errors.items()
+                for parameter, messages in e.messages.items()
                 for message in messages
             ))
 
@@ -209,11 +232,57 @@ class ModelView(ApiView):
         return flask.current_app.extensions['sqlalchemy'].db.session
 
     @settable_property
+    def query_raw(self):
+        """The raw SQLAlchemy query for the view.
+
+        This is the base query, without authorization filters or query options.
+        By default, this is the query property on the model class. This can be
+        overridden to remove filters attached to that query.
+        """
+        return self.model.query
+
+    @settable_property
     def query(self):
-        query = self.model.query
+        """The SQLAlchemy query for the view.
+
+        Override this to customize the query to fetch items in this view.
+
+        By default, this applies the filter from the view's `authorization` and
+        the query options from `base_query_options` and `query_options`.
+        """
+        query = self.query_raw
         query = self.authorization.filter_query(query, self)
+        query = query.options(
+            *itertools.chain(self.base_query_options, self.query_options)
+        )
 
         return query
+
+    #: Base query options to apply before `query_options`.
+    #:
+    #: Set this on a base class to define base query options for its
+    #: subclasses, while still allowing those subclasses to define their own
+    #: additional query options via `query_options`.
+    #:
+    #: For example, set this to ``(raiseload('*', sql_only=True),)`` to prevent
+    #: all implicit SQL-emitting relationship loading, and force all
+    #: relationship loading to be explicitly defined via `query_options`.
+    base_query_options = ()
+
+    @settable_property
+    def query_options(self):
+        """Options to apply to the query for the view.
+
+        Set this to configure relationship and column loading.
+
+        By default, this calls the ``get_query_options`` method on the
+        serializer with a `Load` object bound to the model, if that serializer
+        method exists.
+        """
+        if not hasattr(self.serializer, 'get_query_options'):
+            return ()
+
+        return self.serializer.get_query_options(Load(self.model))
 
     def get_list(self):
         return self.paginate_list_query(self.get_list_query())
@@ -278,8 +347,6 @@ class ModelView(ApiView):
                     # Bypass authorizating the save if we are getting the item
                     # for update, as update_item will make that check.
                     self.session.add(item)
-                else:
-                    self.add_item(item)
             except ApiError:
                 # Raise the original not found error instead of the
                 # authorization error.
@@ -288,7 +355,7 @@ class ModelView(ApiView):
         return item
 
     def deserialize(self, data_raw, **kwargs):
-        data = super(ModelView, self).deserialize(data_raw, **kwargs)
+        data = super().deserialize(data_raw, **kwargs)
         return self.resolve_related(data)
 
     def resolve_related(self, data):
@@ -297,14 +364,17 @@ class ModelView(ApiView):
 
         return self.related.resolve_related(data)
 
-    def resolve_related_item(self, data):
+    def resolve_related_item(self, data, **kwargs):
         try:
             id = self.get_data_id(data)
         except KeyError:
             raise ApiError(422, {'code': 'invalid_related.missing_id'})
 
+        return self.resolve_related_id(id, **kwargs)
+
+    def resolve_related_id(self, id, **kwargs):
         try:
-            item = self.get_item(id)
+            item = self.get_item(id, **kwargs)
         except NoResultFound:
             raise ApiError(422, {'code': 'invalid_related.not_found'})
 
@@ -314,16 +384,19 @@ class ModelView(ApiView):
         return self.create_item(self.get_id_dict(id))
 
     def create_item(self, data):
-        item = self.model(**data)
-
+        item = self.create_item_raw(data)
         self.authorization.authorize_create_item(item)
-
         return item
 
-    def add_item(self, item):
-        self.session.add(item)
+    def create_item_raw(self, data):
+        return self.model(**data)
 
+    def add_item(self, item):
+        self.add_item_raw(item)
         self.authorization.authorize_save_item(item)
+
+    def add_item_raw(self, item):
+        self.session.add(item)
 
     def create_and_add_item(self, data):
         item = self.create_item(data)
@@ -332,41 +405,66 @@ class ModelView(ApiView):
 
     def update_item(self, item, data):
         self.authorization.authorize_update_item(item, data)
+        item = self.update_item_raw(item, data) or item
+        self.authorization.authorize_save_item(item)
+        return item
 
+    def update_item_raw(self, item, data):
         for key, value in data.items():
             setattr(item, key, value)
 
-        self.authorization.authorize_save_item(item)
-
     def delete_item(self, item):
         self.authorization.authorize_delete_item(item)
+        item = self.delete_item_raw(item) or item
+        return item
 
+    def delete_item_raw(self, item):
         self.session.delete(item)
 
-    def flush(self):
+    def flush(self, objects=None):
         try:
             # Flushing allows checking invariants without committing.
-            self.session.flush()
-        except IntegrityError:
-            raise ApiError(409, {'code': 'invalid_data.conflict'})
+            self.session.flush(objects=objects)
+        # Don't catch DataErrors here, as they arise from bugs in validation in
+        # the schema.
+        except IntegrityError as e:
+            raise self.resolve_integrity_error(e)
 
     def commit(self):
         try:
             self.session.commit()
-        except IntegrityError:
-            raise ApiError(409, {'code': 'invalid_data.conflict'})
+        # Don't catch DataErrors here, as they arise from bugs in validation in
+        # the schema.
+        except IntegrityError as e:
+            raise self.resolve_integrity_error(e)
 
-    def set_item_meta(self, item):
-        super(ModelView, self).set_item_meta(item)
-        self.set_item_pagination_meta(item)
+    def resolve_integrity_error(self, error):
+        original_error = error.orig
 
-    def set_item_pagination_meta(self, item):
+        if (
+            hasattr(original_error, 'pgcode') and
+            original_error.pgcode in (
+                '23502',  # not_null_violation
+                '23514',  # check_violation
+            )
+        ):
+            # Using the psycopg2 error code, we can tell that this was not from
+            # an integrity error that was not a conflict. This means there was
+            # a schema bug, so we emit an interal server error instead.
+            return error
+
+        flask.current_app.logger.exception("handled integrity error")
+        return ApiError(409, {'code': 'invalid_data.conflict'})
+
+    def set_item_response_meta(self, item):
+        super().set_item_response_meta(item)
+        self.set_item_response_meta_pagination(item)
+
+    def set_item_response_meta_pagination(self, item):
         if not self.pagination:
             return
 
-        pagination_meta = self.pagination.get_item_meta(item, self)
-        if pagination_meta is not None:
-            meta.set_response_meta(**pagination_meta)
+        meta.update_response_meta(self.pagination.get_item_meta(item, self))
 
 
 class GenericModelView(ModelView):
@@ -390,6 +488,7 @@ class GenericModelView(ModelView):
     def update(
         self,
         id,
+        with_for_update=False,
         create_missing=False,
         partial=False,
         return_content=False,
@@ -398,23 +497,21 @@ class GenericModelView(ModelView):
         # before saving to database below.
         item = self.get_item_or_404(
             id,
+            with_for_update=with_for_update,
             create_missing=create_missing,
             will_update_item=True,
         )
         data_in = self.get_request_data(expected_id=id, partial=partial)
 
-        self.update_item(item, data_in)
+        item = self.update_item(item, data_in) or item
         self.commit()
 
-        if return_content:
-            return self.make_item_response(item)
-
-        return self.make_empty_response(item=item)
+        return self.make_updated_response(item, return_content=return_content)
 
     def destroy(self, id):
         item = self.get_item_or_404(id)
 
-        self.delete_item(item)
+        item = self.delete_item(item) or item
         self.commit()
 
-        return self.make_empty_response()
+        return self.make_deleted_response(item)

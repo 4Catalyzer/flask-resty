@@ -1,22 +1,17 @@
-sudo: false
-
 language: python
-python:
-  - "2.7"
-  - "3.5"
-  - "3.6"
-  - "pypy"
-
-env:
-  - TOXENV=py-jwt
-
+dist: xenial
+services:
+  - postgresql
 matrix:
   include:
-    - python: "2.7"
-      env: TOXENV=py-base
-    - python: "3.6"
-      env: TOXENV=py-base
+    - { python: "3.5",   env: "TOXENV=py-full-marshmallow2 DATABASE_URL=postgres://localhost/travis_ci_test" }
+    - { python: "3.6",   env: "TOXENV=py-full-marshmallow2 DATABASE_URL=postgres://localhost/travis_ci_test" }
+    - { python: "3.7",   env: "TOXENV=py-full-marshmallow2 DATABASE_URL=postgres://localhost/travis_ci_test" }
 
+    - { python: "3.6",   env: "TOXENV=py-base-marshmallow2" }
+
+    - { python: "3.6",   env: "TOXENV=py-full-marshmallow3" }
+    - { python: "3.6",   env: "TOXENV=py-base-marshmallow3" }
 cache:
   directories:
     - $HOME/.cache/pip
@@ -26,6 +21,8 @@ before_install:
 install:
   - pip install -U codecov tox
 
+before_script:
+  - psql -c 'CREATE DATABASE travis_ci_test' -U postgres
 script:
   - python setup.py test
 

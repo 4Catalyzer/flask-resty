@@ -1,9 +1,9 @@
 from marshmallow import fields, Schema
 import pytest
 from sqlalchemy import Column, ForeignKey, Integer, String
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import raiseload, relationship
 
-from flask_resty import Api, GenericModelView, Related, RelatedItem
+from flask_resty import Api, GenericModelView, Related, RelatedId, RelatedItem
 from flask_resty.testing import assert_response
 
 # -----------------------------------------------------------------------------
@@ -44,13 +44,21 @@ def schemas():
         name = fields.String(required=True)
 
         children = RelatedItem('ChildSchema', many=True, exclude=('parent',))
+        child_ids = fields.List(fields.Integer(as_string=True), load_only=True)
 
     class ChildSchema(Schema):
+        @classmethod
+        def get_query_options(cls, load):
+            return (load.joinedload('parent'),)
+
         id = fields.Integer(as_string=True)
         name = fields.String(required=True)
 
         parent = RelatedItem(
             ParentSchema, exclude=('children',), allow_none=True,
+        )
+        parent_id = fields.Integer(
+            as_string=True, allow_none=True, load_only=True,
         )
 
     return {
@@ -66,7 +74,7 @@ def routes(app, models, schemas):
         schema = schemas['parent']
 
         related = Related(
-            children=lambda: ChildView(),
+            children=RelatedId(lambda: ChildView(), 'child_ids'),
         )
 
         def get(self, id):
@@ -77,11 +85,16 @@ def routes(app, models, schemas):
 
     class NestedParentView(ParentView):
         related = Related(
-            children=Related(models['child']),
+            children=lambda: ChildView(),
         )
 
-        def get(self, id):
-            return self.retrieve(id)
+        def put(self, id):
+            return self.update(id, return_content=True)
+
+    class ParentWithCreateView(ParentView):
+        related = Related(
+            children=Related(models['child']),
+        )
 
         def put(self, id):
             return self.update(id, return_content=True)
@@ -90,8 +103,10 @@ def routes(app, models, schemas):
         model = models['child']
         schema = schemas['child']
 
+        base_query_options = (raiseload('*'),)
+
         related = Related(
-            parent=ParentView,
+            parent=RelatedId(ParentView, 'parent_id'),
         )
 
         def get(self, id):
@@ -100,10 +115,23 @@ def routes(app, models, schemas):
         def put(self, id):
             return self.update(id, return_content=True)
 
+    class NestedChildView(GenericModelView):
+        model = models['child']
+        schema = schemas['child']
+
+        related = Related(
+            parent=ParentView,
+        )
+
+        def put(self, id):
+            return self.update(id, return_content=True)
+
     api = Api(app)
     api.add_resource('/parents/<int:id>', ParentView)
     api.add_resource('/nested_parents/<int:id>', NestedParentView)
+    api.add_resource('/parents_with_create/<int:id>', ParentWithCreateView)
     api.add_resource('/children/<int:id>', ChildView)
+    api.add_resource('/nested_children/<int:id>', NestedChildView)
 
 
 @pytest.fixture(autouse=True)
@@ -146,6 +174,23 @@ def test_single(client):
     response = client.put('/children/1', data={
         'id': '1',
         'name': "Updated Child",
+        'parent_id': '1',
+    })
+
+    assert_response(response, 200, {
+        'id': '1',
+        'name': "Updated Child",
+        'parent': {
+            'id': '1',
+            'name': "Parent",
+        },
+    })
+
+
+def test_single_nested(client):
+    response = client.put('/nested_children/1', data={
+        'id': '1',
+        'name': "Updated Child",
         'parent': {'id': '1'},
     })
 
@@ -161,6 +206,29 @@ def test_single(client):
 
 def test_many(client):
     response = client.put('/parents/1', data={
+        'id': '1',
+        'name': "Updated Parent",
+        'child_ids': ['1', '2'],
+    })
+
+    assert_response(response, 200, {
+        'id': '1',
+        'name': "Updated Parent",
+        'children': [
+            {
+                'id': '1',
+                'name': "Child 1",
+            },
+            {
+                'id': '2',
+                'name': "Child 2",
+            },
+        ],
+    })
+
+
+def test_many_nested(client):
+    response = client.put('/nested_parents/1', data={
         'id': '1',
         'name': "Updated Parent",
         'children': [
@@ -185,8 +253,8 @@ def test_many(client):
     })
 
 
-def test_many_nested(client):
-    response = client.put('/nested_parents/1', data={
+def test_many_with_create(client):
+    response = client.put('/parents_with_create/1', data={
         'id': '1',
         'name': "Updated Parent",
         'children': [
@@ -235,6 +303,21 @@ def test_null(client):
     response = client.put('/children/1', data={
         'id': '1',
         'name': "Twice Updated Child",
+        'parent_id': None,
+    })
+    assert_response(response, 200, {
+        'id': '1',
+        'name': "Twice Updated Child",
+        'parent': None,
+    })
+
+
+def test_null_nested(client):
+    test_single(client)
+
+    response = client.put('/nested_children/1', data={
+        'id': '1',
+        'name': "Twice Updated Child",
         'parent': None,
     })
     assert_response(response, 200, {
@@ -250,7 +333,7 @@ def test_many_falsy(client):
     response = client.put('/parents/1', data={
         'id': '1',
         'name': "Twice Updated Parent",
-        'children': [],
+        'child_ids': [],
     })
 
     assert_response(response, 200, {
@@ -267,6 +350,18 @@ def test_error_not_found(client):
     response = client.put('/children/1', data={
         'id': '1',
         'name': "Updated Child",
+        'parent_id': '2',
+    })
+    assert_response(response, 422, [{
+        'code': 'invalid_related.not_found',
+        'source': {'pointer': '/data/parent_id'},
+    }])
+
+
+def test_error_not_found_nested(client):
+    response = client.put('/nested_children/1', data={
+        'id': '1',
+        'name': "Updated Child",
         'parent': {'id': '2'},
     })
     assert_response(response, 422, [{
@@ -276,7 +371,7 @@ def test_error_not_found(client):
 
 
 def test_error_missing_id(client):
-    response = client.put('/children/1', data={
+    response = client.put('/nested_children/1', data={
         'id': '1',
         'name': "Updated Child",
         'parent': {},

@@ -9,6 +9,7 @@ from flask_resty import (
     Filtering,
     GenericModelView,
     LimitOffsetPagination,
+    LimitPagination,
     MaxLimitPagination,
     PagePagination,
     RelayCursorPagination,
@@ -59,6 +60,18 @@ def routes(app, models, schemas):
         def get(self):
             return self.list()
 
+    class OptionalLimitWidgetListView(WidgetViewBase):
+        filtering = Filtering(
+            size=operator.eq,
+        )
+        pagination = LimitPagination()
+
+        def get(self):
+            return self.list()
+
+        def post(self):
+            return self.create()
+
     class LimitOffsetWidgetListView(WidgetViewBase):
         filtering = Filtering(
             size=operator.eq,
@@ -81,10 +94,7 @@ def routes(app, models, schemas):
             return self.create()
 
     class RelayCursorListView(WidgetViewBase):
-        sorting = Sorting(
-            'id', 'size',
-            default='id',
-        )
+        sorting = Sorting('id', 'size')
         pagination = RelayCursorPagination(2)
 
         def get(self):
@@ -95,6 +105,7 @@ def routes(app, models, schemas):
 
     api = Api(app)
     api.add_resource('/max_limit_widgets', MaxLimitWidgetListView)
+    api.add_resource('/optional_limit_widgets', OptionalLimitWidgetListView)
     api.add_resource('/limit_offset_widgets', LimitOffsetWidgetListView)
     api.add_resource('/page_widgets', PageWidgetListView)
     api.add_resource('/relay_cursor_widgets', RelayCursorListView)
@@ -130,6 +141,56 @@ def test_max_limit(client):
     ])
     assert get_meta(response) == {
         'has_next_page': True,
+    }
+
+
+def test_limit(client):
+    response = client.get('/optional_limit_widgets?limit=2')
+    assert_response(response, 200, [
+        {
+            'id': '1',
+            'size': 1,
+        },
+        {
+            'id': '2',
+            'size': 2,
+        },
+    ])
+    assert get_meta(response) == {
+        'has_next_page': True,
+    }
+
+
+def test_unset_limit(client):
+    response = client.get('/optional_limit_widgets')
+    assert_response(response, 200, [
+        {
+            'id': '1',
+            'size': 1,
+        },
+        {
+            'id': '2',
+            'size': 2,
+        },
+        {
+            'id': '3',
+            'size': 3,
+        },
+        {
+            'id': '4',
+            'size': 1,
+        },
+        {
+            'id': '5',
+            'size': 2,
+        },
+        {
+            'id': '6',
+            'size': 3,
+        },
+    ])
+    assert get_meta(response) == {
+        'has_next_page': False,
     }
 
 
@@ -396,29 +457,7 @@ def test_relay_cursor_default(client):
 
 
 def test_relay_cursor_sorted(client):
-    response = client.get('/relay_cursor_widgets?sort=size,-id&cursor=MQ.NA')
-
-    assert_response(response, 200, [
-        {
-            'id': '1',
-            'size': 1,
-        },
-        {
-            'id': '5',
-            'size': 2,
-        },
-    ])
-    assert get_meta(response) == {
-        'has_next_page': True,
-        'cursors': [
-            'MQ.MQ',
-            'Mg.NQ',
-        ],
-    }
-
-
-def test_relay_cursor_sorted_default(client):
-    response = client.get('/relay_cursor_widgets?sort=size,-id')
+    response = client.get('/relay_cursor_widgets?sort=size&cursor=MQ.MQ')
 
     assert_response(response, 200, [
         {
@@ -426,15 +465,81 @@ def test_relay_cursor_sorted_default(client):
             'size': 1,
         },
         {
-            'id': '1',
-            'size': 1,
+            'id': '2',
+            'size': 2,
         },
     ])
     assert get_meta(response) == {
         'has_next_page': True,
         'cursors': [
             'MQ.NA',
+            'Mg.Mg',
+        ],
+    }
+
+
+def test_relay_cursor_sorted_default(client):
+    response = client.get('/relay_cursor_widgets?sort=size')
+
+    assert_response(response, 200, [
+        {
+            'id': '1',
+            'size': 1,
+        },
+        {
+            'id': '4',
+            'size': 1,
+        },
+    ])
+    assert get_meta(response) == {
+        'has_next_page': True,
+        'cursors': [
             'MQ.MQ',
+            'MQ.NA',
+        ],
+    }
+
+
+def test_relay_cursor_sorted_redundant(client):
+    response = client.get('/relay_cursor_widgets?sort=size,id&cursor=MQ.MQ')
+
+    assert_response(response, 200, [
+        {
+            'id': '4',
+            'size': 1,
+        },
+        {
+            'id': '2',
+            'size': 2,
+        },
+    ])
+    assert get_meta(response) == {
+        'has_next_page': True,
+        'cursors': [
+            'MQ.NA',
+            'Mg.Mg',
+        ],
+    }
+
+
+def test_relay_cursor_sorted_inverse(client):
+    response = client.get('/relay_cursor_widgets?sort=-size&cursor=Mg.NQ')
+
+    assert_response(response, 200, [
+        {
+            'id': '2',
+            'size': 2,
+        },
+        {
+            'id': '4',
+            'size': 1,
+        },
+    ])
+    assert get_meta(response) == {
+        'has_next_page': True,
+        'cursors': [
+            'Mg.Mg',
+            'MQ.NA',
         ],
     }
 
@@ -450,7 +555,7 @@ def test_relay_cursor_create(client):
 
 
 def test_relay_cursor_create_sorted(client):
-    response = client.post('/relay_cursor_widgets?sort=size,-id', data={
+    response = client.post('/relay_cursor_widgets?sort=size', data={
         'size': 1,
     })
 
