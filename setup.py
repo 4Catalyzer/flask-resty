@@ -63,7 +63,6 @@ setup(
             'coverage',
             'flake8',
             'flake8-config-4catalyzer',
-            'mock',
             'psycopg2-binary',
             'pytest',
         ),
