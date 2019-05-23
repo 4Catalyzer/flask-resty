@@ -3,7 +3,6 @@ import posixpath
 
 import flask
 from werkzeug.exceptions import HTTPException
-from werkzeug.routing import RoutingException
 
 from .exceptions import ApiError
 
@@ -20,10 +19,6 @@ def handle_api_error(error):
 
 
 def handle_http_exception(error):
-    if isinstance(error, RoutingException):
-        # This is not actually an error. Forward it to properly redirect.
-        return error
-
     # Flask calls the InternalServerError handler with any uncaught app
     # exceptions. Re-raise those as generic internal server errors.
     if not isinstance(error, HTTPException):
