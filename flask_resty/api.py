@@ -38,7 +38,7 @@ def handle_http_exception(error):
 
 
 class Api:
-    def __init__(self, app=None, *, prefix=''):
+    def __init__(self, app=None, prefix=''):
         if app:
             self._app = app
             self.init_app(app)

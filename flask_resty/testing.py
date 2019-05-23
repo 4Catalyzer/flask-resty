@@ -107,6 +107,7 @@ def assert_response(
     response,
     expected_status_code,
     expected_data=UNDEFINED,
+    *,
     get_data=get_data,
     get_errors=get_errors,
 ):
