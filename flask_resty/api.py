@@ -63,9 +63,10 @@ class Api:
         base_rule,
         base_view,
         alternate_view=None,
+        *,
         alternate_rule=None,
         id_rule=None,
-        app=None,
+        app=None
     ):
         """Add route or routes for a resource.
 
@@ -143,7 +144,7 @@ class Api:
         else:
             return base_view_name
 
-    def add_ping(self, rule, status_code=200, app=None):
+    def add_ping(self, rule, *, status_code=200, app=None):
         """Add a ping route.
 
         :param str rule: The URL rule. This will not use the API prefix, as the

@@ -25,7 +25,13 @@ class ArgFilterBase:
 
 
 class FieldFilterBase(ArgFilterBase):
-    def __init__(self, separator=',', allow_empty=False, skip_invalid=False):
+    def __init__(
+        self,
+        *,
+        separator=',',
+        allow_empty=False,
+        skip_invalid=False
+    ):
         self._separator = separator
         self._allow_empty = allow_empty
         self._skip_invalid = skip_invalid
@@ -103,6 +109,7 @@ class ColumnFilter(FieldFilterBase):
         self,
         column_name=None,
         operator=None,
+        *,
         required=False,
         missing=marshmallow.missing,
         validate=True,

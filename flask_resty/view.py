@@ -79,7 +79,7 @@ class ApiView(MethodView):
             response.headers['Location'] = location
         return response
 
-    def make_updated_response(self, item, return_content=False):
+    def make_updated_response(self, item, *, return_content=False):
         if return_content:
             return self.make_item_response(item)
 
@@ -108,7 +108,7 @@ class ApiView(MethodView):
 
         return data_raw
 
-    def deserialize(self, data_raw, expected_id=None, **kwargs):
+    def deserialize(self, data_raw, *, expected_id=None, **kwargs):
         try:
             data = schema_load(self.deserializer, data_raw, **kwargs)
         except ValidationError as e:
@@ -248,7 +248,7 @@ class ModelView(ApiView):
         query = self.query_raw
         query = self.authorization.filter_query(query, self)
         query = query.options(
-            *itertools.chain(self.base_query_options, self.query_options)
+            *itertools.chain(self.base_query_options, self.query_options),
         )
 
         return query
@@ -317,9 +317,10 @@ class ModelView(ApiView):
     def get_item(
         self,
         id,
+        *,
         with_for_update=False,
         create_missing=False,
-        will_update_item=False,
+        will_update_item=False
     ):
         try:
             # Can't use self.query.get(), because query might be filtered.
@@ -467,11 +468,11 @@ class GenericModelView(ModelView):
         items = self.get_list()
         return self.make_items_response(items)
 
-    def retrieve(self, id, create_missing=False):
+    def retrieve(self, id, *, create_missing=False):
         item = self.get_item_or_404(id, create_missing=create_missing)
         return self.make_item_response(item)
 
-    def create(self, allow_client_id=False):
+    def create(self, *, allow_client_id=False):
         expected_id = None if allow_client_id else False
         data_in = self.get_request_data(expected_id=expected_id)
 
@@ -483,10 +484,11 @@ class GenericModelView(ModelView):
     def update(
         self,
         id,
+        *,
         with_for_update=False,
         create_missing=False,
         partial=False,
-        return_content=False,
+        return_content=False
     ):
         # No need to authorize creating the missing item, as we will authorize
         # before saving to database below.
