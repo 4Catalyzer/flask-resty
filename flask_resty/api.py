@@ -48,7 +48,7 @@ class StrictRule(Rule):
 
 
 class Api:
-    def __init__(self, app=None, prefix='', append_slash=True):
+    def __init__(self, app=None, *, prefix='', append_slash=True):
         self.prefix = prefix
         self.append_slash = append_slash
 

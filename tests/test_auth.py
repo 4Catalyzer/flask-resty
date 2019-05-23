@@ -1,6 +1,7 @@
+from unittest.mock import ANY, call, Mock
+
 import flask
 from marshmallow import fields, Schema
-from unittest.mock import ANY, call, Mock
 import pytest
 from sqlalchemy import Column, Integer, sql, String
 

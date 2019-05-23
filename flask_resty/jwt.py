@@ -123,7 +123,7 @@ class JwkSetPyJwt(PyJWT):
         return super().decode(
             jwt,
             key=self.get_key_from_jwk(jwk, alg),
-            **kwargs
+            **kwargs,
         )
 
     def get_jwk_from_jwt(self, unverified_header):
