@@ -320,7 +320,7 @@ class ModelView(ApiView):
         *,
         with_for_update=False,
         create_missing=False,
-        will_update_item=False,
+        will_update_item=False
     ):
         try:
             # Can't use self.query.get(), because query might be filtered.

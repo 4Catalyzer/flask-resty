@@ -30,7 +30,7 @@ class FieldFilterBase(ArgFilterBase):
         *,
         separator=',',
         allow_empty=False,
-        skip_invalid=False,
+        skip_invalid=False
     ):
         self._separator = separator
         self._allow_empty = allow_empty

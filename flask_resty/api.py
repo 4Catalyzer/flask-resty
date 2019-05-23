@@ -66,7 +66,7 @@ class Api:
         *,
         alternate_rule=None,
         id_rule=None,
-        app=None,
+        app=None
     ):
         """Add route or routes for a resource.
 
