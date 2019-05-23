@@ -86,20 +86,6 @@ class LimitPagination(LimitPaginationBase):
 
         return limit
 
-    def spec_declaration(self, path, spec, **kwargs):
-        path['get'].add_parameter(
-            name='limit',
-            type='int',
-            description="pagination limit",
-        )
-        path['get'].add_property_to_response(
-            prop_name='meta',
-            type='object',
-            properties={
-                'has_next_page': {'type': 'boolean'},
-            },
-        )
-
 
 class LimitOffsetPagination(LimitPagination):
     offset_arg = 'offset'
@@ -128,15 +114,6 @@ class LimitOffsetPagination(LimitPagination):
             raise ApiError(400, {'code': 'invalid_offset'})
 
         return offset
-
-    def spec_declaration(self, path, spec, **kwargs):
-        super().spec_declaration(path, spec)
-
-        path['get'].add_parameter(
-            name='offset',
-            type='int',
-            description="pagination offset",
-        )
 
 
 class PagePagination(LimitOffsetPagination):
@@ -171,15 +148,6 @@ class PagePagination(LimitOffsetPagination):
 
     def get_limit(self):
         return self._page_size
-
-    def spec_declaration(self, path, spec, **kwargs):
-        super().spec_declaration(path, spec)
-
-        path['get'].add_parameter(
-            name='page',
-            type='int',
-            description="page number",
-        )
 
 
 # -----------------------------------------------------------------------------
@@ -351,15 +319,6 @@ class CursorPaginationBase(LimitPagination):
         value = base64.urlsafe_b64encode(value)
         value = value.rstrip(b'=')  # Strip padding.
         return value.decode('ascii')
-
-    def spec_declaration(self, path, spec, **kwargs):
-        super().spec_declaration(path, spec)
-
-        path['get'].add_parameter(
-            name='cursor',
-            type='string',
-            description="pagination cursor",
-        )
 
 
 class RelayCursorPagination(CursorPaginationBase):
