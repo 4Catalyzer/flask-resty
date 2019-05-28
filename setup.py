@@ -51,7 +51,7 @@ setup(
     keywords='rest flask',
     packages=('flask_resty',),
     install_requires=(
-        'Flask >= 1.0',
+        'Flask >= 1.0.3',
         'Flask-SQLAlchemy >= 1.0',
         'marshmallow >= 2.2.0',
         'SQLAlchemy >= 1.0.0',
