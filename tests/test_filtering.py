@@ -10,6 +10,7 @@ from flask_resty import (
     Filtering,
     GenericModelView,
     model_filter,
+    ModelFilter,
 )
 from flask_resty.testing import assert_response
 
@@ -48,16 +49,11 @@ def schemas():
 
 @pytest.fixture
 def filter_fields():
-    @model_filter(fields.Boolean())
-    def filter_size_is_odd(model, value):
-        return model.size % 2 == int(value)
-
     @model_filter(fields.String(required=True), separator=None)
     def filter_color_custom(model, value):
         return model.color == value
 
     return {
-        'size_is_odd': filter_size_is_odd,
         'color_custom': filter_color_custom,
     }
 
@@ -82,7 +78,10 @@ def routes(app, models, schemas, filter_fields):
                 'size',
                 lambda size, value: size % value == 0,
             ),
-            size_is_odd=filter_fields['size_is_odd'],
+            size_is_odd=ModelFilter(
+                fields.Boolean(),
+                lambda model, value: model.size % 2 == int(value),
+            ),
             size_min_unvalidated=ColumnFilter(
                 'size',
                 operator.ge,
@@ -114,10 +113,23 @@ def routes(app, models, schemas, filter_fields):
         def get(self):
             return self.list()
 
+    class WidgetDefaultFiltersView(WidgetViewBase):
+        filtering = Filtering(
+            color=ModelFilter(
+                fields.String(missing="red"),
+                lambda model, value: model.color == value,
+            ),
+            size=ColumnFilter(operator.eq, missing=1),
+        )
+
+        def get(self):
+            return self.list()
+
     api = Api(app)
     api.add_resource('/widgets', WidgetListView)
     api.add_resource('/widgets_size_required', WidgetSizeRequiredListView)
     api.add_resource('/widgets_color_custom', WidgetColorCustomListView)
+    api.add_resource('/widgets_default_filters', WidgetDefaultFiltersView)
 
 
 @pytest.fixture(autouse=True)
@@ -285,6 +297,28 @@ def test_model_filter_kwargs(client):
     assert_response(separator_response, 200, [])
 
 
+def test_model_filter_default(client):
+    response = client.get('/widgets_default_filters')
+    assert_response(response, 200, [
+        {
+            'id': '1',
+            'color': 'red',
+            'size': 1,
+        },
+    ])
+
+
+def test_model_filter_default_override(client):
+    response = client.get('/widgets_default_filters?color=blue&size=3')
+    assert_response(response, 200, [
+        {
+            'id': '3',
+            'color': 'blue',
+            'size': 3,
+        },
+    ])
+
+
 # -----------------------------------------------------------------------------
 
 
@@ -326,8 +360,7 @@ def test_error_column_filter_required_missing(client):
 def test_error_model_filter_required_missing(client):
     response = client.get('/widgets_color_custom')
     assert_response(response, 400, [{
-        'code': 'invalid_filter',
-        'detail': 'Missing data for required field.',
+        'code': 'invalid_filter.missing',
         'source': {'parameter': 'color'},
     }])
 
@@ -335,10 +368,10 @@ def test_error_model_filter_required_missing(client):
 def test_error_missing_operator():
     ColumnFilter(operator=operator.eq)
 
-    with pytest.raises(TypeError, message="must specify operator"):
+    with pytest.raises(TypeError, match="must specify operator"):
         ColumnFilter('size')
 
-    with pytest.raises(TypeError, message="must specify operator"):
+    with pytest.raises(TypeError, match="must specify operator"):
         ColumnFilter()
 
 

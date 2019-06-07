@@ -4,6 +4,8 @@ import pytest
 from flask_resty.testing import (
     assert_response,
     assert_shape,
+    get_body,
+    InstanceOf,
     Matching,
     Predicate,
     Shape,
@@ -101,6 +103,10 @@ def test_shape_mapping(assert_shape_func):
     })
 
     assert_shape_func(actual_mapping, {
+        'b': InstanceOf(list),
+    })
+
+    assert_shape_func(actual_mapping, {
         'bar': Matching(r'.*long.*'),
     })
 
@@ -155,4 +161,52 @@ def test_assert_response_with_shape(app):
     with app.test_request_context():
         response = flask.jsonify(data=data)
 
-    assert_response(response, 200, Shape(data))
+    response_data = assert_response(response, 200, Shape(data))
+    assert response_data == data
+
+
+def test_assert_response_returns_data(app):
+    data = {'foo': 'bar'}
+
+    with app.test_request_context():
+        response = flask.jsonify(data=data)
+
+    response_data = assert_response(response, 200)
+    assert response_data == data
+
+
+def test_assert_response_returns_errors(app):
+    errors = [{'code': 'bar'}]
+
+    with app.test_request_context():
+        response = flask.make_response(flask.jsonify(errors=errors), 400)
+
+    response_errors = assert_response(response, 400)
+    assert response_errors == errors
+
+
+def test_assert_response_on_redirect(app):
+    with app.test_request_context():
+        response = flask.redirect('/foo')
+
+    assert_response(response, 302)
+
+
+def test_assert_response_returns_custom_data(app):
+    data = {'foo': 'bar'}
+
+    with app.test_request_context():
+        response = flask.jsonify(data)
+
+    response_data = assert_response(response, 200, get_data=get_body)
+    assert response_data == data
+
+
+def test_assert_response_returns_custom_errors(app):
+    errors = [{'code': 'bar'}]
+
+    with app.test_request_context():
+        response = flask.make_response(flask.jsonify(errors), 400)
+
+    response_errors = assert_response(response, 400, get_errors=get_body)
+    assert response_errors == errors

@@ -14,28 +14,37 @@ def set_request_credentials(credentials):
 # -----------------------------------------------------------------------------
 
 
-class AuthenticationBase(object):
-    """Base class for the API authentication scheme. Flask-RESTy provides an
-    implementation using `JSON Web Tokens`_  but you can use any authentication
-    scheme by extending :py:class:`AuthenticationBase` and implementing
+class AuthenticationBase:
+    """Base class for API authentication components.
+
+    Authentication components are responsible for extracting the request
+    credentials, if any. They should raise a 401 if the credentials are
+    invalid, but should provide `None` for unauthenticated users.
+
+    Flask-RESTy provides an implementation using `JSON Web Tokens`_  but you
+    can use any authentication component by extending
+    :py:class:`AuthenticationBase` and implementing
     :py:meth:`get_request_credentials`.
 
     .. _JSON Web Tokens: https://jwt.io/
     """
+
     def authenticate_request(self):
-        """Stores the request credentials in the
+        """Store the request credentials in the
         :py:class:`flask.ctx.AppContext`.
 
         .. warning::
 
-            No validation is performed by Flask-RESTy. It is up to the implementor
-            to validate the request in :py:meth:`get_request_credentials`.
+            No validation is performed by Flask-RESTy. It is up to the
+            implementor to validate the request in
+            :py:meth:`get_request_credentials`.
         """
         set_request_credentials(self.get_request_credentials())
 
     def get_request_credentials(self):
-        """Retrieve the credentials from the current request. Typically this
-        is done by inspecting :py:data:`flask.request`.
+        """Get the credentials for the current request.
+
+        Typically this is done by inspecting :py:data:`flask.request`.
 
         .. warning::
 
@@ -48,8 +57,8 @@ class AuthenticationBase(object):
 # -----------------------------------------------------------------------------
 
 
-class NoOpAuthentication(object):
-    """An authentication scheme that always allows the request.
-    """
+class NoOpAuthentication:
+    """An authentication component that provides no credentials."""
+
     def authenticate_request(self):
         pass

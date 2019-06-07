@@ -2,11 +2,7 @@ import functools
 import posixpath
 
 import flask
-from werkzeug.exceptions import (
-    default_exceptions,
-    HTTPException,
-    InternalServerError,
-)
+from werkzeug.exceptions import HTTPException
 
 from .exceptions import ApiError
 
@@ -19,47 +15,45 @@ DEFAULT_ID_RULE = '<id>'
 
 
 def handle_api_error(error):
-    return flask.jsonify(error.body), error.status_code
+    return error.response
 
 
 def handle_http_exception(error):
     # Flask calls the InternalServerError handler with any uncaught app
     # exceptions. Re-raise those as generic internal server errors.
     if not isinstance(error, HTTPException):
-        error = InternalServerError()
+        error = ApiError(500)
+    else:
+        error = ApiError.from_http_exception(error)
 
-    body = {
-        'errors': [{
-            'code': '_'.join(word.lower() for word in error.name.split()),
-            'details': error.description,
-        }],
-    }
-    return flask.jsonify(body), error.code
+    return error.response
 
 
 # -----------------------------------------------------------------------------
 
 
-class Api(object):
-    """The central object of Flask-RESTy. Functions as a router. You can
-    eagerly register Flask-RESTy as a Flask extension by providing the Flask
-    application object in the constructor. You can also lazily register by
-    calling :py:meth:`init_app` with the Flask application object.
+class Api:
+    """The Api object controls the Flask-RESTy extension.
 
-    Once registered, Flask-RESTy will handle all default Werkzeug exceptions
-    and exceptions that subclass :py:class:`ApiError`.
+    This can either be bound to an individual Flask application passed in
+    at initialization, or to multiple applications via :py:meth:`init_app`.
 
-    By default your API will be rooted at '/'. Pass `prefix` to specify a custom
-    root.
+    After initializing an application, use this object to register resources
+    with :py:meth:`add_resource`, either to the bound application by default
+    or to an explicitly-specified application object via the `app` keyword
+    argument. Use :py:meth:`add_ping` to add a ping endpoint for health checks.
 
-    You can add resources to Flask applications that are not managed by
-    Flask-RESTy by passing the application object as a keyword argument to
-    :py:meth:`add_resource` or :py:meth:`add_ping`.
+    Once registered, Flask-RESTy will convert all HTTP errors thrown by the
+    application to JSON.
+
+    By default your API will be rooted at '/'. Pass `prefix` to specify a
+    custom root.
 
     :param app: The Flask application object.
     :type app: :py:class:`flask.Flask`
     :param str prefix: The API path prefix.
     """
+
     def __init__(self, app=None, prefix=''):
         if app:
             self._app = app
@@ -70,7 +64,7 @@ class Api(object):
         self.prefix = prefix
 
     def init_app(self, app):
-        """Register Flask-RESTy as a Flask extension.
+        """Initialize an application for use with Flask-RESTy.
 
         :param app: The Flask application object.
         :type app: :py:class:`flask.Flask`
@@ -78,10 +72,7 @@ class Api(object):
         app.extensions['resty'] = FlaskRestyState(self)
 
         app.register_error_handler(ApiError, handle_api_error)
-
-        # TODO: Just handle HTTPException once pallets/flask#2314 lands.
-        for exception in default_exceptions.values():
-            app.register_error_handler(exception, handle_http_exception)
+        app.register_error_handler(HTTPException, handle_http_exception)
 
     def _get_app(self, app):
         app = app or self._app
@@ -93,16 +84,16 @@ class Api(object):
         base_rule,
         base_view,
         alternate_view=None,
+        *,
         alternate_rule=None,
         id_rule=None,
-        app=None,
+        app=None
     ):
-        """Add route or routes for a resource.
+        """Add a REST resource.
 
         :param str base_rule: The URL rule for the resource. This will be
             prefixed by the API prefix.
-        :param ApiView base_view: Class-based view for the
-            resource.
+        :param ApiView base_view: Class-based view for the resource.
         :param ApiView alternate_view: If specified, an alternate
             class-based view for the resource. Usually, this will be a detail
             view, when the base view is a list view.
@@ -136,16 +127,11 @@ class Api(object):
         app = self._get_app(app)
         endpoint = self._get_endpoint(base_view, alternate_view)
 
-        # Store the view rules for reference. Doesn't support multiple routes
-        # mapped to same view.
-        views = app.extensions['resty'].views
-
         base_rule_full = '{}{}'.format(self.prefix, base_rule)
         base_view_func = base_view.as_view(endpoint)
 
         if not alternate_view:
             app.add_url_rule(base_rule_full, view_func=base_view_func)
-            views[base_view] = Resource(base_view, base_rule_full)
             return
 
         alternate_rule_full = '{}{}'.format(self.prefix, alternate_rule)
@@ -159,16 +145,17 @@ class Api(object):
                 return alternate_view_func(*args, **kwargs)
 
         app.add_url_rule(
-            base_rule_full, view_func=view_func, endpoint=endpoint,
+            base_rule_full,
+            view_func=view_func,
+            endpoint=endpoint,
             methods=base_view.methods,
         )
         app.add_url_rule(
-            alternate_rule_full, view_func=view_func, endpoint=endpoint,
+            alternate_rule_full,
+            view_func=view_func,
+            endpoint=endpoint,
             methods=alternate_view.methods,
         )
-
-        views[base_view] = Resource(base_view, base_rule_full)
-        views[alternate_view] = Resource(alternate_view, alternate_rule_full)
 
     def _get_endpoint(self, base_view, alternate_view):
         base_view_name = base_view.__name__
@@ -181,7 +168,7 @@ class Api(object):
         else:
             return base_view_name
 
-    def add_ping(self, rule, status_code=200, app=None):
+    def add_ping(self, rule, *, status_code=200, app=None):
         """Add a ping route.
 
         :param str rule: The URL rule. This will not use the API prefix, as the
@@ -189,9 +176,8 @@ class Api(object):
         :param int status_code: The ping response status code. The default is
             200 rather than the more correct 204 because many health checks
             look for 200s.
-        :param app: If specified, the application to which to add
-            the route. Otherwise, this will be the bound application, if
-            present.
+        :param app: If specified, the application to which to add the route.
+            Otherwise, this will be the bound application, if present.
         :type app: :py:class:`flask.Flask`
         :raises AssertionError: If no Flask application is bound or specified.
         """
@@ -205,15 +191,6 @@ class Api(object):
 # -----------------------------------------------------------------------------
 
 
-class FlaskRestyState(object):
+class FlaskRestyState:
     def __init__(self, api):
         self.api = api
-        self.views = {}
-
-
-class Resource(object):
-    """Simple object to store information about an added resource"""
-
-    def __init__(self, view, rule):
-        self.rule = rule
-        self.view = view

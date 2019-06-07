@@ -1,4 +1,4 @@
-# Flask-RESTy [![Travis][build-badge]][build] [![PyPI][pypi-badge]][pypi]
+# Flask-RESTy [![Travis][build-badge]][build] [![PyPI][pypi-badge]][pypi] [![marshmallow 2/3 compatible][marshmallow-badge]][marshmallow-upgrading]
 Building blocks for REST APIs for [Flask](http://flask.pocoo.org/).
 
 [![Codecov][codecov-badge]][codecov]
@@ -79,3 +79,6 @@ class WidgetSchema(TableSchema):
 
 [codecov-badge]: https://img.shields.io/codecov/c/github/4Catalyzer/flask-resty/master.svg
 [codecov]: https://codecov.io/gh/4Catalyzer/flask-resty
+
+[marshmallow-badge]: https://badgen.net/badge/marshmallow/2,3?list=1
+[marshmallow-upgrading]: https://marshmallow.readthedocs.io/en/latest/upgrading.html

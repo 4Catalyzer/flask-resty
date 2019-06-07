@@ -17,7 +17,7 @@ except ImportError:
 # -----------------------------------------------------------------------------
 
 
-class AbstractTestJwt(object):
+class AbstractTestJwt:
     @pytest.yield_fixture
     def models(self, db):
         class Widget(db.Model):
@@ -79,11 +79,12 @@ class AbstractTestJwt(object):
     def invalid_token(self, request):
         raise NotImplementedError()
 
-    def test_header(self, client, token):
+    @pytest.mark.parametrize('scheme', ('Bearer', 'bearer'))
+    def test_header(self, client, scheme, token):
         response = client.get(
             '/widgets',
             headers={
-                'Authorization': 'Bearer {}'.format(token),
+                'Authorization': '{} {}'.format(scheme, token),
             },
         )
 

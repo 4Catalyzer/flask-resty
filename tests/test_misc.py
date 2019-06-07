@@ -2,7 +2,7 @@ from marshmallow import fields, Schema
 import pytest
 from sqlalchemy import Column, Integer
 
-from flask_resty import Api, GenericModelView
+from flask_resty import Api, GenericModelView, StrictRule
 from flask_resty.testing import assert_response
 
 # -----------------------------------------------------------------------------
@@ -51,9 +51,26 @@ def views(models, schemas):
         def get(self, id):
             return self.retrieve(id)
 
+    class CustomWidgetView(WidgetViewBase):
+        def patch(self, id):
+            return self.update(id, partial=True, return_content=True)
+
+        def delete(self, id):
+            return self.destroy(id)
+
+        def update_item_raw(self, widget, data):
+            return self.model(id=9)
+
+        def delete_item_raw(self, widget):
+            return self.model(id=9)
+
+        def make_deleted_response(self, widget):
+            return self.make_item_response(widget)
+
     return {
         'widget_list': WidgetListView,
         'widget': WidgetView,
+        'custom_widget': CustomWidgetView,
     }
 
 
@@ -79,6 +96,41 @@ def test_api_prefix(app, views, client, base_client):
     assert_response(response, 200, [{
         'id': '1',
     }])
+
+
+def test_rule_without_slash(app, views, client):
+    api = Api(app, '/api')
+    api.add_resource('/widgets', views['widget_list'])
+
+    response = client.get('/widgets')
+    assert_response(response, 200)
+
+    response = client.get('/widgets/')
+    assert_response(response, 404)
+
+
+def test_rule_with_slash(app, views, client):
+    api = Api(app, '/api')
+    api.add_resource('/widgets/', views['widget_list'])
+
+    response = client.get('/widgets')
+    assert_response(response, 308)
+
+    response = client.get('/widgets/')
+    assert_response(response, 200)
+
+
+def test_no_append_slash(monkeypatch, app, views, client):
+    monkeypatch.setattr(app, "url_rule_class", StrictRule)
+
+    api = Api(app, '/api')
+    api.add_resource('/widgets/', views['widget_list'])
+
+    response = client.get('/widgets')
+    assert_response(response, 404)
+
+    response = client.get('/widgets/')
+    assert_response(response, 200)
 
 
 def test_create_client_id(app, views, client):
@@ -153,7 +205,7 @@ def test_factory_pattern(app, views, client):
     api = Api()
     api.init_app(app)
 
-    with pytest.raises(AssertionError, message="no application specified"):
+    with pytest.raises(AssertionError, match="no application specified"):
         api.add_resource('/widgets', views['widget_list'])
 
     api.add_resource('/widgets', views['widget_list'], app=app)
@@ -171,3 +223,25 @@ def test_view_func_wrapper(app, views):
     # This is really a placeholder for asserting that e.g. custom New Relic
     # view information gets passed through.
     assert app.view_functions['WidgetView'].__name__ == 'WidgetView'
+
+
+def test_update_return_item(app, views, client):
+    api = Api(app)
+    api.add_resource('/widgets/<int:id>', views['custom_widget'])
+
+    response = client.patch('/widgets/1', data={
+        'id': '1',
+    })
+    assert_response(response, 200, {
+        'id': '9',
+    })
+
+
+def test_delete_return_item(app, views, client):
+    api = Api(app)
+    api.add_resource('/widgets/<int:id>', views['custom_widget'])
+
+    response = client.delete('/widgets/1')
+    assert_response(response, 200, {
+        'id': '9',
+    })

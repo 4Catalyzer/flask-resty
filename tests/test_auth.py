@@ -1,6 +1,7 @@
+from unittest.mock import ANY, call, Mock
+
 import flask
 from marshmallow import fields, Schema
-from mock import ANY, call, Mock
 import pytest
 from sqlalchemy import Column, Integer, sql, String
 
@@ -64,7 +65,7 @@ def auth():
             )
 
         def authorize_create_item(self, item):
-            super(UserAuthorization, self).authorize_create_item(item)
+            super().authorize_create_item(item)
 
             if item.name == "Updated":
                 raise ApiError(403, {'code': 'invalid_name'})

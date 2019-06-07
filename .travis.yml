@@ -1,33 +1,17 @@
-sudo: false
-
 language: python
-python:
-  - "2.7"
-  - "3.5"
-  - "3.6"
-
+dist: xenial
 services:
   - postgresql
-
-env:
-  - TOXENV=py-full DATABASE_URL=postgres://localhost/travis_ci_test
-
 matrix:
   include:
-    - python: "2.7"
-      env: TOXENV=py-base
-    - python: "3.6"
-      env: TOXENV=py-base
-    - # TODO: Remove this workaround once travis-ci/travis-ci#9815 is fixed.
-      sudo: true
-      dist: xenial
-      python: "3.7"
-      env: TOXENV=py-full DATABASE_URL=postgres://localhost/travis_ci_test
-    - python: "pypy"
-      env: TOXENV=py-full
-    - python: "pypy3"
-      env: TOXENV=py-full
+    - { python: "3.5",   env: "TOXENV=py-full-marshmallow2 DATABASE_URL=postgres://localhost/travis_ci_test" }
+    - { python: "3.6",   env: "TOXENV=py-full-marshmallow2 DATABASE_URL=postgres://localhost/travis_ci_test" }
+    - { python: "3.7",   env: "TOXENV=py-full-marshmallow2 DATABASE_URL=postgres://localhost/travis_ci_test" }
 
+    - { python: "3.6",   env: "TOXENV=py-base-marshmallow2" }
+
+    - { python: "3.6",   env: "TOXENV=py-full-marshmallow3" }
+    - { python: "3.6",   env: "TOXENV=py-base-marshmallow3" }
 cache:
   directories:
     - $HOME/.cache/pip

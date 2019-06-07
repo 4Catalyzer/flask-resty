@@ -5,11 +5,12 @@ from .exceptions import ApiError
 # -----------------------------------------------------------------------------
 
 
-class RelatedId(object):
-    """A facility for resolving model fields by id.
+class RelatedId:
+    """Resolve a related item by a scalar ID.
 
-    :param view_class: The :py:class:`ModelView` corresponding to the related model.
-    :param str field_name: The name of the field on the related model.
+    :param view_class: The :py:class:`ModelView` corresponding to the related
+        model.
+    :param str field_name: The field name on request data.
     """
 
     def __init__(self, view_class, field_name):
@@ -17,30 +18,73 @@ class RelatedId(object):
         self.field_name = field_name
 
     def create_view(self):
-        """Create an instance of the stored view. Separating this out saves
-        instantiating the view multiple times for list fields.
-
-        :return: The :py:class:`ModelView` instance.
-        :rtype: object
-        """
+        # Separating this out saves instantiating the view multiple times for
+        # list fields.
         return self._view_class()
 
     def resolve_related_id(self, view, id):
-        """Resolves `id` by calling :py:meth:`ModelView.resolve_related_id`
-        on the given `view`.
-
-        :return: The resolved item.
-        :rtype: object
-        """
         return view.resolve_related_id(id)
 
 
-class Related(object):
-    """A facility for recursively resolving model fields.
+class Related:
+    """A component for resolving deserialized data fields to model instances.
+
+    The `Related` component is responsible for resolving related model
+    instances by ID and for constructing nested model instances. It supports
+    multiple related types of functionality. For a view with::
+
+        related = Related(
+            foo=RelatedId(FooView, "foo_id"),
+            bar=BarView,
+            baz=Related(models.Baz, qux=RelatedId(QuxView, "qux_id"),
+        )
+
+    Given deserialized input data like::
+
+        {
+            "foo_id": "3",
+            "bar": {"id": "4"},
+            "baz": {name: "Bob", "qux_id": "5"},
+            "other_field": "value",
+        }
+
+    This component will resolve these data into something like::
+
+        {
+            "foo": <Foo(id=3)>,
+            "bar": <Bar(id=4)>,
+            "baz": <Baz(name="Bob", qux=<Qux(id=5)>>,
+            "other_field": "value",
+        }
+
+    In this case, the Foo, Bar, and Qux instances are fetched from the
+    database, while the Baz instance is freshly constructed. If any of the Foo,
+    Bar, or Qux instances do not exist, then the component will fail the
+    request with a 422.
+
+    Formally, in this specification:
+
+    - A `RelatedId` item will retrieve the existing object in the database
+      with the ID from the specified scalar ID field using the specified view.
+    - A view class will retrieve the existing object in the database using the
+      object stub containing the ID fields from the data field of the same
+      name, using the specified view. This is generally used with the
+      `RelatedItem` field class, and unlike `RelatedId`, supports composite
+      IDs.
+    - Another `Related` item will apply the same resolution to a nested
+      dictionary. Additionally, if the `Related` item is given a callable as
+      its positional argument, it will construct a new instance given that
+      callable, which can often be a model class.
+
+    `Related` depends on the deserializer schema to function accordingly, and
+    delegates validation beyond the database fetch to the schema. `Related`
+    also automatically supports cases where the fields are list fields or are
+    configured with ``many=True``. In those cases, `Related` will iterate
+    through the sequence and resolve each item in turn, using the rules as
+    above.
 
     :param item_class: The SQLAlchemy mapper corresponding to the related item.
-    :param kwargs: A mapping from related fields to a callable resolver. 
-    :type kwargs: dict 
+    :param dict kwargs: A mapping from related fields to a callable resolver.
     """
 
     def __init__(self, item_class=None, **kwargs):
@@ -48,8 +92,11 @@ class Related(object):
         self._resolvers = kwargs
 
     def resolve_related(self, data):
-        """Substitutes any related fields present in `data` with the result of
-        calling :py:meth:`resolve_field` on the field's value.
+        """Resolve the related values in the request data.
+
+        This method will replace values in `data` with resolved model
+        instances as described above. This operates in place and will mutate
+        `data`.
 
         :param data object: The deserialized request data.
         :return: The deserialized data with related fields resolved.
@@ -89,8 +136,7 @@ class Related(object):
         return data
 
     def resolve_field(self, value, resolver):
-        """Applies `resolver` to the given value to resolve the related field.
-        If `value` is a list, each item in the list will be resolved.
+        """Resolve a single field value.
 
         :param value: The value corresponding to the field we are resolving.
         :param resolver: A callable capable of resolving the given `value`.

@@ -135,3 +135,10 @@ Exceptions
 .. autoclass:: ApiError
   :members:
   :inherited-members:
+
+Routing
+----------
+
+.. autoclass:: RequestSlash
+  :members:
+  :inherited-members:

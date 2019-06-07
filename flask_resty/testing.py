@@ -4,7 +4,6 @@ import re
 
 from flask.testing import FlaskClient
 
-from .compat import basestring
 from .utils import UNDEFINED
 
 # -----------------------------------------------------------------------------
@@ -21,13 +20,13 @@ class ApiClient(FlaskClient):
             if kwargs['content_type'] == 'application/json':
                 kwargs['data'] = json.dumps({'data': kwargs['data']})
 
-        return super(ApiClient, self).open(full_path, *args, **kwargs)
+        return super().open(full_path, *args, **kwargs)
 
 
 # -----------------------------------------------------------------------------
 
 
-class Predicate(object):
+class Predicate:
     """A helper object to do predicate assertion"""
 
     def __init__(self, predicate):
@@ -38,6 +37,10 @@ class Predicate(object):
 
     def __ne__(self, other):
         return not self.predicate(other)
+
+
+def InstanceOf(type):
+    return Predicate(lambda value: isinstance(value, type))
 
 
 def Matching(expected_regex):
@@ -55,7 +58,7 @@ def assert_shape(actual, expected):
                 assert_shape(actual[key], value)
             else:
                 assert key not in actual
-    elif isinstance(expected, basestring):
+    elif isinstance(expected, (str, bytes)):
         assert expected == actual
     elif isinstance(expected, Sequence):
         assert isinstance(actual, Sequence)
@@ -79,9 +82,13 @@ def Shape(expected):
 # -----------------------------------------------------------------------------
 
 
+def get_raw_body(response):
+    return response.get_data(as_text=True)
+
+
 def get_body(response):
     assert response.mimetype == 'application/json'
-    return json.loads(response.get_data(as_text=True))
+    return json.loads(get_raw_body(response))
 
 
 def get_data(response):
@@ -96,24 +103,36 @@ def get_meta(response):
     return get_body(response)['meta']
 
 
-def assert_response(response, expected_status_code, expected_data=UNDEFINED):
+def assert_response(
+    response,
+    expected_status_code,
+    expected_data=UNDEFINED,
+    *,
+    get_data=get_data,
+    get_errors=get_errors
+):
     """Assert on the status and contents of a response.
 
     If specified, expected_data is checked against either the data or the
     errors in the response body, depending on the response status. This check
-    ignores extra keys dictionaries in the response contents.
+    ignores extra dictionary items in the response contents.
     """
-    assert response.status_code == expected_status_code
+    status_code = response.status_code
+    assert status_code == expected_status_code
 
-    if expected_data is UNDEFINED:
-        return
-
-    if 200 <= response.status_code < 300:
+    if not response.content_length:
+        response_data = UNDEFINED
+    elif 200 <= response.status_code < 300:
         response_data = get_data(response)
-    else:
+    elif response.status_code >= 400:
         response_data = get_errors(response)
+    else:
+        response_data = response.data
 
-    if not isinstance(expected_data, Predicate):
-        expected_data = Shape(expected_data)
+    if expected_data is not UNDEFINED:
+        if not isinstance(expected_data, Predicate):
+            expected_data = Shape(expected_data)
 
-    assert response_data == expected_data
+        assert response_data == expected_data
+
+    return response_data

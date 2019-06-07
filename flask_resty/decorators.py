@@ -7,14 +7,24 @@ from .utils import UNDEFINED
 
 
 def get_item_or_404(func=None, **decorator_kwargs):
-    """
-    Similar to Django's :py:func:`django.shortcuts.get_object_or_404` but
-    as a decorator. Decorating :py:meth:`ApiView.retrieve`,
-    :py:meth:`ApiView.update` or :py:meth:`ApiView.destroy` replaces the `id`
-    parameter of the decorated method with the `item` corresponding to the
-    provided `id`.
+    """Make a view method receive an item rather than the item's ID.
 
-    Behaves like a decorator factory if `func` is omitted.
+    This decorator takes the ID fields per `id_fields` on the view class, then
+    uses them to fetch the corresponding item using the `get_item_or_404` on
+    the view class.
+
+    This function can be used directly as a decorator, or it can be called with
+    keyword arguments and then used to decorate a method to pass those
+    arguments to `get_item_or_404`::
+
+        class MyView(ModelView):
+            @get_item_or_404
+            def get(self, item):
+                pass
+
+            @get_item_or_404(with_for_update=True)
+            def put(self, item):
+                pass
 
     :param func: The function to decorate
     :type func: function or None

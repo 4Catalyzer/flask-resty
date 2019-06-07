@@ -29,7 +29,7 @@ def iter_validation_errors(errors, path=()):
 # -----------------------------------------------------------------------------
 
 
-class SettableProperty(object):
+class SettableProperty:
     def __init__(self, get_default):
         self.get_default = get_default
         self.internal_field_name = '_' + get_default.__name__
@@ -53,4 +53,5 @@ class SettableProperty(object):
             pass
 
 
+#: A property that can be set to a different value on the instance.
 settable_property = SettableProperty

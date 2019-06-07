@@ -1,7 +1,9 @@
+import copy
 import functools
 
 import flask
-from marshmallow import missing, ValidationError
+import marshmallow
+from marshmallow import ValidationError
 import sqlalchemy as sa
 from sqlalchemy import sql
 
@@ -11,15 +13,15 @@ from .utils import iter_validation_errors
 # -----------------------------------------------------------------------------
 
 
-class ArgFilterBase(object):
-    """An abstract specification of a filter.
+class ArgFilterBase:
+    """An abstract specification of a filter from a query argument.
 
     Implementing classes must provide :py:meth:`maybe_set_arg_name` and
     :py:meth:`filter_query`.
     """
 
     def maybe_set_arg_name(self, arg_name):
-        """Store the `arg_name` as a field to filter against, if appropriate.
+        """Set the name of the argument to which this filter is bound.
 
         :param str arg_name: The name of the field to filter against.
         :raises: :py:class:`NotImplementedError` if no implementation is
@@ -28,7 +30,7 @@ class ArgFilterBase(object):
         raise NotImplementedError()
 
     def filter_query(self, query, view, arg_value):
-        """Applies a WHERE clause to the `query`.
+        """Filter the query.
 
         :param query: The query to filter.
         :type query: :py:class:`sqlalchemy.orm.query.Query`
@@ -47,53 +49,43 @@ class ArgFilterBase(object):
 
 
 class FieldFilterBase(ArgFilterBase):
-    """A facility for constructing queries against an arbitrary collection.
+    """A filter that uses a Marshmallow field to deserialize its value.
 
     Implementing classes must provide :py:meth:`get_filter_field` and 
     :py:meth:`get_filter_clause`.
 
-    :param str separator: Glyph that separates filter fields in the filter
-        specification.
-    :param bool allow_empty: If True, NULL values can be used as a filter clause.
-    :param bool skip_invalid: If True, invalid filter values should NOT raise
-        an exception.
+    :param str separator: Character that separates individual elements in the
+        query value.
+    :param bool allow_empty: If set, allow filtering for empty values;
+        otherwise, filter out all items on an empty value.
+    :param bool skip_invalid: If set, ignore invalid filter values instead of
+        throwing an API error.
     """
 
-    def __init__(self, separator=',', allow_empty=False, skip_invalid=False):
+    def __init__(
+        self,
+        *,
+        separator=',',
+        allow_empty=False,
+        skip_invalid=False
+    ):
         self._separator = separator
         self._allow_empty = allow_empty
         self._skip_invalid = skip_invalid
 
     def maybe_set_arg_name(self, arg_name):
-        """FIXME: Does this need to be here?"""
         pass
 
     def filter_query(self, query, view, arg_value):
-        """Applies a WHERE clause to the `query` from the result of calling
-        :py:meth:`get_filter` on the provided `view` and `arg_value`.
+        filter = self.get_filter(view, arg_value)
+        if filter is None:
+            return query
 
-        :param query: The query to filter.
-        :type query: :py:class:`sqlalchemy.orm.query.Query`
-        :param view: The view with the model we wish to filter for.
-        :type view: :py:class:`ModelView`
-        :param str arg_value: The filter specification
-        :return: The filtered query
-        :rtype: :py:class:`sqlalchemy.orm.query.Query`
-        """
-        return query.filter(self.get_filter(view, arg_value))
+        return query.filter(filter)
 
     def get_filter(self, view, arg_value):
-        """Retrieve a filter clause consisting of the disjunction of each
-        filter constructed from calling :py:meth:`get_element_filter` on each
-        element in `arg_value`.
-
-        :param view: The view with the model we wish to filter for.
-        :type view: :py:class:`ModelView`
-        :param str arg_value: The filter specification
-        :return: The filter clause
-        """
         if arg_value is None:
-            return self.get_element_filter(view, missing)
+            return self.get_default_filter(view)
 
         if not arg_value and not self._allow_empty:
             return sql.false()
@@ -106,22 +98,22 @@ class FieldFilterBase(ArgFilterBase):
             for value_raw in arg_value.split(self._separator)
         )
 
-    def get_element_filter(self, view, value_raw):
-        """Retrieve a filter clause against the field corresponding to the
-        element in `value_raw`.
-
-        :param view: The view with the model we wish to filter for.
-        :type view: :py:class:`ModelView`
-        :param str value_raw: The value corresponding to the right-hand side
-            of the WHERE clause.
-        :return: The filter clause
-        """
+    def get_default_filter(self, view):
         field = self.get_field(view)
-        if value_raw is missing and not field.required:
-            return sql.true()
+        if field.required:
+            raise ApiError(400, {'code': 'invalid_filter.missing'})
+
+        value = field.missing() if callable(field.missing) else field.missing
+        if value is marshmallow.missing:
+            return None
+
+        return self.get_element_filter(view, value)
+
+    def get_element_filter(self, view, value):
+        field = self.get_field(view)
 
         try:
-            value = self.deserialize(field, value_raw)
+            value = self.deserialize(field, value)
         except ValidationError as e:
             if self._skip_invalid:
                 return sql.false()
@@ -134,35 +126,23 @@ class FieldFilterBase(ArgFilterBase):
         return self.get_filter_clause(view, value)
 
     def deserialize(self, field, value_raw):
-        """Deserialize `value_raw` by calling deserialize on `field`.
+        """Overridable hook for deserializing a value.
 
-        :param str field: The Marshmallow field.
+        :param field: The Marshmallow field.
+        :type field: :py:class:`marshmallow.fields.Field`
         :param value_raw: The value to deserialize.
         :return: The deserialized value.
         """
         return field.deserialize(value_raw)
 
     def format_validation_error(self, message):
-        """Create a dictionary that describes the validation error provided in
-        `message`. The response body has the following structure::
-
-            code:
-                type: string
-                description: Always the literal `invalid_filter`
-            detail:
-                type: string
-                description: The message in `message`
-
-        :return: The formatted validation error
-        :rtype: dict
-        """
         return {
             'code': 'invalid_filter',
             'detail': message,
         }
 
     def get_field(self, view):
-        """Retreives the target field for filtering.
+        """Get the Marshmallow field for deserializing filter values.
 
         :param view: The view with the model we wish to filter for.
         :type view: :py:class:`ModelView`
@@ -172,7 +152,7 @@ class FieldFilterBase(ArgFilterBase):
         raise NotImplementedError()
 
     def get_filter_clause(self, view, value):
-        """Retrieves a filter clause against the provided `value`.
+        """Build the filter clause for the deserialized value.
 
         :param view: The view with the model we wish to filter for.
         :type view: :py:class:`ModelView`
@@ -184,25 +164,33 @@ class FieldFilterBase(ArgFilterBase):
 
 
 class ColumnFilter(FieldFilterBase):
-    """A facility for constructing queries against a database column.
+    """A filter that operates on the value of a database column.
+
+    This filter relies on the schema to deserialize the query argument values.
+    `ColumnFilter` cannot normally be used for columns that do not appear on
+    the schema, but such columns can be added to the schema with fields that
+    have both `load_only` and `dump_only` set.
 
     :param str column_name: The name of the column to filter against.
-    :param func operator: A callable that maps to a SQL operator.
-    :param bool required: If True, an exception will be raised if a value
-        for the filter is not provided in the request args.
-    :param bool validate: If True, an exception will be raised if the value
-        for the filter cannot be deserialized.
+    :param func operator: A callable that returns the filter expression given
+        the column and the filter value.
+    :param bool required: If set, fail if this filter is not specified.
+    :param bool validate: If unset, bypass validation on the field. This is
+        useful if the field specifies validation rule for inputs that are not
+        relevant for filters.
     """
 
     def __init__(
         self,
         column_name=None,
         operator=None,
+        *,
         required=False,
+        missing=marshmallow.missing,
         validate=True,
         **kwargs
     ):
-        super(ColumnFilter, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         if operator is None and callable(column_name):
             operator = column_name
@@ -213,13 +201,17 @@ class ColumnFilter(FieldFilterBase):
 
         self._has_explicit_column_name = column_name is not None
         self._column_name = column_name
+
         self._operator = operator
+
+        self._fields = {}
         self._required = required
+        self._missing = missing
+
         self._validate = validate
 
     def maybe_set_arg_name(self, arg_name):
-        """If no column name is set, store the given `arg_name` as the column
-        name.
+        """Set `arg_name` as the column name if no explicit value is available.
 
         :param str arg_name: The name of the column to filter against.
         """
@@ -228,59 +220,45 @@ class ColumnFilter(FieldFilterBase):
 
         if self._column_name and self._column_name != arg_name:
             raise TypeError(
-                "cannot use ColumnFilter without explicit column name " +
-                "for multiple arg names",
+                "cannot use ColumnFilter without explicit column name for " +
+                "multiple arg names",
             )
 
         self._column_name = arg_name
 
-    def filter_query(self, query, view, arg_value):
-        """Ensures that required filters are present before calling
-        :py:meth:`FieldFilterBase.filter_query`.
-
-        :param query: The query to filter.
-        :type query: :py:class:`sqlalchemy.orm.query.Query`
-        :param view: The view with the model we wish to filter for.
-        :type view: :py:class:`ModelView`
-        :param str arg_value: The filter specification
-        :return: The filtered query
-        :rtype: :py:class:`sqlalchemy.orm.query.Query`
-        :raises: :py:class:`ApiError` if the filter is required and the
-            `arg_value` is None.
-        """
-        # Missing value handling on the schema field is not relevant here.
-        if arg_value is None:
-            if not self._required:
-                return query
-
-            raise ApiError(400, {'code': 'invalid_filter.missing'})
-
-        return super(ColumnFilter, self).filter_query(query, view, arg_value)
-
     def get_field(self, view):
-        """Retreives the target field for filtering by inspecting
-        :py:attr:`ModelView.deserializer` on the provided `view`.
+        """Construct the Marshmallow field for deserializing filter values.
+
+        This takes the field from the deserializer, then creates a copy with
+        the desired semantics around missing values.
 
         :param view: The view with the model we wish to filter for.
         :type view: :py:class:`ModelView`
         """
-        return view.deserializer.fields[self._column_name]
+        base_field = view.deserializer.fields[self._column_name]
+
+        try:
+            field = self._fields[base_field]
+        except KeyError:
+            # We don't want the default value handling on the original field,
+            # as that's only relevant for object deserialization.
+            field = copy.deepcopy(base_field)
+            field.required = self._required
+            field.missing = self._missing
+
+            self._fields[base_field] = field
+
+        return field
 
     def get_filter_clause(self, view, value):
-        """Retrieves a filter clause for the stored column against the
-        provided `value`.
-
-        :param view: The view with the model we wish to filter for.
-        :type view: :py:class:`ModelView`
-        :param str value: The right-hand side of the WHERE clause.
-        """
         column = getattr(view.model, self._column_name)
         return self._operator(column, value)
 
     def deserialize(self, field, value_raw):
-        """Deserialize `value_raw`, skipping validation if we do not want it.
+        """Deserialize `value_raw`, optionally skipping validation.
 
-        :param str field: The Marshmallow field.
+        :param field: The Marshmallow field.
+        :type field: :py:class:`marshmallow.fields.Field`
         :param value_raw: The value to deserialize.
         :return: The deserialized value.
         """
@@ -290,41 +268,29 @@ class ColumnFilter(FieldFilterBase):
             # and None values, and skips the validation check.
             return field._deserialize(value_raw, None, None)
 
-        return super(ColumnFilter, self).deserialize(field, value_raw)
+        return super().deserialize(field, value_raw)
 
 
 class ModelFilter(FieldFilterBase):
-    """A facility for constructing filtered queries against a
-    :py:class:`ModelView`.
+    """An arbitrary filter against the model.
 
-    :param str field: The field to filter against.
-    :param filter: The filtering routine, defaults to :py:func:`filter`.
+    :param field: A Marshmallow field for deserializing filter values.
+    :type field: :py:class:`marshmallow.fields.Field`
+    :param filter: A callable that returns the filter expression given the
+        model and the filter value.
     :param dict kwargs: Passed to :py:class:`FieldFilterBase`.
     """
 
     def __init__(self, field, filter, **kwargs):
-        super(ModelFilter, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         self._field = field
         self._filter = filter
 
     def get_field(self, view):
-        """Retrieves the stored filter field.
-
-        :return: The stored filter field.
-        :rtype: str
-        """
         return self._field
 
     def get_filter_clause(self, view, value):
-        """Applies the stored filtering routine to the
-        :py:attr:`ModelView.model` and the given `value`.
-
-        :param view: The view with the model we wish to filter for.
-        :type view: :py:class:`ModelView`
-        :param str value: The right-hand side of the WHERE clause.
-        :return: The filter clause.
-        """
         return self._filter(view.model, value)
 
 
@@ -332,9 +298,16 @@ class ModelFilter(FieldFilterBase):
 
 
 def model_filter(field, **kwargs):
-    """A decorator interface for :py:class:`ModelFilter`. FIXME: example
+    """A convenience decorator for building a `ModelFilter`.
 
-    :param str field: The field to filter against.
+    This decorator allows building a `ModelFilter` around a named function::
+
+        @model_filter(fields.String(required=True))
+        def filter_color(model, value):
+            return model.color == value
+
+    :param field: A Marshmallow field for deserializing filter values.
+    :type field: :py:class:`marshmallow.fields.Field`
     :param dict kwargs: Passed to :py:class:`ModelFilter`.
     """
     def wrapper(func):
@@ -348,12 +321,10 @@ def model_filter(field, **kwargs):
 # -----------------------------------------------------------------------------
 
 
-class Filtering(object):
-    """A facility for constructing WHERE clauses in queries against a
-    particular :py:class:`ModelView`.
+class Filtering:
+    """Container for the arg filters on a :py:class:`ModelView`.
 
-    :param dict kwargs: A mapping from filter field names to filter
-        specifications. 
+    :param dict kwargs: A mapping from filter field names to filters.
     """
 
     def __init__(self, **kwargs):
@@ -363,14 +334,6 @@ class Filtering(object):
         }
 
     def make_arg_filter(self, arg_name, arg_filter):
-        """Construct a class inheriting from :py:class:`ArgFilterBase` that
-        filters against the field corresponding to `arg_name`.
-
-        :param str arg_name: The field to filter against.
-        :param arg_filter: Either a callable operator or a class inheriting
-            from :py:class:`ArgFilterBase`.
-        :return: A class inheriting from :py:class:`ArgFilterBase`.
-        """
         if callable(arg_filter):
             arg_filter = ColumnFilter(arg_name, arg_filter)
 
@@ -379,8 +342,7 @@ class Filtering(object):
         return arg_filter
 
     def filter_query(self, query, view):
-        """Applies a WHERE clause to `query` using the filter args from
-        :py:attr:`flask.Request.args`.
+        """Filter a query using the configured filters and the request args.
 
         :param query: The query to filter.
         :type query: :py:class:`sqlalchemy.orm.query.Query`
@@ -403,7 +365,3 @@ class Filtering(object):
                 raise e.update({'source': {'parameter': arg_name}})
 
         return query
-
-    def spec_declaration(self, path, spec, **kwargs):
-        for arg_name in self._arg_filters:
-            path['get'].add_parameter(name=arg_name)
