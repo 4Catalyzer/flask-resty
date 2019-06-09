@@ -38,8 +38,7 @@ intersphinx_mapping = {
     'python': ('https://docs.python.org/3/', None),
     'flask': ('http://flask.pocoo.org/docs/1.0/', None),
     'sqlalchemy': ('https://docs.sqlalchemy.org/en/latest/', None),
-    'django': ('http://django.readthedocs.io/en/latest/', None),
-    'apispec': ('https://apispec.readthedocs.io/en/latest/', None),
+    'marshmallow': ('http://marshmallow.readthedocs.io/en/latest/', None),
 }
 
 # -- Autodoc -----------------------------------------------------------------
