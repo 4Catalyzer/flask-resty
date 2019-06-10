@@ -6,7 +6,29 @@ from .exceptions import ApiError
 
 
 class SortingBase:
+    """The base class for sorting components.
+
+    Sorting components control how list queries are sorted.
+
+    They also expose an API for cursor pagination components to get the sort
+    fields, which are required to build cursors.
+
+    Subclasses must implement :py:meth:`sort_query` to provide the sorting
+    logic.
+    """
+
     def sort_query(self, query, view):
+        """Sort the provided `query`.
+
+        :param query: The query to sort.
+        :type query: :py:class:`sqlalchemy.orm.query.Query`
+        :param view: The view with the model we wish to sort.
+        :type view: :py:class:`ModelView`
+        :return: The sorted query
+        :rtype: :py:class:`sqlalchemy.orm.query.Query`
+        :raises: A :py:class:`NotImplementedError` if no implementation is
+            provided.
+        """
         raise NotImplementedError()
 
 
@@ -14,6 +36,19 @@ class SortingBase:
 
 
 class FieldSortingBase(SortingBase):
+    """The base class for sorting components that sort on model fields.
+
+    These sorting components work on JSON-API style sort field strings, which
+    consist of a list of comma-separated field names, optionally prepended by
+    ``-`` to indicate descending sort order.
+
+    For example, the sort field string of ``name,-date`` will sort by `name`
+    ascending and `date` descending.
+
+    Subclasses must implement :py:meth:`get_request_field_orderings` to specify
+    the actual field orderings to use.
+    """
+
     def sort_query(self, query, view):
         field_orderings = self.get_request_field_orderings(view)
         return self.sort_query_by_fields(query, view, field_orderings)
@@ -23,9 +58,30 @@ class FieldSortingBase(SortingBase):
         return query.order_by(*criteria)
 
     def get_request_field_orderings(self, view):
+        """Get the field orderings to use for the current request.
+
+        These should be created from a sort field string with
+        `get_field_orderings` below.
+
+        :param view: The view with the model containing the target fields
+        :type view: :py:class:`ModelView`
+        :return: A sequence of field orderings. See :py:meth:`get_criterion`.
+        :rtype: tuple
+        :raises: A :py:class:`NotImplementedError` if no implementation is
+            provided.
+        """
         raise NotImplementedError()
 
     def get_field_orderings(self, fields):
+        """Given a sort field string, build the field orderings.
+
+        These field orders can then be used with `get_request_field_orderings`
+        above. See the class documentation for details on sort field strings.
+
+        :param str fields: The sort field string.
+        :return: A sequence of field orderings. See :py:meth:`get_criterion`.
+        :rtype: tuple
+        """
         return tuple(
             self.get_field_ordering(field)
             for field in fields.split(',')
@@ -53,6 +109,16 @@ class FieldSortingBase(SortingBase):
 
 
 class FixedSorting(FieldSortingBase):
+    """A sorting component that applies a fixed sort order.
+
+    For example, to sort queries by `name` ascending and `date` descending,
+    specify the following in your view::
+
+        sorting = FixedSorting('name,-date')
+
+    :param str fields: The formatted fields.
+    """
+
     def __init__(self, fields):
         self._field_orderings = self.get_field_orderings(fields)
 
@@ -61,11 +127,31 @@ class FixedSorting(FieldSortingBase):
 
 
 class Sorting(FieldSortingBase):
+    """A sorting component that allows the user to specify sort fields.
+
+    For example, to allow users to sort by `name` and/or `date`, specify the
+    following in your view::
+
+        sorting = Sorting('name', 'date')
+
+    One or both of `name` or `date` can be formatted in the `sort_arg` request
+    parameter to determine the sort order. For example, users can sort requests
+    by `name` ascending and `date` descending by making a ``GET`` request to::
+
+        /api/widgets?sort=name,-date
+
+    :param str field_names: The fields available for sorting.
+    :param str default: If provided, specifies a default sort order when the
+        request does not specify an explicit sort order.
+    """
+
+    #: The request parameter from which the formatted sorting fields will be
+    #: retrieved.
     sort_arg = 'sort'
 
-    def __init__(self, *field_names, **kwargs):
+    def __init__(self, *field_names, default=None):
         self._field_names = frozenset(field_names)
-        self._default_sort = kwargs.get('default')
+        self._default_sort = default
 
     def get_request_field_orderings(self, view):
         sort = flask.request.args.get(self.sort_arg, self._default_sort)

@@ -28,7 +28,7 @@ setup(
     version='0.21.0',
     description="Building blocks for REST APIs for Flask",
     url='https://github.com/4Catalyzer/flask-resty',
-    author="Jimmy Jia",
+    author="4Catalyzer",
     author_email='tesrin@gmail.com',
     license='MIT',
     python_requires='>=3.5',
@@ -58,6 +58,7 @@ setup(
         'Werkzeug >= 0.11',
     ),
     extras_require={
+        'docs': ('sphinx', 'pallets-sphinx-themes'),
         'jwt': ('PyJWT >= 1.4.0', 'cryptography >= 2.0.0'),
         'tests': (
             'coverage',
@@ -69,6 +70,7 @@ setup(
     },
     cmdclass={
         'clean': system('rm -rf build dist *.egg-info'),
+        'docs': system('make -C docs html'),
         'package': system('python setup.py sdist bdist_wheel'),
         'publish': system('twine upload dist/*'),
         'release': system('python setup.py clean package publish'),

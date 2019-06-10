@@ -12,6 +12,8 @@ matrix:
 
     - { python: "3.6",   env: "TOXENV=py-full-marshmallow3" }
     - { python: "3.6",   env: "TOXENV=py-base-marshmallow3" }
+
+    - { python: "3.7",   env: "TOXENV=docs" }
 cache:
   directories:
     - $HOME/.cache/pip

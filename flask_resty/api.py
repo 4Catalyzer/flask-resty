@@ -33,6 +33,27 @@ def handle_http_exception(error):
 
 
 class Api:
+    """The Api object controls the Flask-RESTy extension.
+
+    This can either be bound to an individual Flask application passed in
+    at initialization, or to multiple applications via :py:meth:`init_app`.
+
+    After initializing an application, use this object to register resources
+    with :py:meth:`add_resource`, either to the bound application by default
+    or to an explicitly-specified application object via the `app` keyword
+    argument. Use :py:meth:`add_ping` to add a ping endpoint for health checks.
+
+    Once registered, Flask-RESTy will convert all HTTP errors thrown by the
+    application to JSON.
+
+    By default your API will be rooted at '/'. Pass `prefix` to specify a
+    custom root.
+
+    :param app: The Flask application object.
+    :type app: :py:class:`flask.Flask`
+    :param str prefix: The API path prefix.
+    """
+
     def __init__(self, app=None, prefix=''):
         if app:
             self._app = app
@@ -43,6 +64,11 @@ class Api:
         self.prefix = prefix
 
     def init_app(self, app):
+        """Initialize an application for use with Flask-RESTy.
+
+        :param app: The Flask application object.
+        :type app: :py:class:`flask.Flask`
+        """
         app.extensions['resty'] = FlaskRestyState(self)
 
         app.register_error_handler(ApiError, handle_api_error)
@@ -63,27 +89,30 @@ class Api:
         id_rule=None,
         app=None
     ):
-        """Add route or routes for a resource.
+        """Add a REST resource.
 
         :param str base_rule: The URL rule for the resource. This will be
             prefixed by the API prefix.
-        :param base_view: Class-based view for the resource.
-        :param alternate_view: If specified, an alternate class-based view for
-            the resource. Usually, this will be a detail view, when the base
-            view is a list view.
+        :param ApiView base_view: Class-based view for the resource.
+        :param ApiView alternate_view: If specified, an alternate
+            class-based view for the resource. Usually, this will be a detail
+            view, when the base view is a list view.
         :param alternate_rule: If specified, the URL rule for the alternate
             view. This will be prefixed by the API prefix. This is mutually
-            exclusive with id_rule, and must not be specified if alternate_view
-            is not specified.
+            exclusive with `id_rule`, and must not be specified if
+            `alternate_view` is not specified.
         :type alternate_rule: str or None
-        :param id_rule: If specified, a suffix to append to base_rule to get
-            the alternate view URL rule. If alternate_view is specified, and
-            alternate_rule is not, then this defaults to '<id>'. This is
-            mutually exclusive with alternate_rule, and must not be specified
-            if alternate_view is not specified.
+        :param id_rule: If specified, a suffix to append to `base_rule` to get
+            the alternate view URL rule. If `alternate_view` is specified, and
+            `alternate_rule` is not, then this defaults to '<id>'. This is
+            mutually exclusive with `alternate_rule`, and must not be specified
+            if `alternate_view` is not specified.
         :type id_rule: str or None
-        :param app: If specified, the application to which to add the route(s).
-            Otherwise, this will be the bound application, if present.
+        :param app: If specified, the application to which to add
+            the route(s). Otherwise, this will be the bound application, if
+            present.
+        :type app: :py:class:`flask.Flask`
+        :raises AssertionError: If no Flask application is bound or specified.
         """
         if alternate_view:
             if not alternate_rule:
@@ -149,6 +178,8 @@ class Api:
             look for 200s.
         :param app: If specified, the application to which to add the route.
             Otherwise, this will be the bound application, if present.
+        :type app: :py:class:`flask.Flask`
+        :raises AssertionError: If no Flask application is bound or specified.
         """
         app = self._get_app(app)
 

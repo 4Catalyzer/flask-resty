@@ -115,7 +115,7 @@ def assert_response(
 
     If specified, expected_data is checked against either the data or the
     errors in the response body, depending on the response status. This check
-    ignores extra keys dictionaries in the response contents.
+    ignores extra dictionary items in the response contents.
     """
     status_code = response.status_code
     assert status_code == expected_status_code

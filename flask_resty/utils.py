@@ -53,4 +53,5 @@ class SettableProperty:
             pass
 
 
+#: A property that can be set to a different value on the instance.
 settable_property = SettableProperty

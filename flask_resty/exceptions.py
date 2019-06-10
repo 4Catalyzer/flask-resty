@@ -7,6 +7,19 @@ from werkzeug.exceptions import default_exceptions
 
 
 class ApiError(Exception):
+    """An API exception.
+
+    When raised, Flask-RESTy will send an HTTP response with the provided
+    `status_code` and the provided `errors` under the ``errors`` property as
+    JSON.
+
+    If :py:attr:`flask.Flask.debug` or :py:attr:`flask.Flask.testing` is True,
+    the body will also contain the full traceback under the ``debug`` property.
+
+    :param int status_code: The HTTP status code for the error response.
+    :param dict errors: A list of dict with error data.
+    """
+
     def __init__(self, status_code, *errors):
         self.status_code = status_code
         self.body = {
@@ -36,6 +49,14 @@ class ApiError(Exception):
         }
 
     def update(self, additional):
+        """Add additional metadata to the error.
+
+        Can be chained with further updates.
+
+        :param dict additional: The additional metadata
+        :return: The :py:class:`ApiError` that :py:meth:`update` was called on
+        :rtype: :py:class:`ApiError`
+        """
         for error in self.body['errors']:
             error.update(additional)
 
