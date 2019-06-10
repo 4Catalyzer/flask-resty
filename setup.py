@@ -51,7 +51,7 @@ setup(
     keywords='rest flask',
     packages=('flask_resty',),
     install_requires=(
-        'Flask >= 1.0',
+        'Flask >= 1.0.3',
         'Flask-SQLAlchemy >= 1.0',
         'marshmallow >= 2.2.0',
         'SQLAlchemy >= 1.0.0',
@@ -71,8 +71,7 @@ setup(
     cmdclass={
         'clean': system('rm -rf build dist *.egg-info'),
         'docs': system('make -C docs html'),
-        'package': system('python setup.py pandoc sdist bdist_wheel'),
-        'pandoc': system('pandoc README.md -o README.rst'),
+        'package': system('python setup.py sdist bdist_wheel'),
         'publish': system('twine upload dist/*'),
         'release': system('python setup.py clean package publish'),
         'test': system('tox'),
