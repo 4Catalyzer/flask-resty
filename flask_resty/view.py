@@ -56,7 +56,7 @@ class ApiView(MethodView):
         """Dump an item using the :py:attr:`serializer`.
 
         This doesn't technically serialize the item; it instead uses
-        Marshmallow to dump the item into a native Python data type. The actual
+        marshmallow to dump the item into a native Python data type. The actual
         serialization is done in `make_response`.
 
         Any provided `**kwargs` will be passed to
@@ -248,7 +248,7 @@ class ApiView(MethodView):
         """Deserialize the data for the current request.
 
         This will deserialize the request data from the request body into a
-        native Python object that can be loaded by Marshmallow.
+        native Python object that can be loaded by marshmallow.
 
         :return: The deserialized request data.
         """
@@ -265,7 +265,7 @@ class ApiView(MethodView):
         """Load data using the :py:attr:`deserializer`.
 
         This doesn't technically deserialize the data; it instead uses
-        Marshmallow to load and validate the data. The actual deserialization
+        marshmallow to load and validate the data. The actual deserialization
         happens in `parse_request_data`.
 
         Any provided `**kwargs` will be passed to
@@ -298,9 +298,9 @@ class ApiView(MethodView):
         return self.schema
 
     def format_validation_error(self, error):
-        """Convert a Marshmallow validation error to a serializable form.
+        """Convert a marshmallow validation error to a serializable form.
 
-        This converts a Marshmallow validation error to a standard serializable
+        This converts a marshmallow validation error to a standard serializable
         representation. By default, it converts errors into a dictionary of the
         form::
 
@@ -312,7 +312,7 @@ class ApiView(MethodView):
                 }
             }
 
-        :param error: The Marshmallow validation error.
+        :param error: The marshmallow validation error.
         :return: The formatted validation error.
         :rtype: dict
         """

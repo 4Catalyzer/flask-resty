@@ -49,7 +49,7 @@ class ArgFilterBase:
 
 
 class FieldFilterBase(ArgFilterBase):
-    """A filter that uses a Marshmallow field to deserialize its value.
+    """A filter that uses a marshmallow field to deserialize its value.
 
     Implementing classes must provide :py:meth:`get_filter_field` and
     :py:meth:`get_filter_clause`.
@@ -128,7 +128,7 @@ class FieldFilterBase(ArgFilterBase):
     def deserialize(self, field, value_raw):
         """Overridable hook for deserializing a value.
 
-        :param field: The Marshmallow field.
+        :param field: The marshmallow field.
         :type field: :py:class:`marshmallow.fields.Field`
         :param value_raw: The value to deserialize.
         :return: The deserialized value.
@@ -142,7 +142,7 @@ class FieldFilterBase(ArgFilterBase):
         }
 
     def get_field(self, view):
-        """Get the Marshmallow field for deserializing filter values.
+        """Get the marshmallow field for deserializing filter values.
 
         :param view: The view with the model we wish to filter for.
         :type view: :py:class:`ModelView`
@@ -227,7 +227,7 @@ class ColumnFilter(FieldFilterBase):
         self._column_name = arg_name
 
     def get_field(self, view):
-        """Construct the Marshmallow field for deserializing filter values.
+        """Construct the marshmallow field for deserializing filter values.
 
         This takes the field from the deserializer, then creates a copy with
         the desired semantics around missing values.
@@ -257,7 +257,7 @@ class ColumnFilter(FieldFilterBase):
     def deserialize(self, field, value_raw):
         """Deserialize `value_raw`, optionally skipping validation.
 
-        :param field: The Marshmallow field.
+        :param field: The marshmallow field.
         :type field: :py:class:`marshmallow.fields.Field`
         :param value_raw: The value to deserialize.
         :return: The deserialized value.
@@ -274,7 +274,7 @@ class ColumnFilter(FieldFilterBase):
 class ModelFilter(FieldFilterBase):
     """An arbitrary filter against the model.
 
-    :param field: A Marshmallow field for deserializing filter values.
+    :param field: A marshmallow field for deserializing filter values.
     :type field: :py:class:`marshmallow.fields.Field`
     :param filter: A callable that returns the filter expression given the
         model and the filter value.
@@ -306,7 +306,7 @@ def model_filter(field, **kwargs):
         def filter_color(model, value):
             return model.color == value
 
-    :param field: A Marshmallow field for deserializing filter values.
+    :param field: A marshmallow field for deserializing filter values.
     :type field: :py:class:`marshmallow.fields.Field`
     :param dict kwargs: Passed to :py:class:`ModelFilter`.
     """
