@@ -139,6 +139,6 @@ Exceptions
 Routing
 ----------
 
-.. autoclass:: RequestSlash
+.. autoclass:: StrictRule
   :members:
   :inherited-members:

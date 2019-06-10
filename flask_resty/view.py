@@ -712,7 +712,6 @@ class ModelView(ApiView):
 
         return self.related.resolve_related(data)
 
-
     def resolve_related_item(self, data, **kwargs):
         """Retrieve the related item corresponding to the provided data stub.
 

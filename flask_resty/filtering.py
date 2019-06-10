@@ -51,7 +51,7 @@ class ArgFilterBase:
 class FieldFilterBase(ArgFilterBase):
     """A filter that uses a Marshmallow field to deserialize its value.
 
-    Implementing classes must provide :py:meth:`get_filter_field` and 
+    Implementing classes must provide :py:meth:`get_filter_field` and
     :py:meth:`get_filter_clause`.
 
     :param str separator: Character that separates individual elements in the

@@ -412,7 +412,8 @@ class CursorPaginationBase(LimitPagination):
         :type view: :py:class:`ModelView`
         :param field_orderings: A sequence of field_ordering tuples
         :type field_orderings: seq
-        :param cursor: A set of values corresponding to the fields in `field_orderings`
+        :param cursor: A set of values corresponding to the fields in
+            `field_orderings`
         :type cursor: seq
         :return: A filter clause
         """
