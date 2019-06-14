@@ -1,6 +1,6 @@
-from collections import Mapping, Sequence
 import json
 import re
+from collections import Mapping, Sequence
 
 from flask.testing import FlaskClient
 
@@ -11,14 +11,14 @@ from .utils import UNDEFINED
 
 class ApiClient(FlaskClient):
     def open(self, path, *args, **kwargs):
-        full_path = '{}{}'.format(
-            self.application.extensions['resty'].api.prefix, path,
+        full_path = "{}{}".format(
+            self.application.extensions["resty"].api.prefix, path
         )
 
-        if 'data' in kwargs:
-            kwargs.setdefault('content_type', 'application/json')
-            if kwargs['content_type'] == 'application/json':
-                kwargs['data'] = json.dumps({'data': kwargs['data']})
+        if "data" in kwargs:
+            kwargs.setdefault("content_type", "application/json")
+            if kwargs["content_type"] == "application/json":
+                kwargs["data"] = json.dumps({"data": kwargs["data"]})
 
         return super().open(full_path, *args, **kwargs)
 
@@ -87,20 +87,20 @@ def get_raw_body(response):
 
 
 def get_body(response):
-    assert response.mimetype == 'application/json'
+    assert response.mimetype == "application/json"
     return json.loads(get_raw_body(response))
 
 
 def get_data(response):
-    return get_body(response)['data']
+    return get_body(response)["data"]
 
 
 def get_errors(response):
-    return get_body(response)['errors']
+    return get_body(response)["errors"]
 
 
 def get_meta(response):
-    return get_body(response)['meta']
+    return get_body(response)["meta"]
 
 
 def assert_response(
@@ -109,7 +109,7 @@ def assert_response(
     expected_data=UNDEFINED,
     *,
     get_data=get_data,
-    get_errors=get_errors
+    get_errors=get_errors,
 ):
     """Assert on the status and contents of a response.
 

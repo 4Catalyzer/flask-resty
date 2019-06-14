@@ -4,11 +4,11 @@ from . import context
 
 
 def get_request_credentials():
-    return context.get('request_credentials')
+    return context.get("request_credentials")
 
 
 def set_request_credentials(credentials):
-    context.set('request_credentials', credentials)
+    context.set("request_credentials", credentials)
 
 
 # -----------------------------------------------------------------------------

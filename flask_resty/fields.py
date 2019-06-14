@@ -1,5 +1,5 @@
-from marshmallow import fields
 import marshmallow.utils
+from marshmallow import fields
 
 from .compat import schema_load
 
@@ -21,7 +21,7 @@ class RelatedItem(fields.Nested):
 
     def _deserialize(self, value, *args, **kwargs):
         if self.many and not marshmallow.utils.is_collection(value):
-            self.fail('type', input=value, type=value.__class__.__name__)
+            self.fail("type", input=value, type=value.__class__.__name__)
 
         # Do partial load of related item, as we only need the id.
         return schema_load(self.schema, value, partial=True)

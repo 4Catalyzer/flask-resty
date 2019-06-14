@@ -32,7 +32,7 @@ def iter_validation_errors(errors, path=()):
 class SettableProperty:
     def __init__(self, get_default):
         self.get_default = get_default
-        self.internal_field_name = '_' + get_default.__name__
+        self.internal_field_name = "_" + get_default.__name__
         self.__doc__ = get_default.__doc__
 
     def __get__(self, instance, owner):
