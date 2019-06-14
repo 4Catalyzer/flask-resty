@@ -125,7 +125,7 @@ class Related:
             try:
                 resolved = self.resolve_field(value, resolver)
             except ApiError as e:
-                pointer = "/data/{}".format(data_field_name)
+                pointer = f"/data/{data_field_name}"
                 raise e.update({"source": {"pointer": pointer}})
 
             data[field_name] = resolved

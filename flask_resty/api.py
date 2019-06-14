@@ -127,14 +127,14 @@ class Api:
         app = self._get_app(app)
         endpoint = self._get_endpoint(base_view, alternate_view)
 
-        base_rule_full = "{}{}".format(self.prefix, base_rule)
+        base_rule_full = f"{self.prefix}{base_rule}"
         base_view_func = base_view.as_view(endpoint)
 
         if not alternate_view:
             app.add_url_rule(base_rule_full, view_func=base_view_func)
             return
 
-        alternate_rule_full = "{}{}".format(self.prefix, alternate_rule)
+        alternate_rule_full = f"{self.prefix}{alternate_rule}"
         alternate_view_func = alternate_view.as_view(endpoint)
 
         @functools.wraps(base_view_func)
