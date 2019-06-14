@@ -1,4 +1,4 @@
-from flask_resty.utils import settable_property, SettableProperty
+from flask_resty.utils import SettableProperty, settable_property
 
 # -----------------------------------------------------------------------------
 

@@ -3,8 +3,8 @@ import functools
 
 import flask
 import marshmallow
-from marshmallow import ValidationError
 import sqlalchemy as sa
+from marshmallow import ValidationError
 from sqlalchemy import sql
 
 from .exceptions import ApiError
@@ -63,11 +63,7 @@ class FieldFilterBase(ArgFilterBase):
     """
 
     def __init__(
-        self,
-        *,
-        separator=',',
-        allow_empty=False,
-        skip_invalid=False
+        self, *, separator=",", allow_empty=False, skip_invalid=False
     ):
         self._separator = separator
         self._allow_empty = allow_empty
@@ -101,7 +97,7 @@ class FieldFilterBase(ArgFilterBase):
     def get_default_filter(self, view):
         field = self.get_field(view)
         if field.required:
-            raise ApiError(400, {'code': 'invalid_filter.missing'})
+            raise ApiError(400, {"code": "invalid_filter.missing"})
 
         value = field.missing() if callable(field.missing) else field.missing
         if value is marshmallow.missing:
@@ -118,10 +114,13 @@ class FieldFilterBase(ArgFilterBase):
             if self._skip_invalid:
                 return sql.false()
 
-            raise ApiError(400, *(
-                self.format_validation_error(message)
-                for message, path in iter_validation_errors(e.messages)
-            ))
+            raise ApiError(
+                400,
+                *(
+                    self.format_validation_error(message)
+                    for message, path in iter_validation_errors(e.messages)
+                ),
+            )
 
         return self.get_filter_clause(view, value)
 
@@ -136,10 +135,7 @@ class FieldFilterBase(ArgFilterBase):
         return field.deserialize(value_raw)
 
     def format_validation_error(self, message):
-        return {
-            'code': 'invalid_filter',
-            'detail': message,
-        }
+        return {"code": "invalid_filter", "detail": message}
 
     def get_field(self, view):
         """Get the marshmallow field for deserializing filter values.
@@ -188,7 +184,7 @@ class ColumnFilter(FieldFilterBase):
         required=False,
         missing=marshmallow.missing,
         validate=True,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(**kwargs)
 
@@ -220,8 +216,8 @@ class ColumnFilter(FieldFilterBase):
 
         if self._column_name and self._column_name != arg_name:
             raise TypeError(
-                "cannot use ColumnFilter without explicit column name for " +
-                "multiple arg names",
+                "cannot use ColumnFilter without explicit column name for "
+                + "multiple arg names"
             )
 
         self._column_name = arg_name
@@ -310,6 +306,7 @@ def model_filter(field, **kwargs):
     :type field: :py:class:`marshmallow.fields.Field`
     :param dict kwargs: Passed to :py:class:`ModelFilter`.
     """
+
     def wrapper(func):
         filter_field = ModelFilter(field, func, **kwargs)
         functools.update_wrapper(filter_field, func)
@@ -362,6 +359,6 @@ class Filtering:
             try:
                 query = arg_filter.filter_query(query, view, arg_value)
             except ApiError as e:
-                raise e.update({'source': {'parameter': arg_name}})
+                raise e.update({"source": {"parameter": arg_name}})
 
         return query

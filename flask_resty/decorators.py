@@ -59,6 +59,7 @@ def request_cached_property(func):
     itself, preventing problems if the object gets reused across multiple
     requests.
     """
+
     @property
     @functools.wraps(func)
     def wrapped(self):

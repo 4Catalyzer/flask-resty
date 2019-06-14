@@ -83,12 +83,11 @@ class FieldSortingBase(SortingBase):
         :rtype: tuple
         """
         return tuple(
-            self.get_field_ordering(field)
-            for field in fields.split(',')
+            self.get_field_ordering(field) for field in fields.split(",")
         )
 
     def get_field_ordering(self, field):
-        if field and field[0] == '-':
+        if field and field[0] == "-":
             return field[1:], False
 
         return field, True
@@ -147,7 +146,7 @@ class Sorting(FieldSortingBase):
 
     #: The request parameter from which the formatted sorting fields will be
     #: retrieved.
-    sort_arg = 'sort'
+    sort_arg = "sort"
 
     def __init__(self, *field_names, default=None):
         self._field_names = frozenset(field_names)
@@ -161,9 +160,12 @@ class Sorting(FieldSortingBase):
         field_orderings = self.get_field_orderings(sort)
         for field_name, _ in field_orderings:
             if field_name not in self._field_names:
-                raise ApiError(400, {
-                    'code': 'invalid_sort',
-                    'source': {'parameter': self.sort_arg},
-                })
+                raise ApiError(
+                    400,
+                    {
+                        "code": "invalid_sort",
+                        "source": {"parameter": self.sort_arg},
+                    },
+                )
 
         return field_orderings

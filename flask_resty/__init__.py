@@ -17,8 +17,8 @@ from .filtering import (
     ColumnFilter,
     FieldFilterBase,
     Filtering,
-    model_filter,
     ModelFilter,
+    model_filter,
 )
 from .pagination import (
     CursorPaginationBase,

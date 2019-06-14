@@ -9,7 +9,7 @@ from .exceptions import ApiError
 # -----------------------------------------------------------------------------
 
 # Don't set default value in function so we can assert on None-ness.
-DEFAULT_ID_RULE = '<id>'
+DEFAULT_ID_RULE = "<id>"
 
 # -----------------------------------------------------------------------------
 
@@ -54,7 +54,7 @@ class Api:
     :param str prefix: The API path prefix.
     """
 
-    def __init__(self, app=None, prefix=''):
+    def __init__(self, app=None, prefix=""):
         if app:
             self._app = app
             self.init_app(app)
@@ -69,7 +69,7 @@ class Api:
         :param app: The Flask application object.
         :type app: :py:class:`flask.Flask`
         """
-        app.extensions['resty'] = FlaskRestyState(self)
+        app.extensions["resty"] = FlaskRestyState(self)
 
         app.register_error_handler(ApiError, handle_api_error)
         app.register_error_handler(HTTPException, handle_http_exception)
@@ -87,7 +87,7 @@ class Api:
         *,
         alternate_rule=None,
         id_rule=None,
-        app=None
+        app=None,
     ):
         """Add a REST resource.
 
@@ -127,14 +127,14 @@ class Api:
         app = self._get_app(app)
         endpoint = self._get_endpoint(base_view, alternate_view)
 
-        base_rule_full = '{}{}'.format(self.prefix, base_rule)
+        base_rule_full = "{}{}".format(self.prefix, base_rule)
         base_view_func = base_view.as_view(endpoint)
 
         if not alternate_view:
             app.add_url_rule(base_rule_full, view_func=base_view_func)
             return
 
-        alternate_rule_full = '{}{}'.format(self.prefix, alternate_rule)
+        alternate_rule_full = "{}{}".format(self.prefix, alternate_rule)
         alternate_view_func = alternate_view.as_view(endpoint)
 
         @functools.wraps(base_view_func)
@@ -185,7 +185,7 @@ class Api:
 
         @app.route(rule)
         def ping():
-            return '', status_code
+            return "", status_code
 
 
 # -----------------------------------------------------------------------------

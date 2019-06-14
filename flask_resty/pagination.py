@@ -1,8 +1,8 @@
 import base64
 
 import flask
-from marshmallow import ValidationError
 import sqlalchemy as sa
+from marshmallow import ValidationError
 
 from . import meta
 from .exceptions import ApiError
@@ -74,7 +74,7 @@ class LimitPaginationBase(PaginationBase):
         else:
             has_next_page = False
 
-        meta.update_response_meta({'has_next_page': has_next_page})
+        meta.update_response_meta({"has_next_page": has_next_page})
         return items
 
     def get_limit(self):
@@ -119,23 +119,23 @@ class LimitPagination(LimitPaginationBase):
     """
 
     #: The name of the query parameter to inspect for the LIMIT value.
-    limit_arg = 'limit'
+    limit_arg = "limit"
 
     def __init__(self, default_limit=None, max_limit=None):
         self._default_limit = if_none(default_limit, max_limit)
         self._max_limit = max_limit
 
         if self._max_limit is not None:
-            assert self._default_limit <= self._max_limit, (
-                "default limit exceeds max limit"
-            )
+            assert (
+                self._default_limit <= self._max_limit
+            ), "default limit exceeds max limit"
 
     def get_limit(self):
         limit = flask.request.args.get(self.limit_arg)
         try:
             return self.parse_limit(limit)
         except ApiError as e:
-            raise e.update({'source': {'parameter': self.limit_arg}})
+            raise e.update({"source": {"parameter": self.limit_arg}})
 
     def parse_limit(self, limit):
         if limit is None:
@@ -144,9 +144,9 @@ class LimitPagination(LimitPaginationBase):
         try:
             limit = int(limit)
         except ValueError:
-            raise ApiError(400, {'code': 'invalid_limit'})
+            raise ApiError(400, {"code": "invalid_limit"})
         if limit < 0:
-            raise ApiError(400, {'code': 'invalid_limit'})
+            raise ApiError(400, {"code": "invalid_limit"})
 
         if self._max_limit is not None:
             limit = min(limit, self._max_limit)
@@ -163,7 +163,7 @@ class LimitOffsetPagination(LimitPagination):
     """
 
     #: The name of the query parameter to inspect for the OFFSET value.
-    offset_arg = 'offset'
+    offset_arg = "offset"
 
     def get_page(self, query, view):
         offset = self.get_offset()
@@ -175,7 +175,7 @@ class LimitOffsetPagination(LimitPagination):
         try:
             return self.parse_offset(offset)
         except ApiError as e:
-            raise e.update({'source': {'parameter': self.offset_arg}})
+            raise e.update({"source": {"parameter": self.offset_arg}})
 
     def parse_offset(self, offset):
         if offset is None:
@@ -184,9 +184,9 @@ class LimitOffsetPagination(LimitPagination):
         try:
             offset = int(offset)
         except ValueError:
-            raise ApiError(400, {'code': 'invalid_offset'})
+            raise ApiError(400, {"code": "invalid_offset"})
         if offset < 0:
-            raise ApiError(400, {'code': 'invalid_offset'})
+            raise ApiError(400, {"code": "invalid_offset"})
 
         return offset
 
@@ -201,7 +201,7 @@ class PagePagination(LimitOffsetPagination):
     """
 
     #: The name of the query parameter to inspect for the page value.
-    page_arg = 'page'
+    page_arg = "page"
 
     def __init__(self, page_size):
         super().__init__()
@@ -215,7 +215,7 @@ class PagePagination(LimitOffsetPagination):
         try:
             return self.parse_page(page)
         except ApiError as e:
-            raise e.update({'source': {'parameter': self.page_arg}})
+            raise e.update({"source": {"parameter": self.page_arg}})
 
     def parse_page(self, page):
         if page is None:
@@ -224,9 +224,9 @@ class PagePagination(LimitOffsetPagination):
         try:
             page = int(page)
         except ValueError:
-            raise ApiError(400, {'code': 'invalid_page'})
+            raise ApiError(400, {"code": "invalid_page"})
         if page < 0:
-            raise ApiError(400, {'code': 'invalid_page'})
+            raise ApiError(400, {"code": "invalid_page"})
 
         return page
 
@@ -252,7 +252,7 @@ class CursorPaginationBase(LimitPagination):
     """
 
     #: The name of the query parameter to inspect for the cursor value.
-    cursor_arg = 'cursor'
+    cursor_arg = "cursor"
 
     def ensure_query_sorting(self, query, view):
         """Ensure the query is sorted correctly and get the field orderings.
@@ -271,14 +271,12 @@ class CursorPaginationBase(LimitPagination):
         :return: The sorted query & the field orderings
         :rtype: tuple
         """
-        sorting_field_orderings, missing_field_orderings = (
-            self.get_sorting_and_missing_field_orderings(view)
+        sorting_field_orderings, missing_field_orderings = self.get_sorting_and_missing_field_orderings(
+            view
         )
 
         query = view.sorting.sort_query_by_fields(
-            query,
-            view,
-            missing_field_orderings,
+            query, view, missing_field_orderings
         )
         field_orderings = sorting_field_orderings + missing_field_orderings
 
@@ -295,16 +293,16 @@ class CursorPaginationBase(LimitPagination):
         :return: A sequence of field orderings
         :rtype: seq
         """
-        sorting_field_orderings, missing_field_orderings = (
-            self.get_sorting_and_missing_field_orderings(view)
+        sorting_field_orderings, missing_field_orderings = self.get_sorting_and_missing_field_orderings(
+            view
         )
         return sorting_field_orderings + missing_field_orderings
 
     def get_sorting_and_missing_field_orderings(self, view):
         sorting = view.sorting
-        assert sorting is not None, (
-            "sorting must be defined when using cursor pagination"
-        )
+        assert (
+            sorting is not None
+        ), "sorting must be defined when using cursor pagination"
 
         sorting_field_orderings = sorting.get_request_field_orderings(view)
 
@@ -321,7 +319,8 @@ class CursorPaginationBase(LimitPagination):
             last_field_asc = True
 
         missing_field_orderings = tuple(
-            (id_field, last_field_asc) for id_field in view.id_fields
+            (id_field, last_field_asc)
+            for id_field in view.id_fields
             if id_field not in sorting_ordering_fields
         )
 
@@ -352,13 +351,13 @@ class CursorPaginationBase(LimitPagination):
         try:
             return self.parse_cursor(cursor, view, field_orderings)
         except ApiError as e:
-            raise e.update({'source': {'parameter': self.cursor_arg}})
+            raise e.update({"source": {"parameter": self.cursor_arg}})
 
     def parse_cursor(self, cursor, view, field_orderings):
         cursor = self.decode_cursor(cursor)
 
         if len(cursor) != len(field_orderings):
-            raise ApiError(400, {'code': 'invalid_cursor.length'})
+            raise ApiError(400, {"code": "invalid_cursor.length"})
 
         deserializer = view.deserializer
         column_fields = (
@@ -372,33 +371,33 @@ class CursorPaginationBase(LimitPagination):
                 for field, value in zip(column_fields, cursor)
             )
         except ValidationError as e:
-            raise ApiError(400, *(
-                self.format_validation_error(message)
-                for message, path in iter_validation_errors(e.messages)
-            ))
+            raise ApiError(
+                400,
+                *(
+                    self.format_validation_error(message)
+                    for message, path in iter_validation_errors(e.messages)
+                ),
+            )
 
         return cursor
 
     def decode_cursor(self, cursor):
         try:
-            cursor = cursor.split('.')
+            cursor = cursor.split(".")
             cursor = tuple(self.decode_value(value) for value in cursor)
         except (TypeError, ValueError):
-            raise ApiError(400, {'code': 'invalid_cursor.encoding'})
+            raise ApiError(400, {"code": "invalid_cursor.encoding"})
 
         return cursor
 
     def decode_value(self, value):
-        value = value.encode('ascii')
-        value += (3 - ((len(value) + 3) % 4)) * b'='  # Add back padding.
+        value = value.encode("ascii")
+        value += (3 - ((len(value) + 3) % 4)) * b"="  # Add back padding.
         value = base64.urlsafe_b64decode(value)
         return value.decode()
 
     def format_validation_error(self, message):
-        return {
-            'code': 'invalid_cursor',
-            'detail': message,
-        }
+        return {"code": "invalid_cursor", "detail": message}
 
     def get_filter(self, view, field_orderings, cursor):
         """Build the filter clause corresponding to a cursor.
@@ -425,7 +424,7 @@ class CursorPaginationBase(LimitPagination):
         )
 
         return sa.or_(
-            self.get_filter_clause(column_cursors[:i + 1])
+            self.get_filter_clause(column_cursors[: i + 1])
             for i in range(len(column_cursors))
         )
 
@@ -457,9 +456,7 @@ class CursorPaginationBase(LimitPagination):
         :rtype: seq
         """
         column_fields = self.get_column_fields(view, field_orderings)
-        return tuple(
-            self.render_cursor(item, column_fields) for item in items
-        )
+        return tuple(self.render_cursor(item, column_fields) for item in items)
 
     def make_cursor(self, item, view, field_orderings):
         """Build a cursor for a given item.
@@ -484,8 +481,7 @@ class CursorPaginationBase(LimitPagination):
     def get_column_fields(self, view, field_orderings):
         serializer = view.serializer
         return tuple(
-            serializer.fields[field_name]
-            for field_name, _ in field_orderings
+            serializer.fields[field_name] for field_name, _ in field_orderings
         )
 
     def render_cursor(self, item, column_fields):
@@ -497,14 +493,14 @@ class CursorPaginationBase(LimitPagination):
         return self.encode_cursor(cursor)
 
     def encode_cursor(self, cursor):
-        return '.'.join(self.encode_value(value) for value in cursor)
+        return ".".join(self.encode_value(value) for value in cursor)
 
     def encode_value(self, value):
         value = str(value)
         value = value.encode()
         value = base64.urlsafe_b64encode(value)
-        value = value.rstrip(b'=')  # Strip padding.
-        return value.decode('ascii')
+        value = value.rstrip(b"=")  # Strip padding.
+        return value.decode("ascii")
 
 
 class RelayCursorPagination(CursorPaginationBase):
@@ -524,14 +520,14 @@ class RelayCursorPagination(CursorPaginationBase):
         cursor_in = self.get_request_cursor(view, field_orderings)
         if cursor_in is not None:
             query = query.filter(
-                self.get_filter(view, field_orderings, cursor_in),
+                self.get_filter(view, field_orderings, cursor_in)
             )
 
         items = super().get_page(query, view)
 
         # Relay expects a cursor for each item.
         cursors_out = self.make_cursors(items, view, field_orderings)
-        meta.update_response_meta({'cursors': cursors_out})
+        meta.update_response_meta({"cursors": cursors_out})
 
         return items
 
@@ -539,4 +535,4 @@ class RelayCursorPagination(CursorPaginationBase):
         field_orderings = self.get_field_orderings(view)
 
         cursor = self.make_cursor(item, view, field_orderings)
-        return {'cursor': cursor}
+        return {"cursor": cursor}

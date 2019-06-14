@@ -1,36 +1,35 @@
 import base64
 import json
 
-from cryptography.hazmat.backends import default_backend
-from cryptography.x509 import load_der_x509_certificate
 import flask
 import jwt
+from cryptography.hazmat.backends import default_backend
+from cryptography.x509 import load_der_x509_certificate
 from jwt import InvalidAlgorithmError, InvalidTokenError, PyJWT
 
 from .authentication import AuthenticationBase
 from .exceptions import ApiError
 
-
 # -----------------------------------------------------------------------------
 
 JWT_DECODE_ARG_KEYS = (
-    'key',
-    'verify',
-    'algorithms',
-    'options',
-    'audience',
-    'issuer',
-    'leeway',
+    "key",
+    "verify",
+    "algorithms",
+    "options",
+    "audience",
+    "issuer",
+    "leeway",
 )
 
 # -----------------------------------------------------------------------------
 
 
 class JwtAuthentication(AuthenticationBase):
-    CONFIG_KEY_TEMPLATE = 'RESTY_JWT_DECODE_{}'
+    CONFIG_KEY_TEMPLATE = "RESTY_JWT_DECODE_{}"
 
-    header_scheme = 'Bearer'
-    id_token_arg = 'id_token'
+    header_scheme = "Bearer"
+    id_token_arg = "id_token"
 
     def __init__(self, **kwargs):
         super().__init__()
@@ -47,12 +46,12 @@ class JwtAuthentication(AuthenticationBase):
         try:
             payload = self.decode_token(token)
         except InvalidTokenError:
-            raise ApiError(401, {'code': 'invalid_token'})
+            raise ApiError(401, {"code": "invalid_token"})
 
         return self.get_credentials(payload)
 
     def get_token(self):
-        authorization = flask.request.headers.get('Authorization')
+        authorization = flask.request.headers.get("Authorization")
         if authorization:
             token = self.get_token_from_authorization(authorization)
         else:
@@ -64,10 +63,10 @@ class JwtAuthentication(AuthenticationBase):
         try:
             scheme, token = authorization.split()
         except ValueError:
-            raise ApiError(401, {'code': 'invalid_authorization'})
+            raise ApiError(401, {"code": "invalid_authorization"})
 
         if scheme.lower() != self.header_scheme.lower():
-            raise ApiError(401, {'code': 'invalid_authorization.scheme'})
+            raise ApiError(401, {"code": "invalid_authorization.scheme"})
 
         return token
 
@@ -112,37 +111,34 @@ class JwkSetPyJwt(PyJWT):
 
         # It's safe to use alg from the header here, as we verify that against
         # the algorithm whitelist.
-        alg = jwk['alg'] if 'alg' in jwk else unverified_header['alg']
+        alg = jwk["alg"] if "alg" in jwk else unverified_header["alg"]
 
         # jwt.decode will also check this, but this is more defensive.
-        if alg not in kwargs['algorithms']:
+        if alg not in kwargs["algorithms"]:
             raise InvalidAlgorithmError(
-                "The specified alg value is not allowed",
+                "The specified alg value is not allowed"
             )
 
         return super().decode(
-            jwt,
-            key=self.get_key_from_jwk(jwk, alg),
-            **kwargs,
+            jwt, key=self.get_key_from_jwk(jwk, alg), **kwargs
         )
 
     def get_jwk_from_jwt(self, unverified_header):
         try:
-            token_kid = unverified_header['kid']
+            token_kid = unverified_header["kid"]
         except KeyError:
             raise InvalidTokenError("Key ID header parameter is missing")
 
-        for jwk in self.jwk_set['keys']:
-            if jwk['kid'] == token_kid:
+        for jwk in self.jwk_set["keys"]:
+            if jwk["kid"] == token_kid:
                 return jwk
 
         raise InvalidTokenError("no key found")
 
     def get_key_from_jwk(self, jwk, alg):
-        if 'x5c' in jwk:
+        if "x5c" in jwk:
             return load_der_x509_certificate(
-                base64.b64decode(jwk['x5c'][0]),
-                default_backend(),
+                base64.b64decode(jwk["x5c"][0]), default_backend()
             ).public_key()
 
         algorithm = self._algorithms[alg]
@@ -164,6 +160,6 @@ class JwkSetAuthentication(JwtAuthentication):
     @property
     def jwk_set(self):
         return (
-            self._jwk_set or
-            flask.current_app.config[self.get_config_key('jwk_set')]
+            self._jwk_set
+            or flask.current_app.config[self.get_config_key("jwk_set")]
         )
