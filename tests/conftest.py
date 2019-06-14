@@ -1,9 +1,9 @@
 import os
 
-from flask import Flask
-from flask.testing import FlaskClient
 import flask_sqlalchemy as fsa
 import pytest
+from flask import Flask
+from flask.testing import FlaskClient
 
 from flask_resty.testing import ApiClient
 
@@ -13,20 +13,19 @@ from flask_resty.testing import ApiClient
 @pytest.fixture
 def app():
     app = Flask(__name__)
-    app.config['TESTING'] = True
+    app.config["TESTING"] = True
 
     return app
 
 
 @pytest.fixture
 def db(app):
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
-        'DATABASE_URL',
-        'sqlite://',
+    app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
+        "DATABASE_URL", "sqlite://"
     )
 
     # TODO: Remove once this is the default.
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
     return fsa.SQLAlchemy(app)
 

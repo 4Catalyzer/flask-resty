@@ -22,12 +22,10 @@ class ApiError(Exception):
 
     def __init__(self, status_code, *errors):
         self.status_code = status_code
-        self.body = {
-            'errors': errors or self.get_default_errors(status_code),
-        }
+        self.body = {"errors": errors or self.get_default_errors(status_code)}
 
         if flask.current_app.debug or flask.current_app.testing:
-            self.body['debug'] = traceback.format_exc()
+            self.body["debug"] = traceback.format_exc()
 
     @classmethod
     def from_http_exception(cls, exc):
@@ -44,8 +42,8 @@ class ApiError(Exception):
     @classmethod
     def get_error_from_http_exception(cls, exc):
         return {
-            'code': '_'.join(word.lower() for word in exc.name.split()),
-            'details': exc.description,
+            "code": "_".join(word.lower() for word in exc.name.split()),
+            "details": exc.description,
         }
 
     def update(self, additional):
@@ -57,7 +55,7 @@ class ApiError(Exception):
         :return: The :py:class:`ApiError` that :py:meth:`update` was called on
         :rtype: :py:class:`ApiError`
         """
-        for error in self.body['errors']:
+        for error in self.body["errors"]:
             error.update(additional)
 
         # Allow e.g. `raise e.update(additional)`.
@@ -65,7 +63,7 @@ class ApiError(Exception):
 
     @property
     def response(self):
-        if flask.current_app.config.get('RESTY_TRAP_API_ERRORS'):
+        if flask.current_app.config.get("RESTY_TRAP_API_ERRORS"):
             raise self
 
         return flask.jsonify(self.body), self.status_code

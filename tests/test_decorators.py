@@ -1,7 +1,7 @@
 import pytest
 from sqlalchemy import Column, Integer
 
-from flask_resty import Api, get_item_or_404, ModelView
+from flask_resty import Api, ModelView, get_item_or_404
 
 # -----------------------------------------------------------------------------
 
@@ -9,15 +9,13 @@ from flask_resty import Api, get_item_or_404, ModelView
 @pytest.yield_fixture
 def models(db):
     class Widget(db.Model):
-        __tablename__ = 'widgets'
+        __tablename__ = "widgets"
 
         id = Column(Integer, primary_key=True)
 
     db.create_all()
 
-    yield {
-        'widget': Widget,
-    }
+    yield {"widget": Widget}
 
     db.drop_all()
 
@@ -25,7 +23,7 @@ def models(db):
 @pytest.fixture(autouse=True)
 def routes(app, models):
     class WidgetView(ModelView):
-        model = models['widget']
+        model = models["widget"]
 
         @get_item_or_404
         def get(self, item):
@@ -40,12 +38,12 @@ def routes(app, models):
             return str(item.id)
 
     api = Api(app)
-    api.add_resource('/widgets/<int:id>', WidgetView)
+    api.add_resource("/widgets/<int:id>", WidgetView)
 
 
 @pytest.fixture(autouse=True)
 def data(db, models):
-    db.session.add(models['widget']())
+    db.session.add(models["widget"]())
     db.session.commit()
 
 
@@ -53,26 +51,26 @@ def data(db, models):
 
 
 def test_get_item(client):
-    response = client.get('/widgets/1')
+    response = client.get("/widgets/1")
     assert response.status_code == 200
-    assert response.get_data(as_text=True) == '1'
+    assert response.get_data(as_text=True) == "1"
 
 
 def test_get_item_create_missing(client):
-    response = client.put('/widgets/2')
+    response = client.put("/widgets/2")
     assert response.status_code == 200
-    assert response.get_data(as_text=True) == '2'
+    assert response.get_data(as_text=True) == "2"
 
 
 def test_get_item_with_for_update(client):
-    response = client.patch('/widgets/1')
+    response = client.patch("/widgets/1")
     assert response.status_code == 200
-    assert response.get_data(as_text=True) == '1'
+    assert response.get_data(as_text=True) == "1"
 
 
 # -----------------------------------------------------------------------------
 
 
 def test_error_not_found(client):
-    response = client.get('/widgets/2')
+    response = client.get("/widgets/2")
     assert response.status_code == 404

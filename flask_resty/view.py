@@ -2,7 +2,7 @@ import itertools
 
 import flask
 from flask.views import MethodView
-from marshmallow import fields, ValidationError
+from marshmallow import ValidationError, fields
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Load
 from sqlalchemy.orm.exc import NoResultFound
@@ -31,7 +31,7 @@ class ApiView(MethodView):
     #: deserialization.
     schema = None
     #: The identifying fields for the model.
-    id_fields = ('id',)
+    id_fields = ("id",)
     #: The :py:class:`marshmallow.Schema` for deserializing the query params in
     #: the :py:data:`flask.Request.args`.
     args_schema = None
@@ -142,9 +142,9 @@ class ApiView(MethodView):
         By default, this builds a dictionary with a ``data`` item for the
         response data and a ``meta`` item for the response metadata, if any.
         """
-        body = {'data': data}
+        body = {"data": data}
         if response_meta is not None:
-            body['meta'] = response_meta
+            body["meta"] = response_meta
 
         return flask.jsonify(body)
 
@@ -170,7 +170,7 @@ class ApiView(MethodView):
         :return: The HTTP response
         :rtype: :py:class:`flask.Response`
         """
-        return self.make_raw_response('', 204, **kwargs)
+        return self.make_raw_response("", 204, **kwargs)
 
     def make_created_response(self, item):
         """Build a response for a newly created item.
@@ -186,7 +186,7 @@ class ApiView(MethodView):
         response = self.make_item_response(item, 201)
         location = self.get_location(item)
         if location is not None:
-            response.headers['Location'] = location
+            response.headers["Location"] = location
         return response
 
     def make_updated_response(self, item, *, return_content=False):
@@ -230,7 +230,7 @@ class ApiView(MethodView):
         id_dict = {
             id_field: getattr(item, id_field) for id_field in self.id_fields
         }
-        return flask.url_for(flask.request.endpoint, _method='GET', **id_dict)
+        return flask.url_for(flask.request.endpoint, _method="GET", **id_dict)
 
     def get_request_data(self, **kwargs):
         """Deserialize and load data from the body of the current request.
@@ -253,11 +253,11 @@ class ApiView(MethodView):
         :return: The deserialized request data.
         """
         try:
-            data_raw = flask.request.get_json()['data']
+            data_raw = flask.request.get_json()["data"]
         except TypeError:
-            raise ApiError(400, {'code': 'invalid_body'})
+            raise ApiError(400, {"code": "invalid_body"})
         except KeyError:
-            raise ApiError(400, {'code': 'invalid_data.missing'})
+            raise ApiError(400, {"code": "invalid_data.missing"})
 
         return data_raw
 
@@ -280,10 +280,13 @@ class ApiView(MethodView):
         try:
             data = schema_load(self.deserializer, data_raw, **kwargs)
         except ValidationError as e:
-            raise ApiError(422, *(
-                self.format_validation_error(error)
-                for error in iter_validation_errors(e.messages)
-            ))
+            raise ApiError(
+                422,
+                *(
+                    self.format_validation_error(error)
+                    for error in iter_validation_errors(e.messages)
+                ),
+            )
 
         self.validate_request_id(data, expected_id)
         return data
@@ -318,14 +321,14 @@ class ApiView(MethodView):
         """
         message, path = error
 
-        pointer = '/data/{}'.format(
-            '/'.join(str(field_key) for field_key in path),
+        pointer = "/data/{}".format(
+            "/".join(str(field_key) for field_key in path)
         )
 
         return {
-            'code': 'invalid_data',
-            'detail': message,
-            'source': {'pointer': pointer},
+            "code": "invalid_data",
+            "detail": message,
+            "source": {"pointer": pointer},
         }
 
     def validate_request_id(self, data, expected_id):
@@ -349,16 +352,16 @@ class ApiView(MethodView):
         if expected_id is False:
             for id_field in self.id_fields:
                 if id_field in data:
-                    raise ApiError(403, {'code': 'invalid_id.forbidden'})
+                    raise ApiError(403, {"code": "invalid_id.forbidden"})
             return
 
         try:
             id = self.get_data_id(data)
         except KeyError:
-            raise ApiError(422, {'code': 'invalid_id.missing'})
+            raise ApiError(422, {"code": "invalid_id.missing"})
 
         if id != expected_id:
-            raise ApiError(409, {'code': 'invalid_id.mismatch'})
+            raise ApiError(409, {"code": "invalid_id.mismatch"})
 
     def get_data_id(self, data):
         """Get the ID as a scalar or tuple from request data.
@@ -419,11 +422,14 @@ class ApiView(MethodView):
         try:
             data = schema_load(self.args_schema, data_raw, **kwargs)
         except ValidationError as e:
-            raise ApiError(422, *(
-                self.format_parameter_validation_error(message, parameter)
-                for parameter, messages in e.messages.items()
-                for message in messages
-            ))
+            raise ApiError(
+                422,
+                *(
+                    self.format_parameter_validation_error(message, parameter)
+                    for parameter, messages in e.messages.items()
+                    for message in messages
+                ),
+            )
 
         return data
 
@@ -447,9 +453,9 @@ class ApiView(MethodView):
         :rtype: dict
         """
         return {
-            'code': 'invalid_parameter',
-            'detail': message,
-            'source': {'parameter': parameter},
+            "code": "invalid_parameter",
+            "detail": message,
+            "source": {"parameter": parameter},
         }
 
     def get_id_dict(self, id):
@@ -484,6 +490,7 @@ class ModelView(ApiView):
     when getting lists of items, and for resolving related items when
     deserializing request data.
     """
+
     #: A declarative SQLAlchemy model.
     model = None
 
@@ -500,7 +507,7 @@ class ModelView(ApiView):
     @settable_property
     def session(self):
         """Convenience property for the current SQLAlchemy session."""
-        return flask.current_app.extensions['sqlalchemy'].db.session
+        return flask.current_app.extensions["sqlalchemy"].db.session
 
     @settable_property
     def query_raw(self):
@@ -524,7 +531,7 @@ class ModelView(ApiView):
         query = self.query_raw
         query = self.authorization.filter_query(query, self)
         query = query.options(
-            *itertools.chain(self.base_query_options, self.query_options),
+            *itertools.chain(self.base_query_options, self.query_options)
         )
 
         return query
@@ -553,7 +560,7 @@ class ModelView(ApiView):
         :return: A sequence of query options.
         :rtype: tuple
         """
-        if not hasattr(self.serializer, 'get_query_options'):
+        if not hasattr(self.serializer, "get_query_options"):
             return ()
 
         return self.serializer.get_query_options(Load(self.model))
@@ -645,7 +652,7 @@ class ModelView(ApiView):
         *,
         with_for_update=False,
         create_missing=False,
-        will_update_item=False
+        will_update_item=False,
     ):
         """Get an item by ID.
 
@@ -665,10 +672,12 @@ class ModelView(ApiView):
         """
         try:
             # Can't use self.query.get(), because query might be filtered.
-            item_query = self.query.filter(*(
-                getattr(self.model, field) == value
-                for field, value in self.get_id_dict(id).items()
-            ))
+            item_query = self.query.filter(
+                *(
+                    getattr(self.model, field) == value
+                    for field, value in self.get_id_dict(id).items()
+                )
+            )
             if with_for_update:
                 item_query = item_query.with_for_update(of=self.model)
 
@@ -724,7 +733,7 @@ class ModelView(ApiView):
         try:
             id = self.get_data_id(data)
         except KeyError:
-            raise ApiError(422, {'code': 'invalid_related.missing_id'})
+            raise ApiError(422, {"code": "invalid_related.missing_id"})
 
         return self.resolve_related_id(id, **kwargs)
 
@@ -740,7 +749,7 @@ class ModelView(ApiView):
         try:
             item = self.get_item(id, **kwargs)
         except NoResultFound:
-            raise ApiError(422, {'code': 'invalid_related.not_found'})
+            raise ApiError(422, {"code": "invalid_related.not_found"})
 
         return item
 
@@ -941,12 +950,9 @@ class ModelView(ApiView):
         """
         original_error = error.orig
 
-        if (
-            hasattr(original_error, 'pgcode') and
-            original_error.pgcode in (
-                '23502',  # not_null_violation
-                '23514',  # check_violation
-            )
+        if hasattr(original_error, "pgcode") and original_error.pgcode in (
+            "23502",  # not_null_violation
+            "23514",  # check_violation
         ):
             # Using the psycopg2 error code, we can tell that this was not from
             # an integrity error that was not a conflict. This means there was
@@ -954,7 +960,7 @@ class ModelView(ApiView):
             return error
 
         flask.current_app.logger.exception("handled integrity error")
-        return ApiError(409, {'code': 'invalid_data.conflict'})
+        return ApiError(409, {"code": "invalid_data.conflict"})
 
     def set_item_response_meta(self, item):
         """Set the appropriate response metadata for the response item.
@@ -1015,6 +1021,7 @@ class GenericModelView(ModelView):
     To extend or otherwise customize the behavior of the methods here, override
     the methods in `MethodView`.
     """
+
     def list(self):
         """Return a list of items.
 
@@ -1064,7 +1071,7 @@ class GenericModelView(ModelView):
         with_for_update=False,
         create_missing=False,
         partial=False,
-        return_content=False
+        return_content=False,
     ):
         """Update the item for the specified ID with the request data.
 

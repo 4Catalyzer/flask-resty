@@ -1,5 +1,5 @@
-from marshmallow import fields, Schema
 import pytest
+from marshmallow import Schema, fields
 from sqlalchemy import Column, Integer, String
 
 from flask_resty import Api, GenericModelView
@@ -11,7 +11,7 @@ from flask_resty.testing import assert_response
 @pytest.yield_fixture
 def models(db):
     class Widget(db.Model):
-        __tablename__ = 'widgets'
+        __tablename__ = "widgets"
 
         id_1 = Column(Integer, primary_key=True)
         id_2 = Column(Integer, primary_key=True)
@@ -19,9 +19,7 @@ def models(db):
 
     db.create_all()
 
-    yield {
-        'widget': Widget,
-    }
+    yield {"widget": Widget}
 
     db.drop_all()
 
@@ -33,17 +31,15 @@ def schemas():
         id_2 = fields.Integer(as_string=True)
         name = fields.String(required=True)
 
-    return {
-        'widget': WidgetSchema(),
-    }
+    return {"widget": WidgetSchema()}
 
 
 @pytest.fixture(autouse=True)
 def routes(app, models, schemas):
     class WidgetViewBase(GenericModelView):
-        model = models['widget']
-        schema = schemas['widget']
-        id_fields = ('id_1', 'id_2')
+        model = models["widget"]
+        schema = schemas["widget"]
+        id_fields = ("id_1", "id_2")
 
     class WidgetListView(WidgetViewBase):
         def get(self):
@@ -64,18 +60,19 @@ def routes(app, models, schemas):
 
     api = Api(app)
     api.add_resource(
-        '/widgets', WidgetListView, WidgetView,
-        id_rule='<int:id_1>/<int:id_2>',
+        "/widgets", WidgetListView, WidgetView, id_rule="<int:id_1>/<int:id_2>"
     )
 
 
 @pytest.fixture(autouse=True)
 def data(db, models):
-    db.session.add_all((
-        models['widget'](id_1=1, id_2=2, name="Foo"),
-        models['widget'](id_1=1, id_2=3, name="Bar"),
-        models['widget'](id_1=4, id_2=5, name="Baz"),
-    ))
+    db.session.add_all(
+        (
+            models["widget"](id_1=1, id_2=2, name="Foo"),
+            models["widget"](id_1=1, id_2=3, name="Bar"),
+            models["widget"](id_1=4, id_2=5, name="Baz"),
+        )
+    )
     db.session.commit()
 
 
@@ -83,69 +80,47 @@ def data(db, models):
 
 
 def test_list(client):
-    response = client.get('/widgets')
-    assert_response(response, 200, [
-        {
-            'id_1': '1',
-            'id_2': '2',
-            'name': "Foo",
-        },
-        {
-            'id_1': '1',
-            'id_2': '3',
-            'name': "Bar",
-        },
-        {
-            'id_1': '4',
-            'id_2': '5',
-            'name': "Baz",
-        },
-    ])
+    response = client.get("/widgets")
+    assert_response(
+        response,
+        200,
+        [
+            {"id_1": "1", "id_2": "2", "name": "Foo"},
+            {"id_1": "1", "id_2": "3", "name": "Bar"},
+            {"id_1": "4", "id_2": "5", "name": "Baz"},
+        ],
+    )
 
 
 def test_retrieve(client):
-    response = client.get('/widgets/1/2')
-    assert_response(response, 200, {
-        'id_1': '1',
-        'id_2': '2',
-        'name': "Foo",
-    })
+    response = client.get("/widgets/1/2")
+    assert_response(response, 200, {"id_1": "1", "id_2": "2", "name": "Foo"})
 
 
 def test_create(client):
-    response = client.post('/widgets', data={
-        'id_1': '4',
-        'id_2': '6',
-        'name': "Qux",
-    })
-    assert response.headers['Location'] == 'http://localhost/widgets/4/6'
+    response = client.post(
+        "/widgets", data={"id_1": "4", "id_2": "6", "name": "Qux"}
+    )
+    assert response.headers["Location"] == "http://localhost/widgets/4/6"
 
-    assert_response(response, 201, {
-        'id_1': '4',
-        'id_2': '6',
-        'name': "Qux",
-    })
+    assert_response(response, 201, {"id_1": "4", "id_2": "6", "name": "Qux"})
 
 
 def test_update(client):
-    update_response = client.patch('/widgets/1/2', data={
-        'id_1': '1',
-        'id_2': '2',
-        'name': "Qux",
-    })
+    update_response = client.patch(
+        "/widgets/1/2", data={"id_1": "1", "id_2": "2", "name": "Qux"}
+    )
     assert_response(update_response, 204)
 
-    retrieve_response = client.get('/widgets/1/2')
-    assert_response(retrieve_response, 200, {
-        'id_1': '1',
-        'id_2': '2',
-        'name': "Qux",
-    })
+    retrieve_response = client.get("/widgets/1/2")
+    assert_response(
+        retrieve_response, 200, {"id_1": "1", "id_2": "2", "name": "Qux"}
+    )
 
 
 def test_destroy(client):
-    destroy_response = client.delete('/widgets/1/2')
+    destroy_response = client.delete("/widgets/1/2")
     assert_response(destroy_response, 204)
 
-    retrieve_response = client.get('/widgets/1/2')
+    retrieve_response = client.get("/widgets/1/2")
     assert_response(retrieve_response, 404)

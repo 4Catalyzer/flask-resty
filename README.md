@@ -37,8 +37,8 @@ class WidgetView(WidgetViewBase):
         return self.destroy(id)
 
 
-api = Api(app, '/api')
-api.add_resource('/widgets', WidgetListView, WidgetView)
+api = Api(app, "/api")
+api.add_resource("/widgets", WidgetListView, WidgetView)
 ```
 
 By default, models are expected to have been created using [Flask-SQLAlchemy](http://flask-sqlalchemy.pocoo.org/).

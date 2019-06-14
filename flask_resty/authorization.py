@@ -87,7 +87,7 @@ class HasCredentialsAuthorizationBase(AuthorizationBase):
 
     def authorize_request(self):
         if self.get_request_credentials() is None:
-            raise ApiError(401, {'code': 'invalid_credentials.missing'})
+            raise ApiError(401, {"code": "invalid_credentials.missing"})
 
 
 # -----------------------------------------------------------------------------
@@ -100,16 +100,16 @@ class AuthorizeModifyMixin(AuthorizationBase):
     """
 
     def authorize_save_item(self, item):
-        self.authorize_modify_item(item, 'save')
+        self.authorize_modify_item(item, "save")
 
     def authorize_create_item(self, item):
-        self.authorize_modify_item(item, 'create')
+        self.authorize_modify_item(item, "create")
 
     def authorize_update_item(self, item, data):
-        self.authorize_modify_item(item, 'update')
+        self.authorize_modify_item(item, "update")
 
     def authorize_delete_item(self, item):
-        self.authorize_modify_item(item, 'delete')
+        self.authorize_modify_item(item, "delete")
 
     def authorize_modify_item(self, item, action):
         """Authorization hook for all modification actions on an item.
@@ -146,7 +146,7 @@ class NoOpAuthorization(AuthorizationBase):
 
 
 class HasAnyCredentialsAuthorization(
-    HasCredentialsAuthorizationBase, NoOpAuthorization,
+    HasCredentialsAuthorizationBase, NoOpAuthorization
 ):
     """An authorization component that allows any action when authenticated.
 

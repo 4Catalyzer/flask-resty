@@ -10,7 +10,7 @@ def _get_resty_context():
     if not context:
         raise RuntimeError("working outside of request context")
 
-    if not hasattr(context, 'resty'):
+    if not hasattr(context, "resty"):
         context.resty = {}
 
     return context.resty
