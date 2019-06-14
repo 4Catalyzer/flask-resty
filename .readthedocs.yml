@@ -7,5 +7,5 @@ python:
   install:
     - method: pip
       path: .
-      extras_requirements:
+      extra_requirements:
         - docs
