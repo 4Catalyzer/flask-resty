@@ -5,7 +5,6 @@ services:
 matrix:
   include:
     - { python: "3.7",   env: "TOXENV=lint" }
-    - { python: "3.5",   env: "TOXENV=py-full-marshmallow2 DATABASE_URL=postgres://localhost/travis_ci_test" }
     - { python: "3.6",   env: "TOXENV=py-full-marshmallow2 DATABASE_URL=postgres://localhost/travis_ci_test" }
     - { python: "3.7",   env: "TOXENV=py-full-marshmallow2 DATABASE_URL=postgres://localhost/travis_ci_test" }
 
