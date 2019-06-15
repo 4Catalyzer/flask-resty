@@ -293,13 +293,7 @@ def test_error_invalid_value(client):
     assert_response(
         response,
         400,
-        [
-            {
-                "code": "invalid_filter",
-                "detail": "Must be at least 1.",
-                "source": {"parameter": "size_min"},
-            }
-        ],
+        [{"code": "invalid_filter", "source": {"parameter": "size_min"}}],
     )
 
 
