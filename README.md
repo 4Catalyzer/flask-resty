@@ -1,4 +1,5 @@
 # Flask-RESTy [![Travis][build-badge]][build] [![PyPI][pypi-badge]][pypi] [![marshmallow 2/3 compatible][marshmallow-badge]][marshmallow-upgrading]
+
 Building blocks for REST APIs for [Flask](http://flask.pocoo.org/).
 
 [![Codecov][codecov-badge]][codecov]
@@ -15,7 +16,7 @@ from . import app, models, schemas
 
 class WidgetViewBase(GenericModelView):
     model = models.Widget
-    schema = models.WidgetSchema()
+    schema = schemas.WidgetSchema()
 
 
 class WidgetListView(WidgetViewBase):
@@ -73,12 +74,9 @@ class WidgetSchema(TableSchema):
 
 [build-badge]: https://img.shields.io/travis/4Catalyzer/flask-resty/master.svg
 [build]: https://travis-ci.org/4Catalyzer/flask-resty
-
 [pypi-badge]: https://img.shields.io/pypi/v/Flask-RESTy.svg
 [pypi]: https://pypi.python.org/pypi/Flask-RESTy
-
 [codecov-badge]: https://img.shields.io/codecov/c/github/4Catalyzer/flask-resty/master.svg
 [codecov]: https://codecov.io/gh/4Catalyzer/flask-resty
-
 [marshmallow-badge]: https://badgen.net/badge/marshmallow/2,3?list=1
 [marshmallow-upgrading]: https://marshmallow.readthedocs.io/en/latest/upgrading.html

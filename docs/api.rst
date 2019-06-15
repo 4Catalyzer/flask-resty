@@ -1,5 +1,3 @@
-.. _api:
-
 API
 ===
 
@@ -25,14 +23,16 @@ Views
 
 .. autofunction:: get_item_or_404
 
-Access Control
+Authentication
 --------------
 
 .. autoclass:: AuthenticationBase
   :members:
 
 .. autoclass:: NoOpAuthentication
-  :members:
+
+Authorization
+-------------
 
 .. autoclass:: AuthorizationBase
   :members:
@@ -61,6 +61,8 @@ Relationships
 .. autoclass:: RelatedItem
   :members:
 
+.. _filtering:
+
 Filtering
 ---------
 
@@ -83,6 +85,8 @@ Filtering
 .. autoclass:: ModelFilter
   :members:
   :inherited-members:
+
+.. _pagination:
 
 Pagination
 ----------
@@ -110,6 +114,8 @@ Pagination
 .. autoclass:: RelayCursorPagination
   :members:
   :inherited-members:
+
+.. _sorting:
 
 Sorting
 -------
