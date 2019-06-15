@@ -45,7 +45,7 @@ install:
 before_script:
   - psql -c 'CREATE DATABASE travis_ci_test' -U postgres
 script:
-  - python setup.py test
+  - tox
 
 after_success:
   - codecov
