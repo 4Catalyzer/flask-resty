@@ -60,21 +60,8 @@ setup(
         "docs": ("sphinx", "pallets-sphinx-themes"),
         "lint": ("pre-commit ~= 1.17"),
         "jwt": ("PyJWT >= 1.4.0", "cryptography >= 2.0.0"),
-        "tests": (
-            "coverage",
-            "flake8",
-            "flake8-config-4catalyzer",
-            "psycopg2-binary",
-            "pytest",
-        ),
+        "tests": ("coverage", "flake8", "psycopg2-binary", "pytest"),
     },
-    cmdclass={
-        "clean": system("rm -rf build dist *.egg-info"),
-        "docs": system("make -C docs html"),
-        "package": system("python setup.py sdist bdist_wheel"),
-        "publish": system("twine upload dist/*"),
-        "release": system("python setup.py clean package publish"),
-        "test": system("tox"),
-    },
+    cmdclass={"test": system("tox")},
     entry_points={"pytest11": ("flask-resty = flask_resty.testing",)},
 )
