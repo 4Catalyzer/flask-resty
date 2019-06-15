@@ -21,7 +21,9 @@ jobs:
       env: []
       before_install: skip
       install: skip
+      before_script: skip
       script: skip
+      after_success: skip
       deploy:
         provider: pypi
         user: taion
