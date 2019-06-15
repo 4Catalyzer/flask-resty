@@ -80,14 +80,13 @@ class AbstractTestJwt:
     @pytest.mark.parametrize("scheme", ("Bearer", "bearer"))
     def test_header(self, client, scheme, token):
         response = client.get(
-            "/widgets",
-            headers={"Authorization": "{} {}".format(scheme, token)},
+            "/widgets", headers={"Authorization": f"{scheme} {token}"}
         )
 
         assert_response(response, 200, [{"id": "1", "owner_id": "foo"}])
 
     def test_arg(self, client, token):
-        response = client.get("/widgets?id_token={}".format(token))
+        response = client.get(f"/widgets?id_token={token}")
         assert_response(response, 200, [{"id": "1", "owner_id": "foo"}])
 
     def test_error_unauthenticated(self, client):
@@ -108,8 +107,7 @@ class AbstractTestJwt:
 
     def test_error_invalid_token(self, client, invalid_token):
         response = client.get(
-            "/widgets",
-            headers={"Authorization": "Bearer {}".format(invalid_token)},
+            "/widgets", headers={"Authorization": f"Bearer {invalid_token}"}
         )
         assert_response(response, 401, [{"code": "invalid_token"}])
 
