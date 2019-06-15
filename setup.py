@@ -1,27 +1,4 @@
-import subprocess
-
-from setuptools import Command, setup
-
-# -----------------------------------------------------------------------------
-
-
-def system(command):
-    class SystemCommand(Command):
-        user_options = []
-
-        def initialize_options(self):
-            pass
-
-        def finalize_options(self):
-            pass
-
-        def run(self):
-            subprocess.check_call(command, shell=True)
-
-    return SystemCommand
-
-
-# -----------------------------------------------------------------------------
+from setuptools import setup
 
 setup(
     name="Flask-RESTy",
@@ -62,6 +39,5 @@ setup(
         "jwt": ("PyJWT >= 1.4.0", "cryptography >= 2.0.0"),
         "tests": ("coverage", "flake8", "psycopg2-binary", "pytest"),
     },
-    cmdclass={"test": system("tox")},
     entry_points={"pytest11": ("flask-resty = flask_resty.testing",)},
 )
