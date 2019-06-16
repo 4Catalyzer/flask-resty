@@ -6,6 +6,8 @@ from flask_resty import (
     ColumnFilter,
     Filtering,
     GenericModelView,
+    NoOpAuthentication,
+    NoOpAuthorization,
     PagePagination,
     Sorting,
 )
@@ -16,6 +18,10 @@ from . import models, schemas
 class AuthorViewBase(GenericModelView):
     model = models.Author
     schema = schemas.AuthorSchema()
+
+    authentication = NoOpAuthentication()
+    authorization = NoOpAuthorization()
+
     pagination = PagePagination(page_size=10)
     sorting = Sorting("created_at", default="-created_at")
 
@@ -42,6 +48,10 @@ class AuthorView(AuthorViewBase):
 class BookViewBase(GenericModelView):
     model = models.Book
     schema = schemas.BookSchema()
+
+    authentication = NoOpAuthentication()
+    authorization = NoOpAuthorization()
+
     pagination = PagePagination(page_size=10)
     sorting = Sorting("published_at", default="-published_at")
     filtering = Filtering(author_id=ColumnFilter(operator.eq, required=True))

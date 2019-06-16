@@ -23,6 +23,8 @@ Views
 
 .. autofunction:: get_item_or_404
 
+.. _authentication:
+
 Authentication
 --------------
 

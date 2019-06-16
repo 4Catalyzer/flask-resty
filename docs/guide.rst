@@ -52,7 +52,7 @@ Schemas are used to validate request input and format response outputs.
 Views
 -----
 
-In simple APIs, most view classes will extend `flask_resty.GenericModelView` which
+Most view classes will extend `flask_resty.GenericModelView` which
 provides standard CRUD behavior.
 
 Typically, you will expose a model with a list endpoint (``/api/authors/``), and a detail
@@ -115,6 +115,7 @@ The following will allow clients to pass a ``page`` parameter in the query strin
     class AuthorViewBase(GenericModelView):
         model = models.Author
         schema = schemas.AuthorSchema()
+
         pagination = PagePagination(page_size=10)
 
 
@@ -135,6 +136,7 @@ The following will allow clients to pass a ``sort`` parameter in the query strin
     class AuthorViewBase(GenericModelView):
         model = models.Author
         schema = schemas.AuthorSchema()
+
         pagination = PagePagination(page_size=10)
         sorting = Sorting("created_at", default="-created_at")
 
@@ -165,12 +167,48 @@ Add filtering to your list endpoints by setting the ``filtering`` attribute on t
 Authentication
 --------------
 
-.. todo:: Add example
+Add authentication by setting the ``authentication`` attribute on the base class. We'll use `NoOpAuthentication <flask_resty.NoOpAuthentication>`
+for this example. Flask-RESTy also includes a `JwtAuthentication <flask_resty.JwtAuthentication>` class for authenticating with
+`JSON Web Tokens <https://jwt.io/>`_ .
+
+
+.. code-block:: python
+
+    class AuthorViewBase(GenericModelView):
+        model = models.Author
+        schema = schemas.AuthorSchema()
+
+        authentication = NoOpAuthentication()
+
+        pagination = PagePagination(page_size=10)
+        sorting = Sorting("created_at", default="-created_at")
+
+.. seealso::
+
+    See the :ref:`authentication` section of the API docs for a listing of available authentication classes.
 
 Authorization
 -------------
 
-.. todo:: Add example
+Add authorization by setting ``authentication`` attribute on the base class. We'll use `NoOpAuthorization <flask_resty.NoOpAuthorization>`
+for this example. You will likely need to implement your own subclasses of `AuthorizationBase <flask_resty.AuthorizationBase>`
+for your applications.
+
+
+.. code-block:: python
+
+    class AuthorViewBase(GenericModelView):
+        model = models.Author
+        schema = schemas.AuthorSchema()
+
+        authentication = NoOpAuthentication()
+
+        pagination = PagePagination(page_size=10)
+        sorting = Sorting("created_at", default="-created_at")
+
+.. seealso::
+
+    See the :ref:`authentication` section of the API docs for a listing of available authentication classes.
 
 Routes
 ------
@@ -184,7 +222,14 @@ our view classes to URL patterns.
 Running the Example Application
 -------------------------------
 
-First, populate the database with some dummy data.
+To run the example application, clone the Flask-RESTy repo.
+
+::
+
+    $ git clone https://github.com/4Catalyzer/flask-resty.git
+    $ cd flask-resty
+
+Populate the database with some dummy data.
 
 ::
 
@@ -196,7 +241,7 @@ Then serve the app on  ``localhost:5000``.
 
     $ FLASK_APP=example FLASK_ENV=development flask run
 
-We can make requests using the `httpie <https://httpie.org/>`_ utility.
+You can make requests using the `httpie <https://httpie.org/>`_ utility.
 
 ::
 
