@@ -48,7 +48,12 @@ html_theme_options = {
 }
 
 html_sidebars = {
-    "index": ["about.html", "useful-links.html", "searchbox.html"],
+    "index": [
+        "about.html",
+        "useful-links.html",
+        "localtoc.html",
+        "searchbox.html",
+    ],
     "**": ["about.html", "localtoc.html", "relations.html", "searchbox.html"],
 }
 

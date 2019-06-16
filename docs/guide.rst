@@ -9,7 +9,7 @@ When building applications with Flask-RESTy, we recommend starting with the foll
 ::
 
     example
-    ├── __init__.py  # Contains your `Flask` instance
+    ├── __init__.py
     ├── settings.py  # App settings
     ├── models.py    # SQLAlchemy models
     ├── schemas.py   # marshmallow schemas
@@ -17,12 +17,13 @@ When building applications with Flask-RESTy, we recommend starting with the foll
     ├── views.py     # View classes
     └── routes.py    # Route declarations
 
-The ``__init__.py`` file will contain project boilerplate, including your `Flask <flask.Flask>` app instance.
+The ``__init__.py`` file initializes the `Flask <flask.Flask>` app and hooks up the routes.
 
 .. literalinclude:: ../example/__init__.py
     :language: python
 
-The ``routes`` import at the bottom of the file is necessary for hooking up the routes.
+.. note::
+    `# noqa: F401 isort:skip` prevents Flake8 and isort from reporting a misplaced import.
 
 Models
 ------
@@ -51,11 +52,11 @@ Schemas are used to validate request input and format response outputs.
 Views
 -----
 
-Now to define our views. In simple APIs, most view classes will extend `flask_resty.GenericModelView` which
+In simple APIs, most view classes will extend `flask_resty.GenericModelView` which
 provides standard CRUD behavior.
 
-Most commonly, you will expose a model with a list endpoint (``/api/authors/``), and a detail
-endpoint (``/api/authors/<id>``). To keep your code DRY, we recommend using a common base class both endpoints.
+Typically, you will expose a model with a list endpoint (``/api/authors/``), and a detail
+endpoint (``/api/authors/<id>``). To keep your code DRY, we recommend using a common base class for both endpoints.
 
 For example:
 

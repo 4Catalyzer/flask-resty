@@ -45,8 +45,7 @@ Features
 Flask-RESty provides the following functionality out of the box:
 
 * Class-based CRUD views
-* Request validation
-* Response formatting
+* Schema-based request validation and response formatting with `marshmallow <https://marshmallow.readthedocs.io/>`_ 
 * JWT and JWK authentication, with base classes for implementing your own authentication policies
 * Authorization
 * Sorting and pagination
