@@ -2,7 +2,7 @@ Flask-RESTy
 ===========
 
 Flask-RESTy provides building blocks for creating REST APIs with `Flask <http://flask.pocoo.org/>`_ ,
-`SQLAlchemy <https://www.sqlalchemy.org/>`_, and `marshmallow <https://marshmallow.readthedocs.io/>`_ .
+`SQLAlchemy <https://www.sqlalchemy.org/>`_, and `marshmallow <https://marshmallow.readthedocs.io/>`_.
 
 .. code-block:: python
 
