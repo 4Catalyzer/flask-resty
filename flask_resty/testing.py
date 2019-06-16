@@ -10,6 +10,13 @@ from .utils import UNDEFINED
 
 
 class ApiClient(FlaskClient):
+    """A `flask.testing.FlaskClient` with a few conveniences:
+
+    * Prefixes paths
+    * Sets ``Content-Type`` to "application/json"
+    * Envelopes ``data`` within a "data" key in the request payload
+    """
+
     def open(self, path, *args, **kwargs):
         full_path = "{}{}".format(
             self.application.extensions["resty"].api.prefix, path
@@ -48,6 +55,7 @@ def Matching(expected_regex):
 
 
 def assert_shape(actual, expected):
+    """Assert that ``actual`` and ``expected`` have the same data shape."""
     if isinstance(expected, Mapping):
         assert isinstance(actual, Mapping)
         # Unlike all the others, this checks that the actual items are a

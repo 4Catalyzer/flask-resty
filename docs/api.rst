@@ -143,8 +143,17 @@ Exceptions
   :inherited-members:
 
 Routing
-----------
+-------
 
 .. autoclass:: StrictRule
   :members:
   :inherited-members:
+
+
+Testing
+-------
+
+.. module:: flask_resty.testing
+.. autoclass:: ApiClient
+.. autofunction:: assert_shape
+.. autofunction:: assert_response
