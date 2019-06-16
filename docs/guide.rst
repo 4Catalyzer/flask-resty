@@ -190,7 +190,7 @@ for this example. Flask-RESTy also includes a `JwtAuthentication <flask_resty.Jw
 Authorization
 -------------
 
-Add authorization by setting ``authentication`` attribute on the base class. We'll use `NoOpAuthorization <flask_resty.NoOpAuthorization>`
+Add authorization by setting the ``authorization`` attribute on the base class. We'll use `NoOpAuthorization <flask_resty.NoOpAuthorization>`
 for this example. You will likely need to implement your own subclasses of `AuthorizationBase <flask_resty.AuthorizationBase>`
 for your applications.
 
@@ -202,13 +202,14 @@ for your applications.
         schema = schemas.AuthorSchema()
 
         authentication = NoOpAuthentication()
+        authorization = NoOpAuthorization()
 
         pagination = PagePagination(page_size=10)
         sorting = Sorting("created_at", default="-created_at")
 
 .. seealso::
 
-    See the :ref:`authentication` section of the API docs for a listing of available authentication classes.
+    See the :ref:`authorization` section of the API docs for a listing of available authorization classes.
 
 Routes
 ------

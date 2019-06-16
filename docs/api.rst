@@ -33,6 +33,8 @@ Authentication
 
 .. autoclass:: NoOpAuthentication
 
+.. _authorization:
+
 Authorization
 -------------
 
