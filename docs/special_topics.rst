@@ -58,11 +58,23 @@ You may also use the ``field_for`` helper.
         created_at = field_for(models.Book, "created_at", dump_only=True)
 
 
+Testing
+-------
 
-.. todo:: Testing
+.. todo:: Testing example
 
-.. todo:: Project organization for larger applications (subpackages)
+Recommendations for Larger Applications
+---------------------------------------
 
-.. todo:: Loading related data
+.. todo:: Subpackages
 
-.. todo:: Prefetching data (base_query_options)
+
+Loading Related Data
+--------------------
+
+.. todo:: Document `Related`
+
+Pre-fetching Data
+-----------------
+
+.. todo:: Document `base_query_options` and `Schema.get_query_options`
