@@ -1,12 +1,6 @@
-# Flask-RESTy [![Travis][build-badge]][build] [![PyPI][pypi-badge]][pypi] [![marshmallow 2/3 compatible][marshmallow-badge]][marshmallow-upgrading]
+# Flask-RESTy [![Travis][build-badge]][build] [![Codecov][codecov-badge]][codecov] [![PyPI][pypi-badge]][pypi] [![marshmallow 2/3 compatible][marshmallow-badge]][marshmallow-upgrading]
 
-Building blocks for REST APIs for [Flask](http://flask.pocoo.org/).
-
-[![Codecov][codecov-badge]][codecov]
-
-## Usage
-
-Create a [SQLAlchemy](http://www.sqlalchemy.org/) model and a [marshmallow](http://marshmallow.rtfd.org/) schema, then:
+Flask-RESTy provides building blocks for creating REST APIs with [Flask](http://flask.pocoo.org/), [SQLAlchemy](https://www.sqlalchemy.org/), and [marshmallow](https://marshmallow.readthedocs.io/).
 
 ```python
 from flask_resty import Api, GenericModelView
@@ -42,35 +36,13 @@ api = Api(app, "/api")
 api.add_resource("/widgets", WidgetListView, WidgetView)
 ```
 
-By default, models are expected to have been created using [Flask-SQLAlchemy](http://flask-sqlalchemy.pocoo.org/).
+## Documentation
 
-```python
-from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import Column, String
+Documentation is available at https://flask-resty.readthedocs.io/.
 
-from . import app
+## License
 
-db = SQLAlchemy(app)
-
-
-class Widget(db.Model):
-    id = Column(String, primary_key=True)
-    name = Column(String, nullable=False)
-    color = Column(String, nullable=False)
-```
-
-Schemas can be standard marshmallow `Schema` instances or [marshmallow-sqlalchemy](https://marshmallow-sqlalchemy.readthedocs.io/) `TableSchema` instances. They should not be `ModelSchema` instances.
-
-```python
-from marshmallow_sqlalchemy import TableSchema
-
-from . import models
-
-
-class WidgetSchema(TableSchema):
-    class Meta:
-        table = models.Widget.__table__
-```
+MIT Licensed. See the bundled [LICENSE](https://github.com/4Catalyzer/flask-resty/blob/master/LICENSE) file for more details.
 
 [build-badge]: https://img.shields.io/travis/4Catalyzer/flask-resty/master.svg
 [build]: https://travis-ci.org/4Catalyzer/flask-resty
