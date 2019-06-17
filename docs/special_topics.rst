@@ -57,12 +57,6 @@ You may also use the ``field_for`` helper.
         published_at = field_for(models.Book, "published_at", required=True)
         created_at = field_for(models.Book, "created_at", dump_only=True)
 
-
-Testing
--------
-
-.. todo:: Testing example
-
 Recommendations for Larger Applications
 ---------------------------------------
 

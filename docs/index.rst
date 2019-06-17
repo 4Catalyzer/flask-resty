@@ -66,12 +66,6 @@ For JWT support:
 
     $ pip install flask-resty[jwt]
 
-You can optionally use `marshmallow-sqlalchemy <https://marshmallow-sqlalchemy.readthedocs.io/>`_ for generating schemas:
-
-::
-
-    $ pip install marshmallow-sqlalchemy
-
 Guide
 -----
 

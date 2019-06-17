@@ -106,7 +106,7 @@ The concrete view classes simply call the appropriate CRUD methods from `Generic
 Pagination
 ----------
 
-Add filtering to your list endpoints by setting the ``pagination`` attribute on the base class.
+Add pagination to your list endpoints by setting the ``pagination`` attribute on the base class.
 
 The following will allow clients to pass a ``page`` parameter in the query string, e.g. ``?page=2``.
 
@@ -127,7 +127,7 @@ The following will allow clients to pass a ``page`` parameter in the query strin
 Sorting
 -------
 
-Add filtering to your list endpoints by setting the ``pagination`` attribute on the base class.
+Add sorting to your list endpoints by setting the ``sorting`` attribute on the base class.
 
 The following will allow clients to pass a ``sort`` parameter in the query string, e.g. ``?sort=-created_at``.
 
@@ -219,6 +219,43 @@ our view classes to URL patterns.
 
 .. literalinclude:: ../example/routes.py
     :language: python
+
+Testing
+-------
+
+Flask-RESTy includes utilities for writing integration tests for your applications.
+Here's how you can use them with `pytest <https://docs.pytest.org>`_.
+
+.. literalinclude:: ../example/test_example.py
+    :language: python
+    :lines: 1-32
+
+The first two fixtures ensure that we start with a clean database for each test.
+The third fixture constructs an `ApiClient <flask_resty.testing.ApiClient>` for
+sending requests within our tests.
+
+Let's test that we can create an author. Here we use `assert_response <flask_resty.testing.assert_response>`
+to check the status code of the response and `assert_shape <flask_resty.testing.assert_shape>` to
+validate the shape of the response body.
+
+.. code-block:: python
+
+    def test_create_author(client):
+        response = client.post("/authors/", data={"name": "Fred Brooks"})
+        data = assert_response(response, 201)
+        assert_shape(data, {"id": ANY, "name": "Fred Brooks", "created_at": ANY})
+
+We can test both the response code and the data shape using a single call. The following snippet
+is equivalent to the above.
+
+.. code-block:: python
+
+    def test_create_author(client):
+        response = client.post("/authors/", data={"name": "Fred Brooks"})
+        data = assert_response(response, 201)
+        assert_response(
+            response, 201, {"id": ANY, "name": "Fred Brooks", "created_at": ANY}
+        )
 
 Running the Example Application
 -------------------------------
