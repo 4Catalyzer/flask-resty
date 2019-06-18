@@ -994,6 +994,7 @@ class GenericModelView(ModelView):
 
     In simple APIs, most view classes will extend `GenericModelView`, and will
     declare methods that immediately call the methods here.
+    ::
 
         class WidgetViewBase(GenericModelView):
             model = models.Widget

@@ -15,19 +15,47 @@ release, version = get_version("Flask-RESTy")
 
 # -- General configuration ---------------------------------------------------
 
-extensions = ["sphinx.ext.autodoc", "sphinx.ext.intersphinx"]
+extensions = [
+    "alabaster",
+    "sphinx.ext.autodoc",
+    "sphinx.ext.intersphinx",
+    "sphinx.ext.viewcode",
+    "sphinx.ext.todo",
+]
 templates_path = ["_templates"]
 source_suffix = ".rst"
 master_doc = "index"
 language = None
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 pygments_style = "sphinx"
+primary_domain = "py"
+default_role = "py:obj"
+todo_include_todos = True
 
 # -- Options for HTML output -------------------------------------------------
 
 html_theme = "alabaster"
 html_static_path = ["_static"]
 html_favicon = "favicon.ico"
+html_theme_options = {
+    "description": "Building blocks for REST APIs for Flask",
+    "description_font_style": "italic",
+    "extra_nav_links": [
+        ("Flask-RESTy @ PyPI", "https://pypi.python.org/pypi/flask-resty"),
+        ("Flask-RESTy @ GitHub", "https://github.com/4Catalyzer/flask-resty"),
+        ("Issue Tracker", "https://github.com/4Catalyzer/flask-resty/issues"),
+    ],
+}
+
+html_sidebars = {
+    "index": [
+        "about.html",
+        "useful-links.html",
+        "localtoc.html",
+        "searchbox.html",
+    ],
+    "**": ["about.html", "localtoc.html", "relations.html", "searchbox.html"],
+}
 
 # -- Intersphinx -------------------------------------------------------------
 
