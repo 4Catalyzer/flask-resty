@@ -69,7 +69,8 @@ set both ``load_only`` and ``dump_only`` to `True` on the schema field.
         # Only used for filtering
         is_deleted = fields.Boolean(load_only=True, dump_only=True)
 
-Filter-only fields will be validated but will not be returned in the response body.
+Filter-only fields will be validated when used as a filter
+but will not be returned in the response body.
 
 Recommendations for Larger Applications
 ---------------------------------------
