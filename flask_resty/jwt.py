@@ -7,7 +7,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.x509 import load_der_x509_certificate
 from jwt import InvalidAlgorithmError, InvalidTokenError, PyJWT
 
-from .authentication import HeaderAuthenticationBase
+from .authentication import HeaderAuthentication
 from .exceptions import ApiError
 
 # -----------------------------------------------------------------------------
@@ -25,10 +25,9 @@ JWT_DECODE_ARG_KEYS = (
 # -----------------------------------------------------------------------------
 
 
-class JwtAuthentication(HeaderAuthenticationBase):
+class JwtAuthentication(HeaderAuthentication):
     CONFIG_KEY_TEMPLATE = "RESTY_JWT_DECODE_{}"
 
-    header_scheme = "Bearer"
     credentials_arg = "id_token"
 
     def __init__(self, **kwargs):
