@@ -70,7 +70,7 @@ class NoOpAuthentication:
 # -----------------------------------------------------------------------------
 
 
-class HeaderAuthenticationBase(AuthenticationBase):
+class HeaderAuthentication(AuthenticationBase):
     """Base class for Authentication components that get their credentials from
     the Authorization request header. The Authorization header has the form:
 
@@ -78,7 +78,7 @@ class HeaderAuthenticationBase(AuthenticationBase):
     """
 
     #: Corresponds to the <scheme> in the Authorization request header.
-    header_scheme = None
+    header_scheme = "Bearer"
 
     #: A fallback query parameter. The value of this query parameter will be
     #: used as credentials if the Authorization request header is missing.
@@ -90,14 +90,11 @@ class HeaderAuthenticationBase(AuthenticationBase):
         if authorization is None:
             if self.credentials_arg is not None:
                 return flask.request.args.get(self.credentials_arg)
-            raise ApiError(401, {"code": "invalid_authorization.missing"})
+            return None
 
         return self.get_credentials_from_authorization(authorization)
 
     def get_credentials_from_authorization(self, authorization):
-        if self.header_scheme is None:
-            raise NotImplementedError("header_scheme must be defined")
-
         try:
             scheme, credentials = authorization.split()
         except (AttributeError, ValueError):

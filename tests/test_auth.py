@@ -13,6 +13,7 @@ from flask_resty import (
     GenericModelView,
     HasAnyCredentialsAuthorization,
     HasCredentialsAuthorizationBase,
+    HeaderAuthentication,
 )
 from flask_resty.testing import assert_response
 
@@ -75,10 +76,15 @@ def auth():
         wraps=authorization.authorize_modify_item, autospec=True
     )
 
+    class BearerWithFallbackAuthentication(HeaderAuthentication):
+        credentials_arg = "secret"
+
     return {
         "authentication": FakeAuthentication(),
         "authorization": authorization,
+        "bearer_with_fallback_authentication": BearerWithFallbackAuthentication(),
     }
+
 
 
 @pytest.fixture(autouse=True)
@@ -125,6 +131,20 @@ def routes(app, models, schemas, auth):
         def put(self, id):
             return self.update(id, create_missing=True)
 
+    class WidgetBearerView(WidgetViewBase):
+        authentication = HeaderAuthentication()
+        authorization = HasAnyCredentialsAuthorization()
+
+        def get(self, id):
+            return self.retrieve(id)
+
+    class WidgetBearerWithFallbackView(WidgetViewBase):
+        authentication = auth["bearer_with_fallback_authentication"]
+        authorization = HasAnyCredentialsAuthorization()
+
+        def get(self, id):
+            return self.retrieve(id)
+
     api = Api(app)
     api.add_resource(
         "/widgets", WidgetListView, WidgetView, id_rule="<int:id>"
@@ -134,6 +154,12 @@ def routes(app, models, schemas, auth):
     )
     api.add_resource(
         "/widgets_create_missing/<int:id>", WidgetCreateMissingView
+    )
+    api.add_resource(
+        "/widgets_bearer/<int:id>", WidgetBearerView
+    )
+    api.add_resource(
+        "/widgets_bearer_with_fallback/<int:id>", WidgetBearerWithFallbackView
     )
 
 
@@ -232,6 +258,13 @@ def test_update_update_missing(client, auth):
         call(ANY, "save"),
     ]
 
+def test_retrieve_bearer(client):
+    response = client.get("/widgets_bearer/1", headers={"Authorization": "Bearer XXX"})
+    assert response.status_code == 200
+
+def test_retrieve_bearer_with_fallback(client):
+    response = client.get("/widgets_bearer_with_fallback/1?secret=XXX")
+    assert response.status_code == 200
 
 # -----------------------------------------------------------------------------
 
@@ -342,3 +375,19 @@ def test_error_update_create_missing_unauthorized(client, auth):
         call(ANY, "update"),
         call(ANY, "save"),
     ]
+
+def test_error_retrieve_bearer_no_fallback(client):
+    response = client.get("/widgets_bearer/1")
+    assert response.status_code == 401
+
+def test_error_retrieve_bearer_malformed_header(client):
+    response = client.get("/widgets_bearer/1", headers={"Authorization": "BearerXXX"})
+    assert_response(response, 401, [{"code": "invalid_authorization"}])
+
+def test_error_retrieve_bearer_malformed_scheme(client):
+    response = client.get("/widgets_bearer/1", headers={"Authorization": "Bear XXX"})
+    assert_response(response, 401, [{"code": "invalid_authorization.scheme"}])
+
+def test_error_retrieve_bearer_with_fallback_no_credentials_arg(client):
+    response = client.get("/widgets_bearer_with_fallback/1")
+    assert response.status_code == 401
