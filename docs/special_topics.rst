@@ -57,6 +57,21 @@ You may also use the ``field_for`` helper.
         published_at = field_for(models.Book, "published_at", required=True)
         created_at = field_for(models.Book, "created_at", dump_only=True)
 
+Filter-only Fields
+------------------
+
+If you have a field that should only be used for filtering, you can
+set both ``load_only`` and ``dump_only`` to `True` on the schema field.
+
+.. code-block:: python
+
+    class SoftDeletedObjectSchema(Schema):
+        # Only used for filtering
+        is_deleted = fields.Boolean(load_only=True, dump_only=True)
+
+Filter-only fields will be validated when used as a filter
+but will not be returned in the response body.
+
 Recommendations for Larger Applications
 ---------------------------------------
 
