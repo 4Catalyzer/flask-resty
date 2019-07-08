@@ -1,4 +1,7 @@
+import flask
+
 from . import context
+from .exceptions import ApiError
 
 # -----------------------------------------------------------------------------
 
@@ -62,3 +65,43 @@ class NoOpAuthentication:
 
     def authenticate_request(self):
         pass
+
+
+# -----------------------------------------------------------------------------
+
+
+class HeaderAuthentication(AuthenticationBase):
+    """Base class for Authentication components that get their credentials from
+    the Authorization request header. The Authorization header has the form:
+
+        Authorization: <scheme> <credentials>
+    """
+
+    #: Corresponds to the <scheme> in the Authorization request header.
+    header_scheme = "Bearer"
+
+    #: A fallback query parameter. The value of this query parameter will be
+    #: used as credentials if the Authorization request header is missing.
+    credentials_arg = None
+
+    def get_request_credentials(self):
+        authorization = flask.request.headers.get("Authorization")
+
+        if authorization is None:
+            if self.credentials_arg is None:
+                return None
+
+            return flask.request.args.get(self.credentials_arg)
+
+        return self.get_credentials_from_authorization(authorization)
+
+    def get_credentials_from_authorization(self, authorization):
+        try:
+            scheme, credentials = authorization.split()
+        except (AttributeError, ValueError):
+            raise ApiError(401, {"code": "invalid_authorization"})
+
+        if scheme.lower() != self.header_scheme.lower():
+            raise ApiError(401, {"code": "invalid_authorization.scheme"})
+
+        return credentials
