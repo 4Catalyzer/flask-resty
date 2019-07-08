@@ -156,9 +156,7 @@ def routes(app, models, schemas, auth):
     api.add_resource(
         "/widgets_create_missing/<int:id>", WidgetCreateMissingView
     )
-    api.add_resource(
-        "/widgets_bearer/<int:id>", WidgetBearerView
-    )
+    api.add_resource("/widgets_bearer/<int:id>", WidgetBearerView)
     api.add_resource(
         "/widgets_bearer_with_fallback/<int:id>", WidgetBearerWithFallbackView
     )
@@ -237,8 +235,7 @@ def test_retrieve_any_credentials(client):
 
 def test_retrieve_bearer(client):
     response = client.get(
-        "/widgets_bearer/1",
-        headers={"Authorization": "Bearer XXX"},
+        "/widgets_bearer/1", headers={"Authorization": "Bearer XXX"}
     )
     assert response.status_code == 200
 
@@ -396,14 +393,14 @@ def test_error_retrieve_bearer_no_fallback(client):
 
 def test_error_retrieve_bearer_malformed_header(client):
     response = client.get(
-        "/widgets_bearer/1", headers={"Authorization": "BearerXXX"},
+        "/widgets_bearer/1", headers={"Authorization": "BearerXXX"}
     )
     assert_response(response, 401, [{"code": "invalid_authorization"}])
 
 
 def test_error_retrieve_bearer_wrong_scheme(client):
     response = client.get(
-        "/widgets_bearer/1", headers={"Authorization": "Bear XXX"},
+        "/widgets_bearer/1", headers={"Authorization": "Bear XXX"}
     )
     assert_response(response, 401, [{"code": "invalid_authorization.scheme"}])
 
