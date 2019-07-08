@@ -88,9 +88,10 @@ class HeaderAuthentication(AuthenticationBase):
         authorization = flask.request.headers.get("Authorization")
 
         if authorization is None:
-            if self.credentials_arg is not None:
-                return flask.request.args.get(self.credentials_arg)
-            return None
+            if self.credentials_arg is None:
+                return None
+
+            return flask.request.args.get(self.credentials_arg)
 
         return self.get_credentials_from_authorization(authorization)
 

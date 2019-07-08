@@ -82,9 +82,10 @@ def auth():
     return {
         "authentication": FakeAuthentication(),
         "authorization": authorization,
-        "bearer_with_fallback_authentication": BearerWithFallbackAuthentication(),
+        "bearer_with_fallback_authentication": (
+            BearerWithFallbackAuthentication()
+        ),
     }
-
 
 
 @pytest.fixture(autouse=True)
@@ -234,6 +235,19 @@ def test_retrieve_any_credentials(client):
     assert response.status_code == 200
 
 
+def test_retrieve_bearer(client):
+    response = client.get(
+        "/widgets_bearer/1",
+        headers={"Authorization": "Bearer XXX"},
+    )
+    assert response.status_code == 200
+
+
+def test_retrieve_bearer_with_fallback(client):
+    response = client.get("/widgets_bearer_with_fallback/1?secret=XXX")
+    assert response.status_code == 200
+
+
 def test_retrieve_create_missing(client, auth):
     response = client.get("/widgets_create_missing/4?user_id=foo&owner_id=foo")
     assert_response(
@@ -258,13 +272,6 @@ def test_update_update_missing(client, auth):
         call(ANY, "save"),
     ]
 
-def test_retrieve_bearer(client):
-    response = client.get("/widgets_bearer/1", headers={"Authorization": "Bearer XXX"})
-    assert response.status_code == 200
-
-def test_retrieve_bearer_with_fallback(client):
-    response = client.get("/widgets_bearer_with_fallback/1?secret=XXX")
-    assert response.status_code == 200
 
 # -----------------------------------------------------------------------------
 
@@ -376,18 +383,31 @@ def test_error_update_create_missing_unauthorized(client, auth):
         call(ANY, "save"),
     ]
 
-def test_error_retrieve_bearer_no_fallback(client):
+
+def test_error_retrieve_bearer_unauthenticated(client):
     response = client.get("/widgets_bearer/1")
     assert response.status_code == 401
 
+
+def test_error_retrieve_bearer_no_fallback(client):
+    response = client.get("/widgets_bearer/1?secret=XXX")
+    assert response.status_code == 401
+
+
 def test_error_retrieve_bearer_malformed_header(client):
-    response = client.get("/widgets_bearer/1", headers={"Authorization": "BearerXXX"})
+    response = client.get(
+        "/widgets_bearer/1", headers={"Authorization": "BearerXXX"},
+    )
     assert_response(response, 401, [{"code": "invalid_authorization"}])
 
-def test_error_retrieve_bearer_malformed_scheme(client):
-    response = client.get("/widgets_bearer/1", headers={"Authorization": "Bear XXX"})
+
+def test_error_retrieve_bearer_wrong_scheme(client):
+    response = client.get(
+        "/widgets_bearer/1", headers={"Authorization": "Bear XXX"},
+    )
     assert_response(response, 401, [{"code": "invalid_authorization.scheme"}])
 
-def test_error_retrieve_bearer_with_fallback_no_credentials_arg(client):
+
+def test_error_retrieve_bearer_with_fallback_unauthenticated(client):
     response = client.get("/widgets_bearer_with_fallback/1")
     assert response.status_code == 401

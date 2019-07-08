@@ -1,7 +1,11 @@
 # flake8: noqa
 
 from .api import Api
-from .authentication import AuthenticationBase, NoOpAuthentication, HeaderAuthentication
+from .authentication import (
+    AuthenticationBase,
+    HeaderAuthentication,
+    NoOpAuthentication,
+)
 from .authorization import (
     AuthorizationBase,
     AuthorizeModifyMixin,
