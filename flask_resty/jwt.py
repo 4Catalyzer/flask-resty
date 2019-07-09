@@ -37,17 +37,13 @@ class JwtAuthentication(HeaderAuthentication):
             key: kwargs[key] for key in JWT_DECODE_ARG_KEYS if key in kwargs
         }
 
-    def get_request_credentials(self):
-        token = super().get_request_credentials()
-        if not token:
-            return None
-
+    def get_credentials_from_token(self, token):
         try:
             payload = self.decode_token(token)
         except InvalidTokenError:
             raise ApiError(401, {"code": "invalid_token"})
 
-        return self.get_credentials(payload)
+        return payload
 
     def decode_token(self, token):
         return self.pyjwt.decode(token, **self.get_jwt_decode_args())
@@ -69,9 +65,6 @@ class JwtAuthentication(HeaderAuthentication):
 
     def get_config_key(self, key):
         return self.CONFIG_KEY_TEMPLATE.format(key.upper())
-
-    def get_credentials(self, payload):
-        return payload
 
 
 class JwkSetPyJwt(PyJWT):
