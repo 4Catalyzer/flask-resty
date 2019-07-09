@@ -33,6 +33,11 @@ Authentication
 
 .. autoclass:: NoOpAuthentication
 
+.. autoclass:: HeaderAuthenticationBase
+  :members:
+
+.. autoclass:: HeaderAuthentication
+
 .. _authorization:
 
 Authorization
