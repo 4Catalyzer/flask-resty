@@ -69,6 +69,7 @@ class Api:
         :param app: The Flask application object.
         :type app: :py:class:`flask.Flask`
         """
+        self._app = app
         app.extensions["resty"] = FlaskRestyState(self)
 
         app.register_error_handler(ApiError, handle_api_error)
