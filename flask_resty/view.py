@@ -372,9 +372,9 @@ class ApiView(MethodView):
         :return: The ID scalar or tuple.
         """
         if len(self.id_fields) == 1:
-            return data[self.id_fields[0]]
+            return getattr(data, self.id_fields[0])
 
-        return tuple(data[id_field] for id_field in self.id_fields)
+        return tuple(getattr(data, id_field) for id_field in self.id_fields)
 
     @request_cached_property
     def request_args(self):
