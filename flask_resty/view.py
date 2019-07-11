@@ -351,7 +351,7 @@ class ApiView(MethodView):
 
         if expected_id is False:
             for id_field in self.id_fields:
-                if id_field in data:
+                if hasattr(data, id_field):
                     raise ApiError(403, {"code": "invalid_id.forbidden"})
             return
 
