@@ -84,7 +84,7 @@ def test_get_names_one(client):
 
 
 def test_get_names_many(client):
-    response = client.get("/names?name=foo&name=bar")
+    response = client.get("/names?name=foo,bar")
     assert_response(response, 200, ["foo", "bar"])
 
 
@@ -126,7 +126,7 @@ def test_error_get_name_missing(client):
 
 
 def test_error_get_name_many(client):
-    response = client.get("/name?name=foo&name=bar")
+    response = client.get("/name?name=foo,bar")
     assert_response(
         response,
         422,
