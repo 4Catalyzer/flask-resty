@@ -14,6 +14,7 @@ from .authorization import NoOpAuthorization
 from .compat import MA2, schema_dump, schema_load
 from .decorators import request_cached_property
 from .exceptions import ApiError
+from .fields import DelimitedList
 from .utils import iter_validation_errors, settable_property
 
 # -----------------------------------------------------------------------------
@@ -401,8 +402,13 @@ class ApiView(MethodView):
                 continue
 
             value = args.get(field_name)
-            if isinstance(field, fields.List) or "," in value:
-                value = value.split(",") if value else []
+            if isinstance(field, fields.List) and not hasattr(field, "delimiter"):
+                value = args.getlist(field_name)
+            elif isinstance(field, DelimitedList):
+                try:
+                    value = value.split(field.delimiter)
+                except AttributeError:
+                    self.fail('invalid')
 
             data_raw[field_name] = value
 

@@ -5,6 +5,8 @@ from flask_resty import Api, ApiView
 from flask_resty.compat import MA2
 from flask_resty.testing import assert_response
 
+from flask_resty.fields import DelimitedList
+
 # -----------------------------------------------------------------------------
 
 
@@ -20,12 +22,20 @@ def schemas():
         }
         names = fields.List(fields.String(), **field_kwargs)
 
+    class NameDelimitedListSchema(Schema):
+        field_kwargs = {
+            "load_from" if MA2 else "data_key": "name",
+            "required": True,
+        }
+        names = DelimitedList(fields.String(), **field_kwargs)
+
     class NameDefaultSchema(Schema):
         name = fields.String(missing="foo")
 
     return {
         "name": NameSchema(),
         "name_list": NameListSchema(),
+        "name_delimited_list": NameDelimitedListSchema(),
         "name_default": NameDefaultSchema(),
     }
 
@@ -44,6 +54,12 @@ def views(app, schemas):
         def get(self):
             return self.make_response(self.request_args["names"])
 
+    class NameDelimitedListView(ApiView):
+        args_schema = schemas["name_delimited_list"]
+
+        def get(self):
+            return self.make_response(self.request_args["names"])
+
     class NameDefaultView(ApiView):
         args_schema = schemas["name_default"]
 
@@ -53,6 +69,7 @@ def views(app, schemas):
     return {
         "name": NameView,
         "names": NameListView,
+        "names_delimited": NameDelimitedListView,
         "name_default": NameDefaultView,
     }
 
@@ -62,6 +79,7 @@ def routes(app, views):
     api = Api(app)
     api.add_resource("/name", views["name"])
     api.add_resource("/names", views["names"])
+    api.add_resource("/names_delimited", views["names_delimited"])
     api.add_resource("/name_default", views["name_default"])
 
 
@@ -84,7 +102,11 @@ def test_get_names_one(client):
 
 
 def test_get_names_many(client):
-    response = client.get("/names?name=foo,bar")
+    response = client.get("/names?name=foo&name=bar")
+    assert_response(response, 200, ["foo", "bar"])
+
+def test_get_names_many_delimited(client):
+    response = client.get("/names_delimited?name=foo,bar")
     assert_response(response, 200, ["foo", "bar"])
 
 
@@ -118,15 +140,6 @@ def test_caching(app, views):
 
 def test_error_get_name_missing(client):
     response = client.get("/name")
-    assert_response(
-        response,
-        422,
-        [{"code": "invalid_parameter", "source": {"parameter": "name"}}],
-    )
-
-
-def test_error_get_name_many(client):
-    response = client.get("/name?name=foo,bar")
     assert_response(
         response,
         422,
