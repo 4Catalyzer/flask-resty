@@ -3,9 +3,8 @@ from marshmallow import Schema, fields
 
 from flask_resty import Api, ApiView
 from flask_resty.compat import MA2
-from flask_resty.testing import assert_response
-
 from flask_resty.fields import DelimitedList
+from flask_resty.testing import assert_response
 
 # -----------------------------------------------------------------------------
 
@@ -104,6 +103,7 @@ def test_get_names_one(client):
 def test_get_names_many(client):
     response = client.get("/names?name=foo&name=bar")
     assert_response(response, 200, ["foo", "bar"])
+
 
 def test_get_names_many_delimited(client):
     response = client.get("/names_delimited?name=foo,bar")

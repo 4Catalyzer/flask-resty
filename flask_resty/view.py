@@ -402,13 +402,10 @@ class ApiView(MethodView):
                 continue
 
             value = args.get(field_name)
-            if isinstance(field, fields.List) and not hasattr(field, "delimiter"):
+            if isinstance(field, fields.List) and not isinstance(
+                field, DelimitedList
+            ):
                 value = args.getlist(field_name)
-            elif isinstance(field, DelimitedList):
-                try:
-                    value = value.split(field.delimiter)
-                except AttributeError:
-                    self.fail('invalid')
 
             data_raw[field_name] = value
 
