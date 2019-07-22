@@ -43,7 +43,7 @@ class ApiError(Exception):
     def get_error_from_http_exception(cls, exc):
         return {
             "code": "_".join(word.lower() for word in exc.name.split()),
-            "details": exc.description,
+            "detail": exc.description,
         }
 
     def update(self, additional):
