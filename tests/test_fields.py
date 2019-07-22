@@ -45,6 +45,14 @@ def delimited_list_schema():
     return DelimitedListSchema()
 
 
+@pytest.fixture
+def delimited_list_as_string_schema():
+    class DelimitedListAsStringSchema(Schema):
+        ids = DelimitedList(fields.String, as_string=True, required=True)
+
+    return DelimitedListAsStringSchema()
+
+
 # -----------------------------------------------------------------------------
 
 
@@ -127,3 +135,22 @@ def test_dump_delimited_list(delimited_list_schema):
     data = schema_dump(delimited_list_schema, {"ids": ["1", "2", "3"]})
 
     assert data == {"ids": ["1", "2", "3"]}
+
+
+def test_delimited_list_as_string(delimited_list_as_string_schema):
+    data = schema_dump(
+        delimited_list_as_string_schema, {"ids": ["1", "2", "3"]}
+    )
+
+    assert data == {"ids": "1,2,3"}
+
+
+# -----------------------------------------------------------------------------
+
+
+def test_error_delimited_list_validation_error(delimited_list_schema):
+    with pytest.raises(ValidationError) as excinfo:
+        schema_load(delimited_list_schema, {"ids": 1})
+
+    errors = excinfo.value.messages
+    assert errors == {"ids": ["Not a valid list."]}
