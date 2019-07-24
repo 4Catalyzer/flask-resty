@@ -401,11 +401,12 @@ class ApiView(MethodView):
                 # KeyError for args that aren't present.
                 continue
 
-            value = args.get(field_name)
             if isinstance(field, fields.List) and not isinstance(
                 field, DelimitedList
             ):
                 value = args.getlist(field_name)
+            else:
+                value = args.get(field_name)
 
             data_raw[field_name] = value
 
