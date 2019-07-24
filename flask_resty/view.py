@@ -14,6 +14,7 @@ from .authorization import NoOpAuthorization
 from .compat import MA2, schema_dump, schema_load
 from .decorators import request_cached_property
 from .exceptions import ApiError
+from .fields import DelimitedList
 from .utils import iter_validation_errors, settable_property
 
 # -----------------------------------------------------------------------------
@@ -400,9 +401,12 @@ class ApiView(MethodView):
                 # KeyError for args that aren't present.
                 continue
 
-            value = args.getlist(field_name)
-            if not isinstance(field, fields.List) and len(value) == 1:
-                value = value[0]
+            if isinstance(field, fields.List) and not isinstance(
+                field, DelimitedList
+            ):
+                value = args.getlist(field_name)
+            else:
+                value = args.get(field_name)
 
             data_raw[field_name] = value
 
