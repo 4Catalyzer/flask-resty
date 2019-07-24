@@ -33,7 +33,9 @@ class RelatedItem(fields.Nested):
 
 
 class DelimitedList(fields.List):
-    """Same as `marshmallow.fields.List`, except can load from either a list or
+    """List represented as a comma-delimited string, for use with args_schema.
+
+    Same as `marshmallow.fields.List`, except can load from either a list or
     a delimited string (e.g. "foo,bar,baz"). Directly taken from webargs:
     https://github.com/marshmallow-code/webargs/blob/de061e037285fd08a42d73be95bc779f2a4e3c47/src/webargs/fields.py#L47
 
@@ -47,9 +49,10 @@ class DelimitedList(fields.List):
     def __init__(
         self, cls_or_instance, delimiter=None, as_string=False, **kwargs
     ):
+        super().__init__(cls_or_instance, **kwargs)
+
         self.delimiter = delimiter or self.delimiter
         self.as_string = as_string
-        super().__init__(cls_or_instance, **kwargs)
 
     def _serialize(self, value, attr, obj):
         ret = super()._serialize(value, attr, obj)

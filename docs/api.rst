@@ -158,11 +158,21 @@ Routing
   :members:
   :inherited-members:
 
+Fields
+-------
+
+.. autoclass:: RelatedItem
+
+.. autoclass:: DelimitedList
+
 
 Testing
 -------
 
 .. module:: flask_resty.testing
+
 .. autoclass:: ApiClient
+
 .. autofunction:: assert_shape
+
 .. autofunction:: assert_response
