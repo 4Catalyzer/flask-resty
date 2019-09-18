@@ -61,7 +61,7 @@ def test_create_and_retrieve_book(client):
         {
             "id": ANY,
             "title": "The Mythical Man-Month",
-            "published_at": "1995-08-12T00:00:00+00:00",
+            "published_at": "1995-08-12T00:00:00",
             "created_at": ANY,
         },
     )
