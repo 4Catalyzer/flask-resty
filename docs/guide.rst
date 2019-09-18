@@ -298,16 +298,16 @@ You can make requests using the `httpie <https://httpie.org/>`_ utility.
         "data": [
             {
                 "author_id": 2,
-                "created_at": "2019-06-16T01:09:33.450768+00:00",
+                "created_at": "2019-06-16T01:09:33.450768",
                 "id": 2,
-                "published_at": "2013-11-05T00:00:00+00:00",
+                "published_at": "2013-11-05T00:00:00",
                 "title": "The Design of Everyday Things"
             },
             {
                 "author_id": 2,
-                "created_at": "2019-06-16T01:09:33.450900+00:00",
+                "created_at": "2019-06-16T01:09:33.450900",
                 "id": 3,
-                "published_at": "2010-10-29T00:00:00+00:00",
+                "published_at": "2010-10-29T00:00:00",
                 "title": "Living With Complexity"
             }
         ],
@@ -315,3 +315,5 @@ You can make requests using the `httpie <https://httpie.org/>`_ utility.
             "has_next_page": false
         }
     }
+
+The naive datetimes in the response are only because the example uses SQLite. A real application would use a timezone-aware datetime column in the database, and would have a UTC offset in the response.
