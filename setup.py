@@ -52,7 +52,7 @@ setup(
     install_requires=(
         "Flask >= 1.0.3",
         "Flask-SQLAlchemy >= 1.0",
-        "marshmallow >= 2.2.0",
+        "marshmallow >= 3.0.0",
         "SQLAlchemy >= 1.0.0",
         "Werkzeug >= 0.11",
     ),

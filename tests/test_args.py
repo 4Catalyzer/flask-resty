@@ -2,7 +2,6 @@ import pytest
 from marshmallow import Schema, fields
 
 from flask_resty import Api, ApiView
-from flask_resty.compat import MA2
 from flask_resty.fields import DelimitedList
 from flask_resty.testing import assert_response
 
@@ -15,18 +14,10 @@ def schemas():
         name = fields.String(required=True)
 
     class NameListSchema(Schema):
-        field_kwargs = {
-            "load_from" if MA2 else "data_key": "name",
-            "required": True,
-        }
-        names = fields.List(fields.String(), **field_kwargs)
+        names = fields.List(fields.String(), data_key="name", required=True)
 
     class NameDelimitedListSchema(Schema):
-        field_kwargs = {
-            "load_from" if MA2 else "data_key": "name",
-            "required": True,
-        }
-        names = DelimitedList(fields.String(), **field_kwargs)
+        names = DelimitedList(fields.String(), data_key="name", required=True)
 
     class NameDefaultSchema(Schema):
         name = fields.String(missing="foo")

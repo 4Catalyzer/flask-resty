@@ -1,8 +1,6 @@
 import marshmallow.utils
 from marshmallow import fields
 
-from .compat import schema_load
-
 # -----------------------------------------------------------------------------
 
 
@@ -24,7 +22,7 @@ class RelatedItem(fields.Nested):
             self.fail("type", input=value, type=value.__class__.__name__)
 
         # Do partial load of related item, as we only need the id.
-        return schema_load(self.schema, value, partial=True)
+        return self.schema.load(value, partial=True)
 
     def _validate_missing(self, value):
         # Do not display detailed error data on required fields in nested

@@ -1,7 +1,6 @@
 import pytest
 from marshmallow import Schema, ValidationError, fields
 
-from flask_resty.compat import schema_dump, schema_load
 from flask_resty.fields import DelimitedList, RelatedItem
 
 # -----------------------------------------------------------------------------
@@ -57,15 +56,14 @@ def delimited_list_as_string_schema():
 
 
 def test_dump_single(single_schema):
-    data = schema_dump(single_schema, {"child": {"id": 1, "name": "Foo"}})
+    data = single_schema.dump({"child": {"id": 1, "name": "Foo"}})
 
     assert data == {"child": {"id": "1", "name": "Foo"}}
 
 
 def test_dump_many(many_schema):
-    data = schema_dump(
-        many_schema,
-        {"children": [{"id": 1, "name": "Foo"}, {"id": 2, "name": "Bar"}]},
+    data = many_schema.dump(
+        {"children": [{"id": 1, "name": "Foo"}, {"id": 2, "name": "Bar"}]}
     )
 
     assert data == {
@@ -74,13 +72,13 @@ def test_dump_many(many_schema):
 
 
 def test_load_single(single_schema):
-    data = schema_load(single_schema, {"child": {"id": "1"}})
+    data = single_schema.load({"child": {"id": "1"}})
 
     assert data == {"child": {"id": 1}}
 
 
 def test_load_many(many_schema):
-    data = schema_load(many_schema, {"children": [{"id": "1"}, {"id": "2"}]})
+    data = many_schema.load({"children": [{"id": "1"}, {"id": "2"}]})
 
     assert data == {"children": [{"id": 1}, {"id": 2}]}
 
@@ -90,7 +88,7 @@ def test_load_many(many_schema):
 
 def test_error_load_single_missing(single_schema, error_messages):
     with pytest.raises(ValidationError) as excinfo:
-        schema_load(single_schema, {})
+        single_schema.load({})
 
     errors = excinfo.value.messages
     assert errors == {"child": [error_messages["required"]]}
@@ -98,7 +96,7 @@ def test_error_load_single_missing(single_schema, error_messages):
 
 def test_error_load_single_field_type(single_schema):
     with pytest.raises(ValidationError) as excinfo:
-        schema_load(single_schema, {"child": {"id": "foo"}})
+        single_schema.load({"child": {"id": "foo"}})
 
     errors = excinfo.value.messages
     assert errors == {
@@ -108,7 +106,7 @@ def test_error_load_single_field_type(single_schema):
 
 def test_error_load_many_missing(many_schema, error_messages):
     with pytest.raises(ValidationError) as excinfo:
-        schema_load(many_schema, {})
+        many_schema.load({})
 
     errors = excinfo.value.messages
     assert errors == {"children": [error_messages["required"]]}
@@ -116,7 +114,7 @@ def test_error_load_many_missing(many_schema, error_messages):
 
 def test_error_load_many_type(many_schema, error_messages):
     with pytest.raises(ValidationError) as excinfo:
-        schema_load(many_schema, {"children": {"id": 1}})
+        many_schema.load({"children": {"id": 1}})
 
     errors = excinfo.value.messages
     assert errors == {"children": [error_messages["type"]]}
@@ -126,21 +124,19 @@ def test_error_load_many_type(many_schema, error_messages):
 
 
 def test_load_delimited_list(delimited_list_schema):
-    data = schema_load(delimited_list_schema, {"ids": "1,2,3"})
+    data = delimited_list_schema.load({"ids": "1,2,3"})
 
     assert data == {"ids": ["1", "2", "3"]}
 
 
 def test_dump_delimited_list(delimited_list_schema):
-    data = schema_dump(delimited_list_schema, {"ids": ["1", "2", "3"]})
+    data = delimited_list_schema.load({"ids": ["1", "2", "3"]})
 
     assert data == {"ids": ["1", "2", "3"]}
 
 
 def test_delimited_list_as_string(delimited_list_as_string_schema):
-    data = schema_dump(
-        delimited_list_as_string_schema, {"ids": ["1", "2", "3"]}
-    )
+    data = delimited_list_as_string_schema.dump({"ids": ["1", "2", "3"]})
 
     assert data == {"ids": "1,2,3"}
 
@@ -150,7 +146,7 @@ def test_delimited_list_as_string(delimited_list_as_string_schema):
 
 def test_error_delimited_list_validation_error(delimited_list_schema):
     with pytest.raises(ValidationError) as excinfo:
-        schema_load(delimited_list_schema, {"ids": 1})
+        delimited_list_schema.load({"ids": 1})
 
     errors = excinfo.value.messages
     assert errors == {"ids": ["Not a valid list."]}

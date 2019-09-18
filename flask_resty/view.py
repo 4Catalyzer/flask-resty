@@ -11,7 +11,6 @@ from werkzeug.exceptions import NotFound
 from . import meta
 from .authentication import NoOpAuthentication
 from .authorization import NoOpAuthorization
-from .compat import MA2, schema_dump, schema_load
 from .decorators import request_cached_property
 from .exceptions import ApiError
 from .fields import DelimitedList
@@ -67,7 +66,7 @@ class ApiView(MethodView):
         :return: The serialized object
         :rtype: dict
         """
-        return schema_dump(self.serializer, item, **kwargs)
+        return self.serializer.dump(item, **kwargs)
 
     @settable_property
     def serializer(self):
@@ -279,7 +278,7 @@ class ApiView(MethodView):
         :rtype: dict
         """
         try:
-            data = schema_load(self.deserializer, data_raw, **kwargs)
+            data = self.deserializer.load(data_raw, **kwargs)
         except ValidationError as e:
             raise ApiError(
                 422,
@@ -392,7 +391,7 @@ class ApiView(MethodView):
         data_raw = {}
 
         for field_name, field in self.args_schema.fields.items():
-            alternate_field_name = field.load_from if MA2 else field.data_key
+            alternate_field_name = field.data_key
 
             if alternate_field_name and alternate_field_name in args:
                 field_name = alternate_field_name
@@ -419,12 +418,12 @@ class ApiView(MethodView):
         schema rather than deserialization per se.
 
         :param dict data_raw: The raw query data.
-        :param dict kwargs: Additional keyword arguments for `schema_load`.
+        :param dict kwargs: Additional keyword arguments for `marshmallow.Schema.load`.
         :return: The deserialized data
         :rtype: object
         """
         try:
-            data = schema_load(self.args_schema, data_raw, **kwargs)
+            data = self.args_schema.load(data_raw, **kwargs)
         except ValidationError as e:
             raise ApiError(
                 422,
