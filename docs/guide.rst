@@ -298,16 +298,16 @@ You can make requests using the `httpie <https://httpie.org/>`_ utility.
         "data": [
             {
                 "author_id": 2,
-                "created_at": "2019-06-16T01:09:33.450768+00:00",
+                "created_at": "2019-06-16T01:09:33.450768",
                 "id": 2,
-                "published_at": "2013-11-05T00:00:00+00:00",
+                "published_at": "2013-11-05T00:00:00",
                 "title": "The Design of Everyday Things"
             },
             {
                 "author_id": 2,
-                "created_at": "2019-06-16T01:09:33.450900+00:00",
+                "created_at": "2019-06-16T01:09:33.450900",
                 "id": 3,
-                "published_at": "2010-10-29T00:00:00+00:00",
+                "published_at": "2010-10-29T00:00:00",
                 "title": "Living With Complexity"
             }
         ],
