@@ -315,3 +315,5 @@ You can make requests using the `httpie <https://httpie.org/>`_ utility.
             "has_next_page": false
         }
     }
+
+The naive datetimes in the response are only because the example uses SQLite. A real application would use a timezone-aware datetime column in the database, and would have a UTC offset in the response.
