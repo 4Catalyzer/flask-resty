@@ -1074,7 +1074,7 @@ class GenericModelView(ModelView):
         *,
         with_for_update=False,
         create_missing=False,
-        partial=False,
+        partial=None,
         return_content=False,
     ):
         """Update the item for the specified ID with the request data.
