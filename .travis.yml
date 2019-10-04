@@ -1,21 +1,32 @@
-language: python
 dist: xenial
-services:
-  - postgresql
+
+language: python
+
 matrix:
   include:
-    - { python: "3.7",   env: "TOXENV=lint" }
+    - python: "3.7"
+      env: TOXENV=lint
 
-    - { python: "3.6",   env: "TOXENV=py-full DATABASE_URL=postgres://localhost/travis_ci_test" }
-    - { python: "3.7",   env: "TOXENV=py-full DATABASE_URL=postgres://localhost/travis_ci_test" }
+    - python: "3.6"
+      env: TOXENV=py-full DATABASE_URL=postgres://localhost/travis_ci_test
+    - python: "3.7"
+      env: TOXENV=py-full DATABASE_URL=postgres://localhost/travis_ci_test
 
-    - { python: "3.6",   env: "TOXENV=py-base" }
-    - { python: "3.7",   env: "TOXENV=py-base" }
+    - python: "3.6"
+      env: TOXENV=py-base
+    - python: "3.7"
+      env: TOXENV=py-base
 
-    - { python: "3.7",   env: "TOXENV=docs" }
-cache:
-  directories:
-    - $HOME/.cache/pip
+    - python: pypy3
+      env: TOXENV=py-full
+
+    - python: "3.7"
+      env: TOXENV=docs
+
+services:
+  - postgresql
+
+cache: pip
 
 before_install:
   - pip install -U pip
@@ -23,7 +34,7 @@ install:
   - pip install -U codecov tox
 
 before_script:
-  - psql -c 'CREATE DATABASE travis_ci_test' -U postgres
+  - psql -c "CREATE DATABASE travis_ci_test" -U postgres
 script:
   - python setup.py test
 
