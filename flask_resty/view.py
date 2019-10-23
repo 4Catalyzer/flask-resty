@@ -867,6 +867,10 @@ class ModelView(ApiView):
         :rtype: object
         """
         for key, value in data.items():
+            field = self.schema.fields.get(key)
+            if field and field.metadata.get('immutable'):
+                continue
+            
             setattr(item, key, value)
 
     def delete_item(self, item):
