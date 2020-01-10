@@ -271,9 +271,10 @@ class CursorPaginationBase(LimitPagination):
         :return: The sorted query & the field orderings
         :rtype: tuple
         """
-        sorting_field_orderings, missing_field_orderings = self.get_sorting_and_missing_field_orderings(
-            view
-        )
+        (
+            sorting_field_orderings,
+            missing_field_orderings,
+        ) = self.get_sorting_and_missing_field_orderings(view)
 
         query = view.sorting.sort_query_by_fields(
             query, view, missing_field_orderings
@@ -293,9 +294,10 @@ class CursorPaginationBase(LimitPagination):
         :return: A sequence of field orderings
         :rtype: seq
         """
-        sorting_field_orderings, missing_field_orderings = self.get_sorting_and_missing_field_orderings(
-            view
-        )
+        (
+            sorting_field_orderings,
+            missing_field_orderings,
+        ) = self.get_sorting_and_missing_field_orderings(view)
         return sorting_field_orderings + missing_field_orderings
 
     def get_sorting_and_missing_field_orderings(self, view):
