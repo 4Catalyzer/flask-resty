@@ -955,7 +955,6 @@ class ModelView(ApiView):
 
         if hasattr(original_error, "pgcode") and original_error.pgcode in (
             "23502",  # not_null_violation
-            "23514",  # check_violation
         ):
             # Using the psycopg2 error code, we can tell that this was not from
             # an integrity error that was not a conflict. This means there was
