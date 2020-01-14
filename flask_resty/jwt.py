@@ -40,8 +40,8 @@ class JwtAuthentication(HeaderAuthentication):
     def get_credentials_from_token(self, token):
         try:
             payload = self.decode_token(token)
-        except InvalidTokenError:
-            raise ApiError(401, {"code": "invalid_token"})
+        except InvalidTokenError as e:
+            raise ApiError(401, {"code": "invalid_token"}) from e
 
         return payload
 
@@ -95,8 +95,10 @@ class JwkSetPyJwt(PyJWT):
     def get_jwk_from_jwt(self, unverified_header):
         try:
             token_kid = unverified_header["kid"]
-        except KeyError:
-            raise InvalidTokenError("Key ID header parameter is missing")
+        except KeyError as e:
+            raise InvalidTokenError(
+                "Key ID header parameter is missing"
+            ) from e
 
         for jwk in self.jwk_set["keys"]:
             if jwk["kid"] == token_kid:

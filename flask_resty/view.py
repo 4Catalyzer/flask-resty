@@ -254,10 +254,10 @@ class ApiView(MethodView):
         """
         try:
             data_raw = flask.request.get_json()["data"]
-        except TypeError:
-            raise ApiError(400, {"code": "invalid_body"})
-        except KeyError:
-            raise ApiError(400, {"code": "invalid_data.missing"})
+        except TypeError as e:
+            raise ApiError(400, {"code": "invalid_body"}) from e
+        except KeyError as e:
+            raise ApiError(400, {"code": "invalid_data.missing"}) from e
 
         return data_raw
 
@@ -286,7 +286,7 @@ class ApiView(MethodView):
                     self.format_validation_error(error)
                     for error in iter_validation_errors(e.messages)
                 ),
-            )
+            ) from e
 
         self.validate_request_id(data, expected_id)
         return data
@@ -357,8 +357,8 @@ class ApiView(MethodView):
 
         try:
             id = self.get_data_id(data)
-        except KeyError:
-            raise ApiError(422, {"code": "invalid_id.missing"})
+        except KeyError as e:
+            raise ApiError(422, {"code": "invalid_id.missing"}) from e
 
         if id != expected_id:
             raise ApiError(409, {"code": "invalid_id.mismatch"})
@@ -432,7 +432,7 @@ class ApiView(MethodView):
                     for parameter, messages in e.messages.items()
                     for message in messages
                 ),
-            )
+            ) from e
 
         return data
 
@@ -644,8 +644,8 @@ class ModelView(ApiView):
         """
         try:
             item = self.get_item(id, **kwargs)
-        except NoResultFound:
-            raise NotFound()
+        except NoResultFound as e:
+            raise NotFound() from e
 
         return item
 
@@ -735,8 +735,8 @@ class ModelView(ApiView):
         """
         try:
             id = self.get_data_id(data)
-        except KeyError:
-            raise ApiError(422, {"code": "invalid_related.missing_id"})
+        except KeyError as e:
+            raise ApiError(422, {"code": "invalid_related.missing_id"}) from e
 
         return self.resolve_related_id(id, **kwargs)
 
@@ -751,8 +751,8 @@ class ModelView(ApiView):
         """
         try:
             item = self.get_item(id, **kwargs)
-        except NoResultFound:
-            raise ApiError(422, {"code": "invalid_related.not_found"})
+        except NoResultFound as e:
+            raise ApiError(422, {"code": "invalid_related.not_found"}) from e
 
         return item
 
@@ -914,7 +914,7 @@ class ModelView(ApiView):
         # Don't catch DataErrors here, as they arise from bugs in validation in
         # the schema.
         except IntegrityError as e:
-            raise self.resolve_integrity_error(e)
+            raise self.resolve_integrity_error(e) from e
 
     def commit(self):
         """Commit changes to the database.
@@ -932,7 +932,7 @@ class ModelView(ApiView):
         # Don't catch DataErrors here, as they arise from bugs in validation in
         # the schema.
         except IntegrityError as e:
-            raise self.resolve_integrity_error(e)
+            raise self.resolve_integrity_error(e) from e
 
     def resolve_integrity_error(self, error):
         """Convert integrity errors to HTTP error responses as appropriate.

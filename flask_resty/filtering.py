@@ -120,7 +120,7 @@ class FieldFilterBase(ArgFilterBase):
                     self.format_validation_error(message)
                     for message, path in iter_validation_errors(e.messages)
                 ),
-            )
+            ) from e
 
         return self.get_filter_clause(view, value)
 

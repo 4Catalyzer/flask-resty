@@ -111,8 +111,8 @@ class HeaderAuthenticationBase(AuthenticationBase):
     def get_token_from_authorization(self, authorization):
         try:
             scheme, token = authorization.split()
-        except (AttributeError, ValueError):
-            raise ApiError(401, {"code": "invalid_authorization"})
+        except (AttributeError, ValueError) as e:
+            raise ApiError(401, {"code": "invalid_authorization"}) from e
 
         if scheme.lower() != self.header_scheme.lower():
             raise ApiError(401, {"code": "invalid_authorization.scheme"})
