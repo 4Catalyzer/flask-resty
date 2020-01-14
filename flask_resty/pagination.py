@@ -143,8 +143,8 @@ class LimitPagination(LimitPaginationBase):
 
         try:
             limit = int(limit)
-        except ValueError:
-            raise ApiError(400, {"code": "invalid_limit"})
+        except ValueError as e:
+            raise ApiError(400, {"code": "invalid_limit"}) from e
         if limit < 0:
             raise ApiError(400, {"code": "invalid_limit"})
 
@@ -183,8 +183,8 @@ class LimitOffsetPagination(LimitPagination):
 
         try:
             offset = int(offset)
-        except ValueError:
-            raise ApiError(400, {"code": "invalid_offset"})
+        except ValueError as e:
+            raise ApiError(400, {"code": "invalid_offset"}) from e
         if offset < 0:
             raise ApiError(400, {"code": "invalid_offset"})
 
@@ -223,8 +223,8 @@ class PagePagination(LimitOffsetPagination):
 
         try:
             page = int(page)
-        except ValueError:
-            raise ApiError(400, {"code": "invalid_page"})
+        except ValueError as e:
+            raise ApiError(400, {"code": "invalid_page"}) from e
         if page < 0:
             raise ApiError(400, {"code": "invalid_page"})
 
@@ -379,7 +379,7 @@ class CursorPaginationBase(LimitPagination):
                     self.format_validation_error(message)
                     for message, path in iter_validation_errors(e.messages)
                 ),
-            )
+            ) from e
 
         return cursor
 
@@ -387,8 +387,8 @@ class CursorPaginationBase(LimitPagination):
         try:
             cursor = cursor.split(".")
             cursor = tuple(self.decode_value(value) for value in cursor)
-        except (TypeError, ValueError):
-            raise ApiError(400, {"code": "invalid_cursor.encoding"})
+        except (TypeError, ValueError) as e:
+            raise ApiError(400, {"code": "invalid_cursor.encoding"}) from e
 
         return cursor
 
