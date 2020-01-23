@@ -961,7 +961,9 @@ class ModelView(ApiView):
             # a schema bug, so we emit an interal server error instead.
             return error
 
-        flask.current_app.logger.exception("handled integrity error")
+        flask.current_app.logger.warning(
+            "handled integrity error", exc_info=True
+        )
         return ApiError(409, {"code": "invalid_data.conflict"})
 
     def set_item_response_meta(self, item):
