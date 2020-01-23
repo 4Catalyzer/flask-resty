@@ -962,7 +962,7 @@ class ModelView(ApiView):
             return error
 
         flask.current_app.logger.warning(
-            "handled integrity error", exc_info=True
+            "handled integrity error", exc_info=error
         )
         return ApiError(409, {"code": "invalid_data.conflict"})
 
