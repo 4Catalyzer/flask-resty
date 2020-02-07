@@ -11,9 +11,9 @@ from werkzeug.exceptions import NotFound
 from . import meta
 from .authentication import NoOpAuthentication
 from .authorization import NoOpAuthorization
-from .compat import MA2, schema_dump, schema_load
 from .decorators import request_cached_property
 from .exceptions import ApiError
+from .fields import DelimitedList
 from .utils import iter_validation_errors, settable_property
 
 # -----------------------------------------------------------------------------
@@ -66,7 +66,7 @@ class ApiView(MethodView):
         :return: The serialized object
         :rtype: dict
         """
-        return schema_dump(self.serializer, item, **kwargs)
+        return self.serializer.dump(item, **kwargs)
 
     @settable_property
     def serializer(self):
@@ -254,10 +254,10 @@ class ApiView(MethodView):
         """
         try:
             data_raw = flask.request.get_json()["data"]
-        except TypeError:
-            raise ApiError(400, {"code": "invalid_body"})
-        except KeyError:
-            raise ApiError(400, {"code": "invalid_data.missing"})
+        except TypeError as e:
+            raise ApiError(400, {"code": "invalid_body"}) from e
+        except KeyError as e:
+            raise ApiError(400, {"code": "invalid_data.missing"}) from e
 
         return data_raw
 
@@ -278,7 +278,7 @@ class ApiView(MethodView):
         :rtype: dict
         """
         try:
-            data = schema_load(self.deserializer, data_raw, **kwargs)
+            data = self.deserializer.load(data_raw, **kwargs)
         except ValidationError as e:
             raise ApiError(
                 422,
@@ -286,7 +286,7 @@ class ApiView(MethodView):
                     self.format_validation_error(error)
                     for error in iter_validation_errors(e.messages)
                 ),
-            )
+            ) from e
 
         self.validate_request_id(data, expected_id)
         return data
@@ -357,8 +357,8 @@ class ApiView(MethodView):
 
         try:
             id = self.get_data_id(data)
-        except KeyError:
-            raise ApiError(422, {"code": "invalid_id.missing"})
+        except KeyError as e:
+            raise ApiError(422, {"code": "invalid_id.missing"}) from e
 
         if id != expected_id:
             raise ApiError(409, {"code": "invalid_id.mismatch"})
@@ -391,7 +391,7 @@ class ApiView(MethodView):
         data_raw = {}
 
         for field_name, field in self.args_schema.fields.items():
-            alternate_field_name = field.load_from if MA2 else field.data_key
+            alternate_field_name = field.data_key
 
             if alternate_field_name and alternate_field_name in args:
                 field_name = alternate_field_name
@@ -400,9 +400,12 @@ class ApiView(MethodView):
                 # KeyError for args that aren't present.
                 continue
 
-            value = args.getlist(field_name)
-            if not isinstance(field, fields.List) and len(value) == 1:
-                value = value[0]
+            if isinstance(field, fields.List) and not isinstance(
+                field, DelimitedList
+            ):
+                value = args.getlist(field_name)
+            else:
+                value = args.get(field_name)
 
             data_raw[field_name] = value
 
@@ -415,12 +418,12 @@ class ApiView(MethodView):
         schema rather than deserialization per se.
 
         :param dict data_raw: The raw query data.
-        :param dict kwargs: Additional keyword arguments for `schema_load`.
+        :param dict kwargs: Additional keyword arguments for `marshmallow.Schema.load`.
         :return: The deserialized data
         :rtype: object
         """
         try:
-            data = schema_load(self.args_schema, data_raw, **kwargs)
+            data = self.args_schema.load(data_raw, **kwargs)
         except ValidationError as e:
             raise ApiError(
                 422,
@@ -429,7 +432,7 @@ class ApiView(MethodView):
                     for parameter, messages in e.messages.items()
                     for message in messages
                 ),
-            )
+            ) from e
 
         return data
 
@@ -641,8 +644,8 @@ class ModelView(ApiView):
         """
         try:
             item = self.get_item(id, **kwargs)
-        except NoResultFound:
-            raise NotFound()
+        except NoResultFound as e:
+            raise NotFound() from e
 
         return item
 
@@ -732,8 +735,8 @@ class ModelView(ApiView):
         """
         try:
             id = self.get_data_id(data)
-        except KeyError:
-            raise ApiError(422, {"code": "invalid_related.missing_id"})
+        except KeyError as e:
+            raise ApiError(422, {"code": "invalid_related.missing_id"}) from e
 
         return self.resolve_related_id(id, **kwargs)
 
@@ -748,8 +751,8 @@ class ModelView(ApiView):
         """
         try:
             item = self.get_item(id, **kwargs)
-        except NoResultFound:
-            raise ApiError(422, {"code": "invalid_related.not_found"})
+        except NoResultFound as e:
+            raise ApiError(422, {"code": "invalid_related.not_found"}) from e
 
         return item
 
@@ -911,7 +914,7 @@ class ModelView(ApiView):
         # Don't catch DataErrors here, as they arise from bugs in validation in
         # the schema.
         except IntegrityError as e:
-            raise self.resolve_integrity_error(e)
+            raise self.resolve_integrity_error(e) from e
 
     def commit(self):
         """Commit changes to the database.
@@ -929,7 +932,7 @@ class ModelView(ApiView):
         # Don't catch DataErrors here, as they arise from bugs in validation in
         # the schema.
         except IntegrityError as e:
-            raise self.resolve_integrity_error(e)
+            raise self.resolve_integrity_error(e) from e
 
     def resolve_integrity_error(self, error):
         """Convert integrity errors to HTTP error responses as appropriate.
@@ -952,14 +955,15 @@ class ModelView(ApiView):
 
         if hasattr(original_error, "pgcode") and original_error.pgcode in (
             "23502",  # not_null_violation
-            "23514",  # check_violation
         ):
             # Using the psycopg2 error code, we can tell that this was not from
             # an integrity error that was not a conflict. This means there was
             # a schema bug, so we emit an interal server error instead.
             return error
 
-        flask.current_app.logger.exception("handled integrity error")
+        flask.current_app.logger.warning(
+            "handled integrity error", exc_info=error
+        )
         return ApiError(409, {"code": "invalid_data.conflict"})
 
     def set_item_response_meta(self, item):
@@ -994,6 +998,7 @@ class GenericModelView(ModelView):
 
     In simple APIs, most view classes will extend `GenericModelView`, and will
     declare methods that immediately call the methods here.
+    ::
 
         class WidgetViewBase(GenericModelView):
             model = models.Widget

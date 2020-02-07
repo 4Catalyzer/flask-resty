@@ -1,5 +1,3 @@
-.. _api:
-
 API
 ===
 
@@ -25,14 +23,25 @@ Views
 
 .. autofunction:: get_item_or_404
 
-Access Control
+.. _authentication:
+
+Authentication
 --------------
 
 .. autoclass:: AuthenticationBase
   :members:
 
 .. autoclass:: NoOpAuthentication
+
+.. autoclass:: HeaderAuthenticationBase
   :members:
+
+.. autoclass:: HeaderAuthentication
+
+.. _authorization:
+
+Authorization
+-------------
 
 .. autoclass:: AuthorizationBase
   :members:
@@ -61,6 +70,8 @@ Relationships
 .. autoclass:: RelatedItem
   :members:
 
+.. _filtering:
+
 Filtering
 ---------
 
@@ -83,6 +94,8 @@ Filtering
 .. autoclass:: ModelFilter
   :members:
   :inherited-members:
+
+.. _pagination:
 
 Pagination
 ----------
@@ -111,6 +124,8 @@ Pagination
   :members:
   :inherited-members:
 
+.. _sorting:
+
 Sorting
 -------
 
@@ -137,8 +152,27 @@ Exceptions
   :inherited-members:
 
 Routing
-----------
+-------
 
 .. autoclass:: StrictRule
   :members:
   :inherited-members:
+
+Fields
+-------
+
+.. autoclass:: RelatedItem
+
+.. autoclass:: DelimitedList
+
+
+Testing
+-------
+
+.. module:: flask_resty.testing
+
+.. autoclass:: ApiClient
+
+.. autofunction:: assert_shape
+
+.. autofunction:: assert_response

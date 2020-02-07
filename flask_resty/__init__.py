@@ -1,7 +1,12 @@
 # flake8: noqa
 
 from .api import Api
-from .authentication import AuthenticationBase, NoOpAuthentication
+from .authentication import (
+    AuthenticationBase,
+    HeaderAuthentication,
+    HeaderAuthenticationBase,
+    NoOpAuthentication,
+)
 from .authorization import (
     AuthorizationBase,
     AuthorizeModifyMixin,
@@ -11,7 +16,7 @@ from .authorization import (
 )
 from .decorators import get_item_or_404
 from .exceptions import ApiError
-from .fields import RelatedItem
+from .fields import DelimitedList, RelatedItem
 from .filtering import (
     ArgFilterBase,
     ColumnFilter,

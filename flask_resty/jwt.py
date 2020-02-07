@@ -7,7 +7,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.x509 import load_der_x509_certificate
 from jwt import InvalidAlgorithmError, InvalidTokenError, PyJWT
 
-from .authentication import AuthenticationBase
+from .authentication import HeaderAuthentication
 from .exceptions import ApiError
 
 # -----------------------------------------------------------------------------
@@ -25,11 +25,10 @@ JWT_DECODE_ARG_KEYS = (
 # -----------------------------------------------------------------------------
 
 
-class JwtAuthentication(AuthenticationBase):
+class JwtAuthentication(HeaderAuthentication):
     CONFIG_KEY_TEMPLATE = "RESTY_JWT_DECODE_{}"
 
-    header_scheme = "Bearer"
-    id_token_arg = "id_token"
+    credentials_arg = "id_token"
 
     def __init__(self, **kwargs):
         super().__init__()
@@ -38,40 +37,13 @@ class JwtAuthentication(AuthenticationBase):
             key: kwargs[key] for key in JWT_DECODE_ARG_KEYS if key in kwargs
         }
 
-    def get_request_credentials(self):
-        token = self.get_token()
-        if not token:
-            return None
-
+    def get_credentials_from_token(self, token):
         try:
             payload = self.decode_token(token)
-        except InvalidTokenError:
-            raise ApiError(401, {"code": "invalid_token"})
+        except InvalidTokenError as e:
+            raise ApiError(401, {"code": "invalid_token"}) from e
 
-        return self.get_credentials(payload)
-
-    def get_token(self):
-        authorization = flask.request.headers.get("Authorization")
-        if authorization:
-            token = self.get_token_from_authorization(authorization)
-        else:
-            token = self.get_token_from_request()
-
-        return token
-
-    def get_token_from_authorization(self, authorization):
-        try:
-            scheme, token = authorization.split()
-        except ValueError:
-            raise ApiError(401, {"code": "invalid_authorization"})
-
-        if scheme.lower() != self.header_scheme.lower():
-            raise ApiError(401, {"code": "invalid_authorization.scheme"})
-
-        return token
-
-    def get_token_from_request(self):
-        return flask.request.args.get(self.id_token_arg)
+        return payload
 
     def decode_token(self, token):
         return self.pyjwt.decode(token, **self.get_jwt_decode_args())
@@ -93,9 +65,6 @@ class JwtAuthentication(AuthenticationBase):
 
     def get_config_key(self, key):
         return self.CONFIG_KEY_TEMPLATE.format(key.upper())
-
-    def get_credentials(self, payload):
-        return payload
 
 
 class JwkSetPyJwt(PyJWT):
@@ -126,8 +95,10 @@ class JwkSetPyJwt(PyJWT):
     def get_jwk_from_jwt(self, unverified_header):
         try:
             token_kid = unverified_header["kid"]
-        except KeyError:
-            raise InvalidTokenError("Key ID header parameter is missing")
+        except KeyError as e:
+            raise InvalidTokenError(
+                "Key ID header parameter is missing"
+            ) from e
 
         for jwk in self.jwk_set["keys"]:
             if jwk["kid"] == token_kid:

@@ -1,23 +1,23 @@
-language: python
 dist: xenial
-services:
-  - postgresql
+
+language: python
+
 jobs:
   include:
-    - { python: "3.7",   env: "TOXENV=lint" }
-    - { python: "3.6",   env: "TOXENV=py-full-marshmallow2 DATABASE_URL=postgres://localhost/travis_ci_test" }
-    - { python: "3.7",   env: "TOXENV=py-full-marshmallow2 DATABASE_URL=postgres://localhost/travis_ci_test" }
+    - { python: "3.8", env: "TOXENV=lint" }
 
-    - { python: "3.6",   env: "TOXENV=py-base-marshmallow2" }
+    - { python: "3.7", env: "TOXENV=py-full DATABASE_URL=postgres://localhost/travis_ci_test" }
+    - { python: "3.8", env: "TOXENV=py-full DATABASE_URL=postgres://localhost/travis_ci_test" }
 
-    - { python: "3.6",   env: "TOXENV=py-full-marshmallow3" }
-    - { python: "3.6",   env: "TOXENV=py-base-marshmallow3" }
+    - { python: "3.6", env: "TOXENV=py-base" }
+    - { python: "3.7", env: "TOXENV=py-base" }
+    - { python: "3.8", env: "TOXENV=py-base" }
 
-    - { python: "3.7",   env: "TOXENV=docs" }
+    - { python: "3.8", env: "TOXENV=docs" }
 
     - stage: PyPI Release
       if: tag IS present
-      python: "3.7"
+      python: "3.8"
       env: []
       before_install: skip
       install: skip
@@ -32,6 +32,10 @@ jobs:
         distributions: sdist bdist_wheel
         password:
           secure: "CHANGEME"
+
+services:
+  - postgresql
+
 
 cache:
   directories:
