@@ -26,12 +26,12 @@ jobs:
       after_success: skip
       deploy:
         provider: pypi
-        user: taion
+        user: "__token__"
+        password:
+          secure: "CHANGEME"
         on:
           tags: true
         distributions: sdist bdist_wheel
-        password:
-          secure: "CHANGEME"
 
 services:
   - postgresql
