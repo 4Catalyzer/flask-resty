@@ -1,4 +1,9 @@
-from werkzeug.routing import RequestSlash, Rule
+from werkzeug.routing import Rule
+
+try:
+    from werkzeug.routing import RequestPath
+except ImportError:  # werkzeug<1.0
+    from werkzeug.routing import RequestSlash as RequestPath
 
 # -----------------------------------------------------------------------------
 
@@ -9,7 +14,7 @@ class StrictRule(Rule):
     def match(self, path, method=None):
         try:
             result = super().match(path, method)
-        except RequestSlash:
+        except RequestPath:
             return None
 
         return result
