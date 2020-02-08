@@ -28,7 +28,7 @@ jobs:
         provider: pypi
         user: "__token__"
         password:
-          secure: "CHANGEME"
+          secure: "pypi-AgEIcHlwaS5vcmcCJGFkMmQ4MWVjLThmY2MtNGU1ZC04YTdiLTkxODQxNjMwMmJiYgACPHsicGVybWlzc2lvbnMiOiB7InByb2plY3RzIjogWyJmbGFzay1yZXN0eSJdfSwgInZlcnNpb24iOiAxfQAABiBcT6Q3J-IZXm_H2PAV71RZb4VnHePtOV7OvA0jLQrlIw"
         on:
           tags: true
         distributions: sdist bdist_wheel
