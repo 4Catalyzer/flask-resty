@@ -32,7 +32,7 @@ setup(
         "Flask-SQLAlchemy >= 1.0",
         "marshmallow >= 3.0.0",
         "SQLAlchemy >= 1.0.0",
-        "Werkzeug >= 0.11",
+        "Werkzeug>=1.0.0",
     ),
     extras_require={
         "docs": ("sphinx", "pallets-sphinx-themes"),
