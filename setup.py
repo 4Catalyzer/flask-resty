@@ -29,7 +29,7 @@ setup(
     packages=("flask_resty",),
     install_requires=(
         "Flask >= 1.0.3",
-        "Flask-SQLAlchemy >= 1.0",
+        "Flask-SQLAlchemy>=2.4.1",
         "marshmallow >= 3.0.0",
         "SQLAlchemy >= 1.0.0",
         "Werkzeug >= 0.11",
