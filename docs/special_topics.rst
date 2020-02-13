@@ -42,7 +42,7 @@ You may generate schemas from your models using ``SQLAlchemySchema`` or ``SQLAlc
             include_fk = True
 
 
-You may also use the ``auto_field`` helper.
+You can also use the ``auto_field`` helper.
 
 .. code-block:: python
 
