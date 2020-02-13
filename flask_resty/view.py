@@ -189,23 +189,6 @@ class ApiView(MethodView):
             response.headers["Location"] = location
         return response
 
-    def make_updated_response(self, item, *, return_content=False):
-        """Build a response for an updated item.
-
-        This will either be an empty response or the response with the item
-        data. The empty response will also have an ``item`` attribute.
-
-        :param object item: The updated item.
-        :param boolean return_content: Whether to include the content with the
-            values of the updated item in the response.
-        :return: The HTTP response
-        :rtype: :py:class:`flask.Response`
-        """
-        if return_content:
-            return self.make_item_response(item)
-
-        return self.make_empty_response(item=item)
-
     def make_deleted_response(self, item):
         """Build a response for a deleted item.
 
@@ -693,9 +676,9 @@ class ModelView(ApiView):
                 item = self.create_missing_item(id)
 
                 if will_update_item:
-                    # Bypass authorizating the save if we are getting the item
-                    # for update, as update_item will make that check.
-                    self.session.add(item)
+                    # Bypass authorizating the add if we are getting the item
+                    # to update it, as update_item will make that check.
+                    self.add_item_raw(item)
             except ApiError:
                 # Raise the original not found error instead of the
                 # authorization error.
@@ -1084,8 +1067,11 @@ class GenericModelView(ModelView):
         not set, or the standard ``PATCH`` handler if `partial` is set.
 
         :param id: The item ID.
-        :param bool create_missing: If set, create the item if it is not found.
-            This gives this method upsert-like semantics.
+        :param bool with_for_update: If set, lock the item row while updating
+            using ``FOR UPDATE``.
+        :param bool create_missing: If set, create the item before updating it,
+            if it is not found. Unlike with `upsert`, this creates the item in
+            an "empty" state before running an update as normal.
         :param bool partial: If set, perform a partial update for the item,
             ignoring fields marked ``required`` on `deserializer`.
         :param bool return_content: If set, return an HTTP 200 response with
@@ -1093,8 +1079,6 @@ class GenericModelView(ModelView):
         :return: An HTTP 200 or 204 response.
         :rtype: :py:class:`flask.Response`
         """
-        # No need to authorize creating the missing item, as we will authorize
-        # before saving to database below.
         item = self.get_item_or_404(
             id,
             with_for_update=with_for_update,
@@ -1106,7 +1090,39 @@ class GenericModelView(ModelView):
         item = self.update_item(item, data_in) or item
         self.commit()
 
-        return self.make_updated_response(item, return_content=return_content)
+        return (
+            self.make_item_response(item)
+            if return_content
+            else self.make_empty_response(item=item)
+        )
+
+    def upsert(self, id, *, with_for_update=False):
+        """Upsert the item for the specified ID with the request data.
+
+        Unlike with `update` with ``create_missing``, this will create the item
+        with the request data if the item is missing, instead of creating an
+        empty item and then updating it.
+
+        :param id: The item ID.
+        :param bool with_for_update: If set, lock the item row while updating
+            using ``FOR UPDATE``.
+        :return: An HTTP 200 or 201 response.
+        :rtype: :py:class:`flask.Response`
+        """
+        data_in = self.get_request_data(expected_id=id)
+
+        try:
+            item = self.get_item(id, with_for_update=with_for_update)
+        except NoResultFound:
+            item = self.create_and_add_item(data_in)
+            self.commit()
+
+            return self.make_created_response(item)
+        else:
+            item = self.update_item(item, data_in) or item
+            self.commit()
+
+            return self.make_item_response(item)
 
     def destroy(self, id):
         """Delete the item for the specified ID.
