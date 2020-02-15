@@ -76,7 +76,7 @@ class JwkSetPyJwt(PyJWT):
     def decode(self, jwt, **kwargs):
         unverified_header = self.get_unverified_header(jwt)
 
-        jwk = self.get_jwk_from_jwt(unverified_header)
+        jwk = self.get_jwk_for_jwt(unverified_header)
 
         # It's safe to use alg from the header here, as we verify that against
         # the algorithm whitelist.
@@ -92,7 +92,7 @@ class JwkSetPyJwt(PyJWT):
             jwt, key=self.get_key_from_jwk(jwk, alg), **kwargs
         )
 
-    def get_jwk_from_jwt(self, unverified_header):
+    def get_jwk_for_jwt(self, unverified_header):
         try:
             token_kid = unverified_header["kid"]
         except KeyError as e:
