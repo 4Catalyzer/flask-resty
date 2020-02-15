@@ -28,8 +28,6 @@ JWT_DECODE_ARG_KEYS = (
 class JwtAuthentication(HeaderAuthentication):
     CONFIG_KEY_TEMPLATE = "RESTY_JWT_DECODE_{}"
 
-    credentials_arg = "id_token"
-
     def __init__(self, **kwargs):
         super().__init__()
 
