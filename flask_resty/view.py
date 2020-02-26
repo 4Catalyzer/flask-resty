@@ -1112,7 +1112,7 @@ class GenericModelView(ModelView):
         """Delete the item for the specified ID.
 
         :param id: The item ID.
-        :return: An HTTP 201 response.
+        :return: An HTTP 204 response.
         :rtype: :py:class:`flask.Response`
         """
         item = self.get_item_or_404(id)
