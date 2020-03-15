@@ -51,6 +51,9 @@ def routes(app, models, schemas):
         def get(self, id):
             return self.retrieve(id)
 
+        def put(self, id):
+            return self.upsert(id)
+
         def patch(self, id):
             return self.update(id, partial=True)
 
@@ -114,14 +117,34 @@ def test_update(client):
     update_response = client.patch(
         "/widgets/1", data={"id": "1", "description": "updated description"}
     )
-    assert_response(update_response, 204)
-
-    retrieve_response = client.get("/widgets/1")
-
     assert_response(
-        retrieve_response,
+        update_response,
         200,
         {"id": "1", "name": "Foo", "description": "updated description"},
+    )
+
+
+def test_upsert_update(client):
+    response = client.put(
+        "/widgets/1",
+        data={"id": "1", "name": "Foo", "description": "updated description"},
+    )
+    assert_response(
+        response,
+        200,
+        {"id": "1", "name": "Foo", "description": "updated description"},
+    )
+
+
+def test_upsert_create(client):
+    response = client.put(
+        "/widgets/4",
+        data={"id": "4", "name": "Qux", "description": "qux widget"},
+    )
+    assert response.headers["Location"] == "http://localhost/widgets/4"
+
+    assert_response(
+        response, 201, {"id": "4", "name": "Qux", "description": "qux widget"}
     )
 
 

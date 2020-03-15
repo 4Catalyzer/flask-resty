@@ -130,7 +130,7 @@ def test_load_delimited_list(delimited_list_schema):
 
 
 def test_dump_delimited_list(delimited_list_schema):
-    data = delimited_list_schema.load({"ids": ["1", "2", "3"]})
+    data = delimited_list_schema.dump({"ids": ["1", "2", "3"]})
 
     assert data == {"ids": ["1", "2", "3"]}
 

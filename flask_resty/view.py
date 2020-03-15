@@ -633,12 +633,7 @@ class ModelView(ApiView):
         return item
 
     def get_item(
-        self,
-        id,
-        *,
-        with_for_update=False,
-        create_missing=False,
-        will_update_item=False,
+        self, id, *, with_for_update=False, create_transient_stub=False,
     ):
         """Get an item by ID.
 
@@ -649,10 +644,9 @@ class ModelView(ApiView):
         :param id: The item ID.
         :param bool with_for_update: If set, lock the item row for updating
             using ``FOR UPDATE``.
-        :param bool create_missing: If set, create the item using
-            `create_missing_item` if it is not found.
-        :param bool will_update_item: If set, and an item is created per
-            `create_missing` above, add it to the session so it can be saved.
+        :param bool create_stub: If set, create and return a transient stub for
+            the item using `create_stub_item` if it is not found. This will not
+            save the stub to the database.
         :return: The item corresponding to the ID.
         :rtype: object
         """
@@ -669,16 +663,11 @@ class ModelView(ApiView):
 
             item = item_query.one()
         except NoResultFound as e:
-            if not create_missing:
+            if not create_transient_stub:
                 raise
 
             try:
-                item = self.create_missing_item(id)
-
-                if will_update_item:
-                    # Bypass authorizating the add if we are getting the item
-                    # to update it, as update_item will make that check.
-                    self.add_item_raw(item)
+                item = self.create_stub_item(id)
             except ApiError:
                 # Raise the original not found error instead of the
                 # authorization error.
@@ -739,15 +728,15 @@ class ModelView(ApiView):
 
         return item
 
-    def create_missing_item(self, id):
-        """Create an item that corresponds to the provided ID.
+    def create_stub_item(self, id):
+        """Create a stub item that corresponds to the provided ID.
 
-        This is used by `get_item` when `create_missing` is set.
+        This is used by `get_item` when `create_transient_stub` is set.
 
-        Override this to configure the creation of missing items.
+        Override this to configure the creation of stub items.
 
         :param id: The item ID.
-        :return: A newly created item corresponding to the ID.
+        :return: A transient stub item corresponding to the ID.
         :rtype: object
         """
         return self.create_item(self.get_id_dict(id))
@@ -1021,17 +1010,21 @@ class GenericModelView(ModelView):
         items = self.get_list()
         return self.make_items_response(items)
 
-    def retrieve(self, id, *, create_missing=False):
+    def retrieve(self, id, *, create_transient_stub=False):
         """Retrieve an item by ID.
 
         This is the standard ``GET`` handler on a detail view.
 
         :param id: The item ID.
-        :param bool create_missing: If set, create the item if it is not found.
+        :param bool create_transient_stub: If set, create and retrieve a
+            transient stub for the item if it is not found. This will not save
+            the stub to the database.
         :return: An HTTP 200 response.
         :rtype: :py:class:`flask.Response`
         """
-        item = self.get_item_or_404(id, create_missing=create_missing)
+        item = self.get_item_or_404(
+            id, create_transient_stub=create_transient_stub
+        )
         return self.make_item_response(item)
 
     def create(self, *, allow_client_id=False):
@@ -1053,13 +1046,7 @@ class GenericModelView(ModelView):
         return self.make_created_response(item)
 
     def update(
-        self,
-        id,
-        *,
-        with_for_update=False,
-        create_missing=False,
-        partial=False,
-        return_content=False,
+        self, id, *, with_for_update=False, partial=False,
     ):
         """Update the item for the specified ID with the request data.
 
@@ -1069,9 +1056,6 @@ class GenericModelView(ModelView):
         :param id: The item ID.
         :param bool with_for_update: If set, lock the item row while updating
             using ``FOR UPDATE``.
-        :param bool create_missing: If set, create the item before updating it,
-            if it is not found. Unlike with `upsert`, this creates the item in
-            an "empty" state before running an update as normal.
         :param bool partial: If set, perform a partial update for the item,
             ignoring fields marked ``required`` on `deserializer`.
         :param bool return_content: If set, return an HTTP 200 response with
@@ -1079,29 +1063,19 @@ class GenericModelView(ModelView):
         :return: An HTTP 200 or 204 response.
         :rtype: :py:class:`flask.Response`
         """
-        item = self.get_item_or_404(
-            id,
-            with_for_update=with_for_update,
-            create_missing=create_missing,
-            will_update_item=True,
-        )
+        item = self.get_item_or_404(id, with_for_update=with_for_update,)
         data_in = self.get_request_data(expected_id=id, partial=partial)
 
         item = self.update_item(item, data_in) or item
         self.commit()
 
-        return (
-            self.make_item_response(item)
-            if return_content
-            else self.make_empty_response(item=item)
-        )
+        return self.make_item_response(item)
 
     def upsert(self, id, *, with_for_update=False):
         """Upsert the item for the specified ID with the request data.
 
-        Unlike with `update` with ``create_missing``, this will create the item
-        with the request data if the item is missing, instead of creating an
-        empty item and then updating it.
+        This will update the item for the given ID, if that item exists.
+        Otherwise, this will create a new item with the request data.
 
         :param id: The item ID.
         :param bool with_for_update: If set, lock the item row while updating
