@@ -114,11 +114,11 @@ def test_create(client):
 
 
 def test_update(client):
-    update_response = client.patch(
+    response = client.patch(
         "/widgets/1", data={"id": "1", "description": "updated description"}
     )
     assert_response(
-        update_response,
+        response,
         200,
         {"id": "1", "name": "Foo", "description": "updated description"},
     )
