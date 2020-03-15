@@ -644,9 +644,9 @@ class ModelView(ApiView):
         :param id: The item ID.
         :param bool with_for_update: If set, lock the item row for updating
             using ``FOR UPDATE``.
-        :param bool create_stub: If set, create and return a transient stub for
-            the item using `create_stub_item` if it is not found. This will not
-            save the stub to the database.
+        :param bool create_transient_stub: If set, create and return a
+            transient stub for the item using `create_stub_item` if it is not
+            found. This will not save the stub to the database.
         :return: The item corresponding to the ID.
         :rtype: object
         """
