@@ -107,15 +107,10 @@ def test_create(client):
 
 
 def test_update(client):
-    update_response = client.patch(
+    response = client.patch(
         "/widgets/1/2", data={"id_1": "1", "id_2": "2", "name": "Qux"}
     )
-    assert_response(update_response, 204)
-
-    retrieve_response = client.get("/widgets/1/2")
-    assert_response(
-        retrieve_response, 200, {"id_1": "1", "id_2": "2", "name": "Qux"}
-    )
+    assert_response(response, 200, {"id_1": "1", "id_2": "2", "name": "Qux"})
 
 
 def test_destroy(client):

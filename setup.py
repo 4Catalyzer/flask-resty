@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name="Flask-RESTy",
-    version="0.23.0",
+    version="0.23.1",
     description="Building blocks for REST APIs for Flask",
     url="https://github.com/4Catalyzer/flask-resty",
     author="4Catalyzer",
@@ -28,16 +28,15 @@ setup(
     keywords="rest flask",
     packages=("flask_resty",),
     install_requires=(
-        "Flask >= 1.1.0",
-        "Flask-SQLAlchemy >= 1.0",
-        "marshmallow >= 3.0.0",
-        "SQLAlchemy >= 1.0.0",
-        "Werkzeug >= 0.11",
+        "Flask>=1.1.0",
+        "Flask-SQLAlchemy>=1.0",
+        "marshmallow>=3.0.0",
+        "SQLAlchemy>=1.0.0",
+        "Werkzeug>=0.11",
     ),
     extras_require={
         "docs": ("sphinx", "pallets-sphinx-themes"),
-        "lint": ("pre-commit ~= 1.17"),
-        "jwt": ("PyJWT >= 1.4.0", "cryptography >= 2.0.0"),
+        "jwt": ("PyJWT>=1.4.0", "cryptography>=2.0.0"),
         "tests": ("coverage", "psycopg2-binary", "pytest"),
     },
     entry_points={"pytest11": ("flask-resty = flask_resty.testing",)},

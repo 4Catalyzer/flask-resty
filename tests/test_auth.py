@@ -120,17 +120,29 @@ def routes(app, models, schemas, auth):
         def get(self, id):
             return self.retrieve(id)
 
-    class WidgetCreateMissingView(WidgetViewBase):
-        def create_missing_item(self, id):
+    class WidgetCreateTransientStubView(WidgetViewBase):
+        def get(self, id):
+            return self.retrieve(id, create_transient_stub=True)
+
+        def create_stub_item(self, id):
             return self.create_item(
                 {"id": id, "owner_id": flask.request.args["owner_id"]}
             )
 
+    class WidgetUpsertView(WidgetViewBase):
         def get(self, id):
-            return self.retrieve(id, create_missing=True)
+            return self.retrieve(id, create_transient_stub=True)
 
         def put(self, id):
-            return self.update(id, create_missing=True)
+            return self.upsert(id)
+
+        def create_stub_item(self, id):
+            return self.create_item(
+                {"id": id, "owner_id": flask.request.args["owner_id"]}
+            )
+
+        def get_location(self, item):
+            return None
 
     class WidgetBearerView(WidgetViewBase):
         authentication = HeaderAuthentication()
@@ -154,8 +166,10 @@ def routes(app, models, schemas, auth):
         "/widgets_any_credentials/<int:id>", WidgetAnyCredentialsView
     )
     api.add_resource(
-        "/widgets_create_missing/<int:id>", WidgetCreateMissingView
+        "/widgets_create_transient_stub/<int:id>",
+        WidgetCreateTransientStubView,
     )
+    api.add_resource("/widgets_upsert/<int:id>", WidgetUpsertView)
     api.add_resource("/widgets_bearer/<int:id>", WidgetBearerView)
     api.add_resource(
         "/widgets_bearer_with_fallback/<int:id>", WidgetBearerWithFallbackView
@@ -211,7 +225,7 @@ def test_update(client, auth):
         "/widgets/1?user_id=foo",
         data={"id": "1", "owner_id": "foo", "name": "Updated"},
     )
-    assert_response(response, 204)
+    assert_response(response, 200)
 
     assert auth["authorization"].authorize_modify_item.mock_calls == [
         call(ANY, "update"),
@@ -245,8 +259,10 @@ def test_retrieve_bearer_with_fallback(client):
     assert response.status_code == 200
 
 
-def test_retrieve_create_missing(client, auth):
-    response = client.get("/widgets_create_missing/4?user_id=foo&owner_id=foo")
+def test_retrieve_create_transient_stub(client, auth):
+    response = client.get(
+        "/widgets_create_transient_stub/4?user_id=foo&owner_id=foo"
+    )
     assert_response(
         response, 200, {"id": "4", "owner_id": "foo", "name": None}
     )
@@ -256,15 +272,27 @@ def test_retrieve_create_missing(client, auth):
     ]
 
 
-def test_update_update_missing(client, auth):
+def test_upsert_create(client, auth):
     response = client.put(
-        "/widgets_create_missing/4?user_id=foo&owner_id=foo",
-        data={"id": "4", "name": "Created"},
+        "/widgets_upsert/4?user_id=foo",
+        data={"id": 4, "owner_id": "foo", "name": "Created"},
     )
-    assert_response(response, 204)
+    assert_response(response, 201)
 
     assert auth["authorization"].authorize_modify_item.mock_calls == [
         call(ANY, "create"),
+        call(ANY, "save"),
+    ]
+
+
+def test_upsert_update(client, auth):
+    response = client.put(
+        "/widgets_upsert/1?user_id=foo",
+        data={"id": "1", "owner_id": "foo", "name": "Updated"},
+    )
+    assert_response(response, 200)
+
+    assert auth["authorization"].authorize_modify_item.mock_calls == [
         call(ANY, "update"),
         call(ANY, "save"),
     ]
@@ -358,8 +386,10 @@ def test_error_any_credentials_unauthenticated(client):
     assert response.status_code == 401
 
 
-def test_error_retrieve_create_missing_unauthorized(client, auth):
-    response = client.get("/widgets_create_missing/4?user_id=bar&owner_id=foo")
+def test_error_retrieve_create_transient_stub_unauthorized(client, auth):
+    response = client.get(
+        "/widgets_create_transient_stub/4?user_id=bar&owner_id=foo"
+    )
     assert_response(response, 404)
 
     assert auth["authorization"].authorize_modify_item.mock_calls == [
@@ -367,17 +397,27 @@ def test_error_retrieve_create_missing_unauthorized(client, auth):
     ]
 
 
-def test_error_update_create_missing_unauthorized(client, auth):
+def test_error_upsert_create_unauthorized(client, auth):
     response = client.put(
-        "/widgets_create_missing/4?user_id=foo&owner_id=foo",
-        data={"id": "4", "owner_id": "bar", "name": "Created"},
+        "/widgets_upsert/4?user_id=foo",
+        data={"id": "4", "owner_id": "foo", "name": "Updated"},
+    )
+    assert_response(response, 403, [{"code": "invalid_name"}])
+
+    assert auth["authorization"].authorize_modify_item.mock_calls == [
+        call(ANY, "create")
+    ]
+
+
+def test_error_upsert_update_unauthorized(client, auth):
+    response = client.put(
+        "/widgets_upsert/3?user_id=foo",
+        data={"id": "3", "owner_id": "foo", "name": "Updated"},
     )
     assert_response(response, 403, [{"code": "invalid_user"}])
 
     assert auth["authorization"].authorize_modify_item.mock_calls == [
-        call(ANY, "create"),
-        call(ANY, "update"),
-        call(ANY, "save"),
+        call(ANY, "update")
     ]
 
 
