@@ -28,6 +28,8 @@ jobs:
         user: "__token__"
         password:
           secure: "Z7mZWJfnuzmXH7j7ePbqZbexnSymAArUN1lQkqecguD6QkMwD8IIzAwM5EAld3pmrwdF6iIwu7utfZgaT8JoFavQYjcDLvvW+qvmK2i5K1YFcfrSpLoHifOFFkGmnVKpzLxDOO5KwDBgmbxWxUZB2AOmPUkDT1/Y0fg03f+sYXvSn7azT6FkhljRCP0+xgbqqZEs7nd/RVdCkdKHxsOlqaMC2CX/E64VBj0YAG0Fa9a8OCRmqbKmROnihqE8p0pKPAk7wj8VAJlaJmzNkSJDJLWs/thb1KG4CXcYWkcE/H7DWjvEXSPNCqPxsZ28WqcfKNmAYNMZBkvBW/99LpYd3zKM+ez/DyGRYzf8YOOQ7axIRwJOPExbZYZakny27hDcQEpaMLOuAP3NbMqaIHdJkQEDuTVHnDnFeCTn7rgHVzBaB7uQnaUD3z31EWDUOrN8jeUE3QnzR7FhhoWjrYkDwUFZpUVQzpzrTU17lTRLfJxXIUqqMBhdIgMZ/NGTLvXdDgdyPlt0iEPfg2VMXUl5JgwiKvWRK4raJY3y95TI8zHcUi/9XBM4YLPbQVYg/UuEJPt0p6A3YNnvHv855/SuZnn3Bmo+Vv5sI9DJZ/T7N86wWMDBdlEtboSXMc2Nv8UuO5kSxATmY+oCETh8f0J2zPqe83zrN1Es7cHYyccCLNA="
+        on:
+          tags: true
         distributions: sdist bdist_wheel
 
 services:
