@@ -23,6 +23,8 @@ jobs:
       install: skip
       before_script: skip
       script: skip
+      after_success:
+        - "true"
       deploy:
         provider: pypi
         user: "__token__"
