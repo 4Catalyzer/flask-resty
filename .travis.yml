@@ -6,12 +6,12 @@ jobs:
   include:
     - { python: "3.8", env: "TOXENV=lint" }
 
-    - { python: "3.7", env: "TOXENV=py-full DATABASE_URL=postgres://localhost/travis_ci_test" }
     - { python: "3.8", env: "TOXENV=py-full DATABASE_URL=postgres://localhost/travis_ci_test" }
+    - { python: "3.7", env: "TOXENV=py-full DATABASE_URL=postgres://localhost/travis_ci_test" }
 
-    - { python: "3.6", env: "TOXENV=py-base" }
-    - { python: "3.7", env: "TOXENV=py-base" }
     - { python: "3.8", env: "TOXENV=py-base" }
+    - { python: "3.7", env: "TOXENV=py-base" }
+    - { python: "3.6", env: "TOXENV=py-base" }
 
     - { python: "3.8", env: "TOXENV=docs" }
 
