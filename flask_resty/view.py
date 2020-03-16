@@ -864,7 +864,7 @@ class ModelView(ApiView):
         """
         self.session.delete(item)
 
-    def flush(self, objects=None):
+    def flush(self, *, objects=None):
         """Flush pending changes to the database.
 
         This will check database level invariants, and will throw exceptions as
