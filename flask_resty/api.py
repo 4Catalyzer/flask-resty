@@ -19,14 +19,7 @@ def handle_api_error(error):
 
 
 def handle_http_exception(error):
-    # Flask calls the InternalServerError handler with any uncaught app
-    # exceptions. Re-raise those as generic internal server errors.
-    if not isinstance(error, HTTPException):
-        error = ApiError(500)
-    else:
-        error = ApiError.from_http_exception(error)
-
-    return error.response
+    return ApiError.from_http_exception(error).response
 
 
 # -----------------------------------------------------------------------------
