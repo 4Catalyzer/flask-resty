@@ -1063,7 +1063,7 @@ class GenericModelView(ModelView):
         :return: An HTTP 200 or 204 response.
         :rtype: :py:class:`flask.Response`
         """
-        item = self.get_item_or_404(id, with_for_update=with_for_update,)
+        item = self.get_item_or_404(id, with_for_update=with_for_update)
         data_in = self.get_request_data(expected_id=id, partial=partial)
 
         item = self.update_item(item, data_in) or item
