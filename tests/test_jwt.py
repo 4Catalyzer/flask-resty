@@ -164,7 +164,7 @@ class TestJwkSet(AbstractTestJwt):
         ),
     )
     def jwk_set(self, request):
-        with open(request.param, "r") as rsa_pub_file:
+        with open(request.param) as rsa_pub_file:
             return json.load(rsa_pub_file)
 
     @pytest.fixture()

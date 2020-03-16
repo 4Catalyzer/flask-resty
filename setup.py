@@ -36,7 +36,6 @@ setup(
     ),
     extras_require={
         "docs": ("sphinx", "pallets-sphinx-themes"),
-        "lint": ("pre-commit ~= 1.17"),
         "jwt": ("PyJWT >= 1.4.0", "cryptography >= 2.0.0"),
         "tests": ("coverage", "psycopg2-binary", "pytest"),
     },

@@ -1,15 +1,15 @@
 repos:
 - repo: https://github.com/asottile/pyupgrade
-  rev: v1.25.3
+  rev: v2.1.0
   hooks:
     - id: pyupgrade
       args: [--py36-plus]
 - repo: https://github.com/4Catalyzer/fourmat
-  rev: master
+  rev: v0.4.2
   hooks:
     - id: fourmat
 - repo: https://github.com/asottile/blacken-docs
-  rev: v1.4.0
+  rev: v1.6.0
   hooks:
   - id: blacken-docs
     additional_dependencies: [black==19.10b0]
