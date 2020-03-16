@@ -73,19 +73,19 @@ def routes(app, models, schemas):
             return self.retrieve(id)
 
         def put(self, id):
-            return self.update(id, return_content=True)
+            return self.update(id)
 
     class NestedParentView(ParentView):
         related = Related(children=lambda: ChildView())
 
         def put(self, id):
-            return self.update(id, return_content=True)
+            return self.update(id)
 
     class ParentWithCreateView(ParentView):
         related = Related(children=Related(models["child"]))
 
         def put(self, id):
-            return self.update(id, return_content=True)
+            return self.update(id)
 
     class ChildView(GenericModelView):
         model = models["child"]
@@ -99,7 +99,7 @@ def routes(app, models, schemas):
             return self.retrieve(id)
 
         def put(self, id):
-            return self.update(id, return_content=True)
+            return self.update(id)
 
     class NestedChildView(GenericModelView):
         model = models["child"]
@@ -108,7 +108,7 @@ def routes(app, models, schemas):
         related = Related(parent=ParentView)
 
         def put(self, id):
-            return self.update(id, return_content=True)
+            return self.update(id)
 
     api = Api(app)
     api.add_resource("/parents/<int:id>", ParentView)

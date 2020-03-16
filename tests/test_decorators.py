@@ -29,7 +29,7 @@ def routes(app, models):
         def get(self, item):
             return str(item.id)
 
-        @get_item_or_404(create_missing=True)
+        @get_item_or_404(create_transient_stub=True)
         def put(self, item):
             return str(item.id)
 
@@ -56,7 +56,7 @@ def test_get_item(client):
     assert response.get_data(as_text=True) == "1"
 
 
-def test_get_item_create_missing(client):
+def test_get_item_create_transient_stub(client):
     response = client.put("/widgets/2")
     assert response.status_code == 200
     assert response.get_data(as_text=True) == "2"
