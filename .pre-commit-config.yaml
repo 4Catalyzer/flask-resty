@@ -5,7 +5,7 @@ repos:
     - id: pyupgrade
       args: [--py36-plus]
 - repo: https://github.com/4Catalyzer/fourmat
-  rev: master
+  rev: v0.4.2
   hooks:
     - id: fourmat
 - repo: https://github.com/asottile/blacken-docs
