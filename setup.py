@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name="Flask-RESTy",
-    version="0.23.0",
+    version="0.23.1",
     description="Building blocks for REST APIs for Flask",
     url="https://github.com/4Catalyzer/flask-resty",
     author="4Catalyzer",
