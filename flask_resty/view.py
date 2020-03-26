@@ -1058,8 +1058,6 @@ class GenericModelView(ModelView):
             using ``FOR UPDATE``.
         :param bool partial: If set, perform a partial update for the item,
             ignoring fields marked ``required`` on `deserializer`.
-        :param bool return_content: If set, return an HTTP 200 response with
-            the updated item. Otherwise, return an empty HTTP 204 response.
         :return: An HTTP 200 or 204 response.
         :rtype: :py:class:`flask.Response`
         """
