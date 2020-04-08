@@ -98,7 +98,9 @@ class ApiView(MethodView):
         """Build a response for a single item.
 
         This serializes the item, then builds an response with the serialized
-        item as its data.
+        item as its data. If the response status code is 201, then it will also
+        include a ``Location`` header with the canonical URL of the item, if
+        available.
 
         The response will have the item available as the ``item`` attribute.
 
@@ -108,7 +110,14 @@ class ApiView(MethodView):
         """
         data_out = self.serialize(item)
         self.set_item_response_meta(item)
-        return self.make_response(data_out, *args, item=item)
+        response = self.make_response(data_out, *args, item=item)
+
+        if response.status_code == 201:
+            location = self.get_location(item)
+            if location is not None:
+                response.headers["Location"] = location
+
+        return response
 
     def set_item_response_meta(self, item):
         """Hook for setting additional metadata for an item.
@@ -183,11 +192,7 @@ class ApiView(MethodView):
         :return: The HTTP response
         :rtype: :py:class:`flask.Response`
         """
-        response = self.make_item_response(item, 201)
-        location = self.get_location(item)
-        if location is not None:
-            response.headers["Location"] = location
-        return response
+        return self.make_item_response(item, 201)
 
     def make_deleted_response(self, item):
         """Build a response for a deleted item.
