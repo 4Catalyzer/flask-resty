@@ -149,6 +149,8 @@ Filtering
 
 Add filtering to your list endpoints by setting the ``filtering`` attribute on the base class.
 
+Filtering natively handles multiple values. Specify values in a comma separated string to the query parameter, e.g., ``/books?author_id=1,2``.
+
 .. code-block:: python
 
     class BookViewBase(GenericModelView):
