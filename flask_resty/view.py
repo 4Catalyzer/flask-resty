@@ -299,8 +299,8 @@ class ApiView(MethodView):
                 }
             }
 
-        :param error: The marshmallow validation error message.
-        :param path: The path to the invalid field.
+        :param str message: The marshmallow validation error message.
+        :param tuple path: The path to the invalid field.
         :return: The formatted validation error.
         :rtype: dict
         """
