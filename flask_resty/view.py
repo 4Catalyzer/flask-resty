@@ -1,25 +1,48 @@
 import itertools
+from typing import (
+    Generic,
+    List,
+    Literal,
+    Optional,
+    Sequence,
+    Type,
+    TypeVar,
+    Union,
+)
 
 import flask
+from flask import Response
 from flask.views import MethodView
-from marshmallow import ValidationError, fields
+from marshmallow import Schema, ValidationError, fields
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Load
+from sqlalchemy.orm import Load, Query, Session
 from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.orm.strategy_options import loader_option
 from werkzeug.exceptions import NotFound
 
 from . import meta
-from .authentication import NoOpAuthentication
-from .authorization import NoOpAuthorization
+from .authentication import AuthenticationBase, NoOpAuthentication
+from .authorization import AuthorizationBase, NoOpAuthorization
 from .decorators import request_cached_property
 from .exceptions import ApiError
 from .fields import DelimitedList
+from .filtering import Filtering
+from .pagination import PaginationBase
+from .related import Related
+from .sorting import SortingBase
 from .utils import settable_property
 
 # -----------------------------------------------------------------------------
 
+TItem = TypeVar("TItem")
+_TDataIn = TypeVar("_TDataIn", bound=dict)
+_TArgs = TypeVar("_TArgs", bound=dict)
+_TId = TypeVar("_TId")
 
-class ApiView(MethodView):
+# -----------------------------------------------------------------------------
+
+
+class ApiView(Generic[TItem], MethodView):
     """Base class for views that expose API endpoints.
 
     `ApiView` extends :py:class:`flask.views.MethodView` exposes functionality
@@ -29,19 +52,19 @@ class ApiView(MethodView):
 
     #: The :py:class:`marshmallow.Schema` for serialization and
     #: deserialization.
-    schema = None
+    schema: Optional[Schema] = None
     #: The identifying fields for the model.
-    id_fields = ("id",)
+    id_fields: Sequence[str] = ("id",)
     #: The :py:class:`marshmallow.Schema` for deserializing the query params in
     #: the :py:data:`flask.Request.args`.
-    args_schema = None
+    args_schema: Optional[Schema] = None
 
     #: The authentication component. See :py:class:`AuthenticationBase`.
-    authentication = NoOpAuthentication()
+    authentication: AuthenticationBase = NoOpAuthentication()
     #: The authorization component. See :py:class:`AuthorizationBase`.
-    authorization = NoOpAuthorization()
+    authorization: AuthorizationBase = NoOpAuthorization()
 
-    def dispatch_request(self, *args, **kwargs):
+    def dispatch_request(self, *args, **kwargs) -> Response:
         """Handle an incoming request.
 
         By default, this checks request-level authentication and authorization
@@ -52,7 +75,7 @@ class ApiView(MethodView):
 
         return super().dispatch_request(*args, **kwargs)
 
-    def serialize(self, item, **kwargs):
+    def serialize(self, item: Union[TItem, Sequence[TItem]], **kwargs) -> dict:
         """Dump an item using the :py:attr:`serializer`.
 
         This doesn't technically serialize the item; it instead uses
@@ -69,7 +92,7 @@ class ApiView(MethodView):
         return self.serializer.dump(item, **kwargs)
 
     @settable_property
-    def serializer(self):
+    def serializer(self) -> Optional[Schema]:
         """The :py:class:`marshmallow.Schema` for serialization.
 
         By default, this is :py:attr:`ApiView.schema`. This can be overridden
@@ -77,7 +100,7 @@ class ApiView(MethodView):
         """
         return self.schema
 
-    def make_items_response(self, items, *args):
+    def make_items_response(self, items: Sequence[TItem], *args) -> Response:
         """Build a response for a sequence of multiple items.
 
         This serializes the items, then builds an response with the list of
@@ -94,7 +117,7 @@ class ApiView(MethodView):
         data_out = self.serialize(items, many=True)
         return self.make_response(data_out, *args, items=items)
 
-    def make_item_response(self, item, *args):
+    def make_item_response(self, item: TItem, *args) -> Response:
         """Build a response for a single item.
 
         This serializes the item, then builds an response with the serialized
@@ -119,7 +142,7 @@ class ApiView(MethodView):
 
         return response
 
-    def set_item_response_meta(self, item):
+    def set_item_response_meta(self, item: TItem) -> None:
         """Hook for setting additional metadata for an item.
 
         This should call `meta.update_response_meta` to set any metadata values
@@ -130,7 +153,7 @@ class ApiView(MethodView):
         """
         pass
 
-    def make_response(self, data, *args, **kwargs):
+    def make_response(self, data, *args, **kwargs) -> Response:
         """Build a response for arbitrary dumped data.
 
         This builds the response body given the data and any metadata from the
@@ -142,7 +165,7 @@ class ApiView(MethodView):
         body = self.render_response_body(data, meta.get_response_meta())
         return self.make_raw_response(body, *args, **kwargs)
 
-    def render_response_body(self, data, response_meta):
+    def render_response_body(self, data, response_meta: dict) -> Response:
         """Render the response data and metadata into a body.
 
         This is the final step of building the response payload before
@@ -157,7 +180,7 @@ class ApiView(MethodView):
 
         return flask.jsonify(body)
 
-    def make_raw_response(self, *args, **kwargs):
+    def make_raw_response(self, *args, **kwargs) -> Response:
         """Convenience method for creating a :py:class:`flask.Response`.
 
         Any supplied keyword arguments are defined as attributes on the
@@ -171,7 +194,7 @@ class ApiView(MethodView):
             setattr(response, key, value)
         return response
 
-    def make_empty_response(self, **kwargs):
+    def make_empty_response(self, **kwargs) -> Response:
         """Build an empty response.
 
         This response has a status code of 204 and an empty body.
@@ -181,7 +204,7 @@ class ApiView(MethodView):
         """
         return self.make_raw_response("", 204, **kwargs)
 
-    def make_created_response(self, item):
+    def make_created_response(self, item: TItem) -> Response:
         """Build a response for a newly created item.
 
         This response will be for the item data and will have a status code of
@@ -194,7 +217,7 @@ class ApiView(MethodView):
         """
         return self.make_item_response(item, 201)
 
-    def make_deleted_response(self, item):
+    def make_deleted_response(self, item: TItem) -> Response:
         """Build a response for a deleted item.
 
         By default, this will be an empty response. The empty response will
@@ -206,7 +229,7 @@ class ApiView(MethodView):
         """
         return self.make_empty_response(item=item)
 
-    def get_location(self, item):
+    def get_location(self, item: TItem) -> str:
         """Get the canonical URL for an item.
 
         Override this to return ``None`` if no such URL is available.
@@ -220,7 +243,7 @@ class ApiView(MethodView):
         }
         return flask.url_for(flask.request.endpoint, _method="GET", **id_dict)
 
-    def get_request_data(self, **kwargs):
+    def get_request_data(self, **kwargs) -> _TDataIn:
         """Deserialize and load data from the body of the current request.
 
         By default, this will look for the value under the ``data`` key in a
@@ -232,13 +255,14 @@ class ApiView(MethodView):
         data_raw = self.parse_request_data()
         return self.deserialize(data_raw, **kwargs)
 
-    def parse_request_data(self):
+    def parse_request_data(self) -> dict:
         """Deserialize the data for the current request.
 
         This will deserialize the request data from the request body into a
         native Python object that can be loaded by marshmallow.
 
-        :return: The deserialized request data.
+        :return: The deserialized request data
+        :rtype: dict
         """
         try:
             data_raw = flask.request.get_json()["data"]
@@ -249,7 +273,13 @@ class ApiView(MethodView):
 
         return data_raw
 
-    def deserialize(self, data_raw, *, expected_id=None, **kwargs):
+    def deserialize(
+        self,
+        data_raw: dict,
+        *,
+        expected_id: Union[_TId, Literal[False], None] = None,
+        **kwargs,
+    ) -> _TDataIn:
         """Load data using the :py:attr:`deserializer`.
 
         This doesn't technically deserialize the data; it instead uses
@@ -259,7 +289,7 @@ class ApiView(MethodView):
         Any provided `**kwargs` will be passed to
         :py:meth:`marshmallow.Schema.load`.
 
-        :param data_raw: The request data to load.
+        :param dict data_raw: The request data to load.
         :param expected_id: The expected ID in the request data. See
             `validate_request_id`.
         :return: The deserialized data
@@ -276,7 +306,7 @@ class ApiView(MethodView):
         return data
 
     @settable_property
-    def deserializer(self):
+    def deserializer(self) -> Optional[Schema]:
         """The :py:class:`marshmallow.Schema` for serialization.
 
         By default, this is :py:attr:`ApiView.schema`. This can be overridden
@@ -284,7 +314,9 @@ class ApiView(MethodView):
         """
         return self.schema
 
-    def format_validation_error(self, message, path):
+    def format_validation_error(
+        self, message: str, path: Sequence[str]
+    ) -> dict:
         """Convert marshmallow validation error data to a serializable form.
 
         This converts marshmallow validation error data to a standard
@@ -314,7 +346,7 @@ class ApiView(MethodView):
             "source": {"pointer": pointer},
         }
 
-    def validate_request_id(self, data, expected_id):
+    def validate_request_id(self, data: dict, expected_id: _TId) -> None:
         """Check that the request data has the expected ID.
 
         This is generally used to assert that update operations include the
@@ -346,7 +378,7 @@ class ApiView(MethodView):
         if id != expected_id:
             raise ApiError(409, {"code": "invalid_id.mismatch"})
 
-    def get_data_id(self, data):
+    def get_data_id(self, data: dict) -> _TId:
         """Get the ID as a scalar or tuple from request data.
 
         The ID will be a scalar if :py:attr:`id_fields` contains a single
@@ -360,7 +392,7 @@ class ApiView(MethodView):
         return tuple(data[id_field] for id_field in self.id_fields)
 
     @request_cached_property
-    def request_args(self):
+    def request_args(self) -> _TArgs:
         """The query arguments for the current request.
 
         This uses :py:attr:`args_schema` to load the current query args. This
@@ -394,7 +426,7 @@ class ApiView(MethodView):
 
         return self.deserialize_args(data_raw)
 
-    def deserialize_args(self, data_raw, **kwargs):
+    def deserialize_args(self, data_raw: dict, **kwargs) -> _TArgs:
         """Load parsed query arg data using :py:attr:`args_schema`.
 
         As with `deserialize`, contra the name, this handles loading with a
@@ -419,7 +451,9 @@ class ApiView(MethodView):
 
         return data
 
-    def format_parameter_validation_error(self, message, parameter):
+    def format_parameter_validation_error(
+        self, message: str, parameter: str
+    ) -> dict:
         """Convert a parameter validation error to a serializable form.
 
         This closely follows `format_validation_error`, but produces error
@@ -444,7 +478,7 @@ class ApiView(MethodView):
             "source": {"parameter": parameter},
         }
 
-    def get_id_dict(self, id):
+    def get_id_dict(self, id: _TId) -> dict:
         """Convert an ID from `get_data_id` to dictionary form.
 
         This converts an ID from `get_data_id` into a dictionary where each ID
@@ -461,7 +495,7 @@ class ApiView(MethodView):
         return dict(zip(self.id_fields, id))
 
 
-class ModelView(ApiView):
+class ModelView(ApiView[TItem]):
     """Base class for API views tied to SQLAlchemy models.
 
     `ModelView` implements additional methods on top of those provided by
@@ -478,25 +512,25 @@ class ModelView(ApiView):
     """
 
     #: A declarative SQLAlchemy model.
-    model = None
+    model: Type[TItem] = None
 
     #: An instance of :py:class:`filtering.Filtering`.
-    filtering = None
+    filtering: Optional[Filtering] = None
     #: An instance of :py:class:`sorting.SortingBase`.
-    sorting = None
+    sorting: Optional[SortingBase] = None
     #: An instance of :py:class:`pagination.PaginationBase`.
-    pagination = None
+    pagination: Optional[PaginationBase] = None
 
     #: An instance of :py:class:`related.Related`.
-    related = None
+    related: Optional[Related] = None
 
     @settable_property
-    def session(self):
+    def session(self) -> Session:
         """Convenience property for the current SQLAlchemy session."""
         return flask.current_app.extensions["sqlalchemy"].db.session
 
     @settable_property
-    def query_raw(self):
+    def query_raw(self) -> Query:
         """The raw SQLAlchemy query for the view.
 
         This is the base query, without authorization filters or query options.
@@ -506,7 +540,7 @@ class ModelView(ApiView):
         return self.model.query
 
     @settable_property
-    def query(self):
+    def query(self) -> Query:
         """The SQLAlchemy query for the view.
 
         Override this to customize the query to fetch items in this view.
@@ -531,10 +565,10 @@ class ModelView(ApiView):
     #: For example, set this to ``(raiseload('*', sql_only=True),)`` to prevent
     #: all implicit SQL-emitting relationship loading, and force all
     #: relationship loading to be explicitly defined via `query_options`.
-    base_query_options = ()
+    base_query_options: Sequence[loader_option] = ()
 
     @settable_property
-    def query_options(self):
+    def query_options(self) -> Sequence[loader_option]:
         """Options to apply to the query for the view.
 
         Set this to configure relationship and column loading.
@@ -551,7 +585,7 @@ class ModelView(ApiView):
 
         return self.serializer.get_query_options(Load(self.model))
 
-    def get_list(self):
+    def get_list(self) -> List[TItem]:
         """Retrieve a list of items.
 
         This takes the output of `get_list_query` and applies pagination.
@@ -561,7 +595,7 @@ class ModelView(ApiView):
         """
         return self.paginate_list_query(self.get_list_query())
 
-    def get_list_query(self):
+    def get_list_query(self) -> Query:
         """Build the query to retrieve a filtered and sorted list of items.
 
         :return: The list query.
@@ -572,7 +606,7 @@ class ModelView(ApiView):
         query = self.sort_list_query(query)
         return query
 
-    def filter_list_query(self, query):
+    def filter_list_query(self, query: Query) -> Query:
         """Apply filtering as specified to the provided `query`.
 
         :param: A SQL query
@@ -585,7 +619,7 @@ class ModelView(ApiView):
 
         return self.filtering.filter_query(query, self)
 
-    def sort_list_query(self, query):
+    def sort_list_query(self, query: Query) -> Query:
         """Apply sorting as specified to the provided `query`.
 
         :param: A SQL query
@@ -598,7 +632,7 @@ class ModelView(ApiView):
 
         return self.sorting.sort_query(query, self)
 
-    def paginate_list_query(self, query):
+    def paginate_list_query(self, query: Query) -> List[TItem]:
         """Retrieve the requested page from `query`.
 
         If :py:attr:`pagination` is configured, this will retrieve the page as
@@ -615,7 +649,7 @@ class ModelView(ApiView):
 
         return self.pagination.get_page(query, self)
 
-    def get_item_or_404(self, id, **kwargs):
+    def get_item_or_404(self, id: _TId, **kwargs) -> TItem:
         """Get an item by ID; raise a 404 if it not found.
 
         This will get an item by ID per `get_item` below. If no item is found,
@@ -633,8 +667,12 @@ class ModelView(ApiView):
         return item
 
     def get_item(
-        self, id, *, with_for_update=False, create_transient_stub=False,
-    ):
+        self,
+        id: _TId,
+        *,
+        with_for_update: bool = False,
+        create_transient_stub: bool = False,
+    ) -> TItem:
         """Get an item by ID.
 
         The ID should be the scalar ID value if `id_fields` specifies a single
@@ -675,7 +713,7 @@ class ModelView(ApiView):
 
         return item
 
-    def deserialize(self, data_raw, **kwargs):
+    def deserialize(self, data_raw: dict, **kwargs) -> _TDataIn:
         """Load data using the :py:attr:`deserializer`.
 
         In addition to the functionality of :py:meth:`ApiView.deserialize`,
@@ -684,7 +722,7 @@ class ModelView(ApiView):
         data = super().deserialize(data_raw, **kwargs)
         return self.resolve_related(data)
 
-    def resolve_related(self, data):
+    def resolve_related(self, data: dict) -> _TDataIn:
         """Resolve all related fields per :py:attr:`related`.
 
         :param object data: A deserialized object
@@ -696,7 +734,7 @@ class ModelView(ApiView):
 
         return self.related.resolve_related(data)
 
-    def resolve_related_item(self, data, **kwargs):
+    def resolve_related_item(self, data: dict, **kwargs) -> TItem:
         """Retrieve the related item corresponding to the provided data stub.
 
         This is used by `Related` when this view is set for a field.
@@ -712,7 +750,7 @@ class ModelView(ApiView):
 
         return self.resolve_related_id(id, **kwargs)
 
-    def resolve_related_id(self, id, **kwargs):
+    def resolve_related_id(self, id: _TId, **kwargs) -> TItem:
         """Retrieve the related item corresponding to the provided ID.
 
         This is used by `Related` when a field is specified as a `RelatedId`.
@@ -728,7 +766,7 @@ class ModelView(ApiView):
 
         return item
 
-    def create_stub_item(self, id):
+    def create_stub_item(self, id: _TId) -> TItem:
         """Create a stub item that corresponds to the provided ID.
 
         This is used by `get_item` when `create_transient_stub` is set.
@@ -741,7 +779,7 @@ class ModelView(ApiView):
         """
         return self.create_item(self.get_id_dict(id))
 
-    def create_item(self, data):
+    def create_item(self, data: _TDataIn) -> TItem:
         """Create an item using the provided data.
 
         This will invoke `authorize_create_item` on the created item.
@@ -757,7 +795,7 @@ class ModelView(ApiView):
         self.authorization.authorize_create_item(item)
         return item
 
-    def create_item_raw(self, data):
+    def create_item_raw(self, data: _TDataIn) -> TItem:
         """As with `create_item`, but without the authorization check.
 
         This is used by `create_item`, which then applies the authorization
@@ -773,7 +811,7 @@ class ModelView(ApiView):
         """
         return self.model(**data)
 
-    def add_item(self, item):
+    def add_item(self, item: TItem) -> None:
         """Add an item to the current session.
 
         This will invoke `authorize_save_item` on the item to add.
@@ -783,7 +821,7 @@ class ModelView(ApiView):
         self.add_item_raw(item)
         self.authorization.authorize_save_item(item)
 
-    def add_item_raw(self, item):
+    def add_item_raw(self, item: TItem) -> None:
         """As with `add_item`, but without the authorization check.
 
         This is used by `add_item`, which then applies the authorization check.
@@ -792,7 +830,7 @@ class ModelView(ApiView):
         """
         self.session.add(item)
 
-    def create_and_add_item(self, data):
+    def create_and_add_item(self, data: _TDataIn) -> TItem:
         """Create an item using the provided data, then add it to the session.
 
         This uses `create_item` and `add_item`. Correspondingly, it will invoke
@@ -806,7 +844,7 @@ class ModelView(ApiView):
         self.add_item(item)
         return item
 
-    def update_item(self, item, data):
+    def update_item(self, item: TItem, data: _TDataIn) -> TItem:
         """Update an existing item with the provided data.
 
         This will invoke `authorize_update_item` using the provided item and
@@ -826,7 +864,7 @@ class ModelView(ApiView):
         self.authorization.authorize_save_item(item)
         return item
 
-    def update_item_raw(self, item, data):
+    def update_item_raw(self, item: TItem, data: _TDataIn) -> TItem:
         """As with `update_item`, but without the authorization checks.
 
         Override this instead of `update_item` when applying other
@@ -840,8 +878,9 @@ class ModelView(ApiView):
         """
         for key, value in data.items():
             setattr(item, key, value)
+        return item
 
-    def delete_item(self, item):
+    def delete_item(self, item: TItem) -> TItem:
         """Delete an existing item.
 
         This will run `authorize_delete_item` on the item before deleting it.
@@ -854,7 +893,7 @@ class ModelView(ApiView):
         item = self.delete_item_raw(item) or item
         return item
 
-    def delete_item_raw(self, item):
+    def delete_item_raw(self, item: TItem) -> TItem:
         """As with `delete_item`, but without the authorization check.
 
         Override this to customize the delete behavior, e.g. by replacing the
@@ -863,8 +902,9 @@ class ModelView(ApiView):
         :param object item: The item to delete.
         """
         self.session.delete(item)
+        return item
 
-    def flush(self, *, objects=None):
+    def flush(self, *, objects=None) -> None:
         """Flush pending changes to the database.
 
         This will check database level invariants, and will throw exceptions as
@@ -906,7 +946,7 @@ class ModelView(ApiView):
         except IntegrityError as e:
             raise self.resolve_integrity_error(e) from e
 
-    def resolve_integrity_error(self, error):
+    def resolve_integrity_error(self, error: IntegrityError) -> Exception:
         """Convert integrity errors to HTTP error responses as appropriate.
 
         Certain kinds of database integrity errors cannot easily be caught by
@@ -938,7 +978,7 @@ class ModelView(ApiView):
         )
         return ApiError(409, {"code": "invalid_data.conflict"})
 
-    def set_item_response_meta(self, item):
+    def set_item_response_meta(self, item: TItem) -> None:
         """Set the appropriate response metadata for the response item.
 
         By default, this adds the item metadata from the pagination component.
@@ -948,7 +988,7 @@ class ModelView(ApiView):
         super().set_item_response_meta(item)
         self.set_item_response_meta_pagination(item)
 
-    def set_item_response_meta_pagination(self, item):
+    def set_item_response_meta_pagination(self, item: TItem) -> None:
         """Set pagination metadata for the response item.
 
         This uses the configured pagination component to set pagination
@@ -962,7 +1002,7 @@ class ModelView(ApiView):
         meta.update_response_meta(self.pagination.get_item_meta(item, self))
 
 
-class GenericModelView(ModelView):
+class GenericModelView(ModelView[TItem]):
     """Base class for API views implementing CRUD methods.
 
     `GenericModelView` provides basic implementations of the standard CRUD
@@ -999,7 +1039,7 @@ class GenericModelView(ModelView):
     the methods in `MethodView`.
     """
 
-    def list(self):
+    def list(self) -> Response:
         """Return a list of items.
 
         This is the standard GET handler on a list view.
@@ -1010,7 +1050,9 @@ class GenericModelView(ModelView):
         items = self.get_list()
         return self.make_items_response(items)
 
-    def retrieve(self, id, *, create_transient_stub=False):
+    def retrieve(
+        self, id: _TId, *, create_transient_stub: bool = False
+    ) -> Response:
         """Retrieve an item by ID.
 
         This is the standard ``GET`` handler on a detail view.
@@ -1027,7 +1069,7 @@ class GenericModelView(ModelView):
         )
         return self.make_item_response(item)
 
-    def create(self, *, allow_client_id=False):
+    def create(self, *, allow_client_id: bool = False) -> Response:
         """Create a new item using the request data.
 
         This is the standard ``POST`` handler on a list view.
@@ -1046,8 +1088,12 @@ class GenericModelView(ModelView):
         return self.make_created_response(item)
 
     def update(
-        self, id, *, with_for_update=False, partial=False,
-    ):
+        self,
+        id: _TId,
+        *,
+        with_for_update: bool = False,
+        partial: bool = False,
+    ) -> Response:
         """Update the item for the specified ID with the request data.
 
         This is the standard ``PUT`` handler on a detail view if `partial` is
@@ -1069,7 +1115,7 @@ class GenericModelView(ModelView):
 
         return self.make_item_response(item)
 
-    def upsert(self, id, *, with_for_update=False):
+    def upsert(self, id: _TId, *, with_for_update: bool = False) -> Response:
         """Upsert the item for the specified ID with the request data.
 
         This will update the item for the given ID, if that item exists.
@@ -1096,7 +1142,7 @@ class GenericModelView(ModelView):
 
             return self.make_item_response(item)
 
-    def destroy(self, id):
+    def destroy(self, id: _TId) -> Response:
         """Delete the item for the specified ID.
 
         :param id: The item ID.
