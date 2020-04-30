@@ -6,7 +6,7 @@ from marshmallow import ValidationError
 
 from . import meta
 from .exceptions import ApiError
-from .utils import if_none, iter_validation_errors
+from .utils import if_none
 
 # -----------------------------------------------------------------------------
 
@@ -373,12 +373,8 @@ class CursorPaginationBase(LimitPagination):
                 for field, value in zip(column_fields, cursor)
             )
         except ValidationError as e:
-            raise ApiError(
-                400,
-                *(
-                    self.format_validation_error(message)
-                    for message, path in iter_validation_errors(e.messages)
-                ),
+            raise ApiError.from_validation_error(
+                400, e, self.format_validation_error
             ) from e
 
         return cursor
@@ -398,7 +394,7 @@ class CursorPaginationBase(LimitPagination):
         value = base64.urlsafe_b64decode(value)
         return value.decode()
 
-    def format_validation_error(self, message):
+    def format_validation_error(self, message, path):
         return {"code": "invalid_cursor", "detail": message}
 
     def get_filter(self, view, field_orderings, cursor):

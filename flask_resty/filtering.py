@@ -8,7 +8,6 @@ from marshmallow import ValidationError
 from sqlalchemy import sql
 
 from .exceptions import ApiError
-from .utils import iter_validation_errors
 
 # -----------------------------------------------------------------------------
 
@@ -114,12 +113,8 @@ class FieldFilterBase(ArgFilterBase):
             if self._skip_invalid:
                 return sql.false()
 
-            raise ApiError(
-                400,
-                *(
-                    self.format_validation_error(message)
-                    for message, path in iter_validation_errors(e.messages)
-                ),
+            raise ApiError.from_validation_error(
+                400, e, self.format_validation_error
             ) from e
 
         return self.get_filter_clause(view, value)
@@ -134,7 +129,7 @@ class FieldFilterBase(ArgFilterBase):
         """
         return field.deserialize(value_raw)
 
-    def format_validation_error(self, message):
+    def format_validation_error(self, message, path):
         return {"code": "invalid_filter", "detail": message}
 
     def get_field(self, view):
