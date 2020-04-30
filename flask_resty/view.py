@@ -14,7 +14,7 @@ from .authorization import NoOpAuthorization
 from .decorators import request_cached_property
 from .exceptions import ApiError
 from .fields import DelimitedList
-from .utils import iter_validation_errors, settable_property
+from .utils import settable_property
 
 # -----------------------------------------------------------------------------
 
@@ -268,12 +268,8 @@ class ApiView(MethodView):
         try:
             data = self.deserializer.load(data_raw, **kwargs)
         except ValidationError as e:
-            raise ApiError(
-                422,
-                *(
-                    self.format_validation_error(error)
-                    for error in iter_validation_errors(e.messages)
-                ),
+            raise ApiError.from_validation_error(
+                422, e, self.format_validation_error
             ) from e
 
         self.validate_request_id(data, expected_id)
@@ -288,12 +284,12 @@ class ApiView(MethodView):
         """
         return self.schema
 
-    def format_validation_error(self, error):
-        """Convert a marshmallow validation error to a serializable form.
+    def format_validation_error(self, message, path):
+        """Convert marshmallow validation error data to a serializable form.
 
-        This converts a marshmallow validation error to a standard serializable
-        representation. By default, it converts errors into a dictionary of the
-        form::
+        This converts marshmallow validation error data to a standard
+        serializable representation. By default, it converts errors into a
+        dictionary of the form::
 
             {
                 "code": "invalid_data",
@@ -303,12 +299,11 @@ class ApiView(MethodView):
                 }
             }
 
-        :param error: The marshmallow validation error.
+        :param str message: The marshmallow validation error message.
+        :param tuple path: The path to the invalid field.
         :return: The formatted validation error.
         :rtype: dict
         """
-        message, path = error
-
         pointer = "/data/{}".format(
             "/".join(str(field_key) for field_key in path)
         )

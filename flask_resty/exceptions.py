@@ -3,6 +3,8 @@ import traceback
 import flask
 from werkzeug.exceptions import default_exceptions
 
+from .utils import iter_validation_errors
+
 # -----------------------------------------------------------------------------
 
 
@@ -45,6 +47,18 @@ class ApiError(Exception):
             "code": "_".join(word.lower() for word in exc.name.split()),
             "detail": exc.description,
         }
+
+    @classmethod
+    def from_validation_error(
+        cls, status_code, error, format_validation_error
+    ):
+        return cls(
+            status_code,
+            *(
+                format_validation_error(message, path)
+                for message, path in iter_validation_errors(error.messages)
+            ),
+        )
 
     def update(self, additional):
         """Add additional metadata to the error.
