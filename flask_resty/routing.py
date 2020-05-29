@@ -4,7 +4,7 @@ try:
     from werkzeug.routing import RequestPath
 except ImportError:  # pragma: no cover
     # werkzeug<1.0
-    from werkzeug.routing import RequestSlash as RequestPath
+    from werkzeug.routing import RequestSlash as RequestPath  # type: ignore
 
 # -----------------------------------------------------------------------------
 

@@ -1,10 +1,13 @@
 import functools
 import posixpath
+from typing import Optional
 
 import flask
+from flask import Flask
 from werkzeug.exceptions import HTTPException
 
 from .exceptions import ApiError
+from .view import ApiView
 
 # -----------------------------------------------------------------------------
 
@@ -14,11 +17,11 @@ DEFAULT_ID_RULE = "<id>"
 # -----------------------------------------------------------------------------
 
 
-def handle_api_error(error):
+def handle_api_error(error: ApiError):
     return error.response
 
 
-def handle_http_exception(error):
+def handle_http_exception(error: HTTPException):
     return ApiError.from_http_exception(error).response
 
 
@@ -47,7 +50,9 @@ class Api:
     :param str prefix: The API path prefix.
     """
 
-    def __init__(self, app=None, prefix=""):
+    _app: Optional[Flask]
+
+    def __init__(self, app: Optional[Flask] = None, prefix: str = "") -> None:
         if app:
             self._app = app
             self.init_app(app)
@@ -56,7 +61,7 @@ class Api:
 
         self.prefix = prefix
 
-    def init_app(self, app):
+    def init_app(self, app: Flask) -> None:
         """Initialize an application for use with Flask-RESTy.
 
         :param app: The Flask application object.
@@ -67,21 +72,21 @@ class Api:
         app.register_error_handler(ApiError, handle_api_error)
         app.register_error_handler(HTTPException, handle_http_exception)
 
-    def _get_app(self, app):
+    def _get_app(self, app: Optional[Flask]) -> Flask:
         app = app or self._app
         assert app, "no application specified"
         return app
 
     def add_resource(
         self,
-        base_rule,
-        base_view,
-        alternate_view=None,
+        base_rule: str,
+        base_view: ApiView,
+        alternate_view: Optional[ApiView] = None,
         *,
-        alternate_rule=None,
-        id_rule=None,
-        app=None,
-    ):
+        alternate_rule: Optional[str] = None,
+        id_rule: Optional[str] = None,
+        app: Optional[Flask] = None,
+    ) -> None:
         """Add a REST resource.
 
         :param str base_rule: The URL rule for the resource. This will be
@@ -150,7 +155,9 @@ class Api:
             methods=alternate_view.methods,
         )
 
-    def _get_endpoint(self, base_view, alternate_view):
+    def _get_endpoint(
+        self, base_view: ApiView, alternate_view: Optional[ApiView]
+    ) -> str:
         base_view_name = base_view.__name__
         if not alternate_view:
             return base_view_name
@@ -161,7 +168,9 @@ class Api:
         else:
             return base_view_name
 
-    def add_ping(self, rule, *, status_code=200, app=None):
+    def add_ping(
+        self, rule: str, *, status_code: int = 200, app: Optional[Flask] = None
+    ) -> None:
         """Add a ping route.
 
         :param str rule: The URL rule. This will not use the API prefix, as the
@@ -185,5 +194,5 @@ class Api:
 
 
 class FlaskRestyState:
-    def __init__(self, api):
+    def __init__(self, api: Api) -> None:
         self.api = api
