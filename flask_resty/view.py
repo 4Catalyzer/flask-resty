@@ -89,6 +89,7 @@ class ApiView(Generic[TItem], MethodView):
         :return: The serialized object
         :rtype: dict
         """
+        assert self.serializer, "cannot serialize without serializer"
         return self.serializer.dump(item, **kwargs)
 
     @settable_property
@@ -295,6 +296,8 @@ class ApiView(Generic[TItem], MethodView):
         :return: The deserialized data
         :rtype: dict
         """
+        assert self.deserializer, "cannot deserialize without deserializer"
+
         try:
             data = self.deserializer.load(data_raw, **kwargs)
         except ValidationError as e:
