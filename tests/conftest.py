@@ -13,8 +13,7 @@ from flask_resty.testing import ApiClient
 @pytest.fixture
 def app():
     app = Flask(__name__)
-    app.config["TESTING"] = True
-
+    app.testing = True
     return app
 
 
