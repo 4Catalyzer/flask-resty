@@ -255,8 +255,8 @@ class ColumnFilter(FieldFilterBase):
         """
         if not self._validate:
             # We may not want to apply the same validation for filters as we do
-            # on model fields. This bypasses the irrelevant handling of missing
-            # and None values, and skips the validation check.
+            #  on model fields. This bypasses the irrelevant handling of
+            #  missing and None values, and skips the validation check.
             return field._deserialize(value_raw, None, None)
 
         return super().deserialize(field, value_raw)
