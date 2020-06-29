@@ -1,7 +1,7 @@
 import operator
 
 import pytest
-from marshmallow import Schema, fields
+from marshmallow import Schema, fields, validate
 from sqlalchemy import Column, Integer
 
 from flask_resty import (
@@ -41,59 +41,49 @@ def schemas():
         id = fields.Integer(as_string=True)
         size = fields.Integer()
 
-    return {"widget": WidgetSchema()}
+    class WidgetValidateSchema(WidgetSchema):
+        size = fields.Integer(validate=validate.Range(max=1))
+
+    return {
+        "widget": WidgetSchema(),
+        "widget_validate": WidgetValidateSchema(),
+    }
 
 
 @pytest.fixture(autouse=True)
 def routes(app, models, schemas):
-    class WidgetViewBase(GenericModelView):
+    class WidgetListViewBase(GenericModelView):
         model = models["widget"]
         schema = schemas["widget"]
 
-    class MaxLimitWidgetListView(WidgetViewBase):
-        pagination = MaxLimitPagination(2)
-
         def get(self):
             return self.list()
 
-    class OptionalLimitWidgetListView(WidgetViewBase):
+        def post(self):
+            return self.create()
+
+    class MaxLimitWidgetListView(WidgetListViewBase):
+        pagination = MaxLimitPagination(2)
+
+    class OptionalLimitWidgetListView(WidgetListViewBase):
         filtering = Filtering(size=operator.eq)
         pagination = LimitPagination()
 
-        def get(self):
-            return self.list()
-
-        def post(self):
-            return self.create()
-
-    class LimitOffsetWidgetListView(WidgetViewBase):
+    class LimitOffsetWidgetListView(WidgetListViewBase):
         filtering = Filtering(size=operator.eq)
         pagination = LimitOffsetPagination(2, 4)
 
-        def get(self):
-            return self.list()
-
-        def post(self):
-            return self.create()
-
-    class PageWidgetListView(WidgetViewBase):
+    class PageWidgetListView(WidgetListViewBase):
         pagination = PagePagination(2)
 
-        def get(self):
-            return self.list()
-
-        def post(self):
-            return self.create()
-
-    class RelayCursorListView(WidgetViewBase):
+    class RelayCursorListView(WidgetListViewBase):
         sorting = Sorting("id", "size")
         pagination = RelayCursorPagination(2)
 
-        def get(self):
-            return self.list()
+    class RelayCursorNoValidateListView(RelayCursorListView):
+        schema = schemas["widget_validate"]
 
-        def post(self):
-            return self.create()
+        pagination = RelayCursorPagination(2, validate_values=False)
 
     api = Api(app)
     api.add_resource("/max_limit_widgets", MaxLimitWidgetListView)
@@ -101,6 +91,9 @@ def routes(app, models, schemas):
     api.add_resource("/limit_offset_widgets", LimitOffsetWidgetListView)
     api.add_resource("/page_widgets", PageWidgetListView)
     api.add_resource("/relay_cursor_widgets", RelayCursorListView)
+    api.add_resource(
+        "/relay_cursor_no_validate_widgets", RelayCursorNoValidateListView
+    )
 
 
 @pytest.fixture(autouse=True)
@@ -353,13 +346,29 @@ def test_relay_cursor_sorted_inverse(client):
 def test_relay_cursor_create(client):
     response = client.post("/relay_cursor_widgets", data={"size": 1})
 
+    assert_response(response, 201, {"size": 1})
     assert get_meta(response) == {"cursor": "Nw"}
 
 
 def test_relay_cursor_create_sorted(client):
     response = client.post("/relay_cursor_widgets?sort=size", data={"size": 1})
 
+    assert_response(response, 201, {"size": 1})
     assert get_meta(response) == {"cursor": "MQ.Nw"}
+
+
+def test_relay_cursor_no_validate(app, client):
+    response = client.post(
+        "/relay_cursor_no_validate_widgets", data={"size": 3}
+    )
+    assert_response(response, 422)
+
+    response = client.get(
+        "/relay_cursor_no_validate_widgets?sort=size&cursor=Mg.Mg"
+    )
+    assert_response(
+        response, 200, [{"id": "5", "size": 2}, {"id": "3", "size": 3}]
+    )
 
 
 # -----------------------------------------------------------------------------

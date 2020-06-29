@@ -249,10 +249,18 @@ class CursorPaginationBase(LimitPagination):
 
     It's also more efficient against the database, as the cursor condition can
     be cheaply evaluated as a filter against an index.
+
+    :param bool validate: If unset, bypass validation on cursor values. This is
+        useful if the deserializer field imposes validation that will fail for
+        on cursor values for items actually present.
     """
 
     #: The name of the query parameter to inspect for the cursor value.
     cursor_arg = "cursor"
+
+    def __init__(self, *args, validate_values=True, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._validate_values = validate_values
 
     def ensure_query_sorting(self, query, view):
         """Ensure the query is sorted correctly and get the field orderings.
@@ -369,7 +377,7 @@ class CursorPaginationBase(LimitPagination):
 
         try:
             cursor = tuple(
-                field.deserialize(value)
+                self.deserialize_value(field, value)
                 for field, value in zip(column_fields, cursor)
             )
         except ValidationError as e:
@@ -393,6 +401,16 @@ class CursorPaginationBase(LimitPagination):
         value += (3 - ((len(value) + 3) % 4)) * b"="  # Add back padding.
         value = base64.urlsafe_b64decode(value)
         return value.decode()
+
+    def deserialize_value(self, field, value):
+        return (
+            field.deserialize(value)
+            if self._validate_values
+            # Cursors don't need to be fully valid values; they just need to be
+            #  the correct type for sorting, so it can make sense to bypass
+            #  validation.
+            else field._deserialize(value, None, None)
+        )
 
     def format_validation_error(self, message, path):
         return {"code": "invalid_cursor", "detail": message}
