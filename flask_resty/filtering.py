@@ -316,6 +316,12 @@ def model_filter(field, **kwargs):
 class Filtering:
     """Container for the arg filters on a :py:class:`ModelView`.
 
+    `Filtering` supports view inheritance by implementing the `|` operator. For
+    example, `Filtering(foo=..., bar=...) | Filtering(baz=...)` will create a
+    new `Filtering` instance with filters for each `foo`, `bar` and `baz`.
+    Filters on the right-hand side take precedence where each `Filtering`
+    instance has the same key.
+
     :param dict kwargs: A mapping from filter field names to filters.
     """
 
@@ -324,6 +330,15 @@ class Filtering:
             arg_name: self.make_arg_filter(arg_name, arg_filter)
             for arg_name, arg_filter in kwargs.items()
         }
+
+    def __or__(self, other):
+        if not isinstance(other, Filtering):
+            return NotImplemented
+
+        new = Filtering()
+        new._arg_filters = dict(**self._arg_filters)
+        new._arg_filters.update(other._arg_filters)
+        return new
 
     def make_arg_filter(self, arg_name, arg_filter):
         if callable(arg_filter):

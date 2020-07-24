@@ -333,3 +333,16 @@ def test_error_reuse_column_filter():
 
     with pytest.raises(TypeError, match="without explicit column name"):
         Filtering(foo=implicit_column_filter, bar=implicit_column_filter)
+
+
+def test_filter__or__():
+    column_filter_foo = ColumnFilter("foo", operator.eq)
+    column_filter_bar = ColumnFilter("bar", operator.eq)
+    column_filter_baz = ColumnFilter("baz", operator.eq)
+    left = Filtering(foo=column_filter_foo, bar=column_filter_bar)
+    right = Filtering(bar=column_filter_baz)
+    union = left | right
+    assert isinstance(union, Filtering)
+    assert len(union._arg_filters) == 2
+    assert union._arg_filters["foo"] is column_filter_foo
+    assert union._arg_filters["bar"] is column_filter_baz

@@ -365,3 +365,15 @@ def test_error_missing_id(client):
             }
         ],
     )
+
+
+def test_related__or__(models):
+    related_foo = RelatedId(GenericModelView, "view_id")
+    related_bar = GenericModelView
+    related_baz = Related(models["parent"])
+    left = Related(foo=related_foo, bar=related_bar)
+    right = Related(bar=related_baz)
+    union = left | right
+    assert len(union._resolvers) == 2
+    assert union._resolvers["foo"] is related_foo
+    assert union._resolvers["bar"] is related_baz
