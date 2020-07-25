@@ -377,3 +377,10 @@ def test_related__or__(models):
     assert len(union._resolvers) == 2
     assert union._resolvers["foo"] is related_foo
     assert union._resolvers["bar"] is related_baz
+
+
+def test_related__or__typeerror():
+    left = Related()
+    right = object()
+    with pytest.raises(TypeError):
+        left | right

@@ -346,3 +346,10 @@ def test_filter__or__():
     assert len(union._arg_filters) == 2
     assert union._arg_filters["foo"] is column_filter_foo
     assert union._arg_filters["bar"] is column_filter_baz
+
+
+def test_filtering__or__typeerror():
+    left = Filtering()
+    right = object()
+    with pytest.raises(TypeError):
+        left | right
