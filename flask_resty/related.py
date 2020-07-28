@@ -160,3 +160,20 @@ class Related:
             return [resolve_item(item) for item in value]
 
         return resolve_item(value)
+
+    def __or__(self, other):
+        """Combine two `Related` instances.
+
+        `Related` supports view inheritance by implementing the `|` operator.
+        For example, `Related(foo=..., bar=...) | Related(baz=...)` will create
+        a new `Related` instance with resolvers for each `foo`, `bar` and
+        `baz`. Resolvers on the right-hand side take precedence where each
+        `Related` instance has the same key.
+        """
+        if not isinstance(other, Related):
+            return NotImplemented
+
+        return self.__class__(
+            other._item_class or self._item_class,
+            **{**self._resolvers, **other._resolvers},
+        )

@@ -211,8 +211,7 @@ class ColumnFilter(FieldFilterBase):
 
         if self._column_name and self._column_name != arg_name:
             raise TypeError(
-                "cannot use ColumnFilter without explicit column name for "
-                + "multiple arg names"
+                "cannot use ColumnFilter without explicit column name for multiple arg names"
             )
 
         self._column_name = arg_name
@@ -357,3 +356,17 @@ class Filtering:
                 raise e.update({"source": {"parameter": arg_name}})
 
         return query
+
+    def __or__(self, other):
+        """Combine two `Filtering` instances.
+
+        `Filtering` supports view inheritance by implementing the `|` operator.
+        For example, `Filtering(foo=..., bar=...) | Filtering(baz=...)` will
+        create a new `Filtering` instance with filters for each `foo`, `bar`
+        and `baz`. Filters on the right-hand side take precedence where each
+        `Filtering` instance has the same key.
+        """
+        if not isinstance(other, Filtering):
+            return NotImplemented
+
+        return self.__class__(**{**self._arg_filters, **other._arg_filters})

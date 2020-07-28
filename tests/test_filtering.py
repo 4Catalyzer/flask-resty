@@ -58,7 +58,6 @@ def routes(app, models, schemas, filter_fields):
         model = models["widget"]
         schema = schemas["widget"]
 
-    class WidgetListView(WidgetViewBase):
         filtering = Filtering(
             color=operator.eq,
             color_allow_empty=ColumnFilter(
@@ -81,11 +80,14 @@ def routes(app, models, schemas, filter_fields):
             ),
         )
 
+    class WidgetListView(WidgetViewBase):
         def get(self):
             return self.list()
 
     class WidgetSizeRequiredListView(WidgetViewBase):
-        filtering = Filtering(size=ColumnFilter(operator.eq, required=True))
+        filtering = WidgetViewBase.filtering | Filtering(
+            size=ColumnFilter(operator.eq, required=True)
+        )
 
         def get(self):
             return self.list()
@@ -204,6 +206,11 @@ def test_custom_operator(client):
 def test_column_filter_required_present(client):
     response = client.get("/widgets_size_required?size=1")
     assert_response(response, 200, [{"id": "1", "color": "red", "size": 1}])
+
+
+def test_combine(client):
+    response = client.get("/widgets_size_required?size=1&color=green")
+    assert_response(response, 200, [])
 
 
 def test_column_filter_unvalidated(client):
@@ -333,3 +340,8 @@ def test_error_reuse_column_filter():
 
     with pytest.raises(TypeError, match="without explicit column name"):
         Filtering(foo=implicit_column_filter, bar=implicit_column_filter)
+
+
+def test_error_combine_filtering_type_error():
+    with pytest.raises(TypeError):
+        Filtering() | {}
