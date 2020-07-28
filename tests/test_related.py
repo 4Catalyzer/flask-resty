@@ -17,8 +17,6 @@ def models(db):
         id = Column(Integer, primary_key=True)
         name = Column(String)
 
-        children = relationship("Child", backref="parent", cascade="all")
-
     class Child(db.Model):
         __tablename__ = "children"
 
@@ -26,6 +24,12 @@ def models(db):
         name = Column(String)
 
         parent_id = Column(ForeignKey(Parent.id))
+        parent = relationship(
+            Parent, foreign_keys=parent_id, backref="children"
+        )
+
+        other_parent_id = Column(ForeignKey(Parent.id))
+        other_parent = relationship(Parent, foreign_keys=other_parent_id)
 
     db.create_all()
 
@@ -40,13 +44,15 @@ def schemas():
         id = fields.Integer(as_string=True)
         name = fields.String(required=True)
 
-        children = RelatedItem("ChildSchema", many=True, exclude=("parent",))
+        children = RelatedItem(
+            "ChildSchema", many=True, exclude=("parent", "other_parent")
+        )
         child_ids = fields.List(fields.Integer(as_string=True), load_only=True)
 
     class ChildSchema(Schema):
         @classmethod
         def get_query_options(cls, load):
-            return (load.joinedload("parent"),)
+            return (load.joinedload("parent"), load.joinedload("other_parent"))
 
         id = fields.Integer(as_string=True)
         name = fields.String(required=True)
@@ -56,6 +62,10 @@ def schemas():
         )
         parent_id = fields.Integer(
             as_string=True, allow_none=True, load_only=True
+        )
+
+        other_parent = fields.Nested(
+            ParentSchema, exclude=("children",), allow_none=True
         )
 
     return {"parent": ParentSchema(), "child": ChildSchema()}
@@ -110,12 +120,20 @@ def routes(app, models, schemas):
         def put(self, id):
             return self.update(id)
 
+    class ChildWithOtherParentView(ChildView):
+        related = ChildView.related | Related(
+            other_parent=Related(models["parent"])
+        )
+
     api = Api(app)
     api.add_resource("/parents/<int:id>", ParentView)
     api.add_resource("/nested_parents/<int:id>", NestedParentView)
     api.add_resource("/parents_with_create/<int:id>", ParentWithCreateView)
     api.add_resource("/children/<int:id>", ChildView)
     api.add_resource("/nested_children/<int:id>", NestedChildView)
+    api.add_resource(
+        "/children_with_other_parent/<int:id>", ChildWithOtherParentView
+    )
 
 
 @pytest.fixture(autouse=True)
@@ -163,6 +181,7 @@ def test_single(client):
             "id": "1",
             "name": "Updated Child",
             "parent": {"id": "1", "name": "Parent"},
+            "other_parent": None,
         },
     )
 
@@ -180,6 +199,7 @@ def test_single_nested(client):
             "id": "1",
             "name": "Updated Child",
             "parent": {"id": "1", "name": "Parent"},
+            "other_parent": None,
         },
     )
 
@@ -266,6 +286,7 @@ def test_missing(client):
             "id": "1",
             "name": "Twice Updated Child",
             "parent": {"id": "1", "name": "Parent"},
+            "other_parent": None,
         },
     )
 
@@ -280,7 +301,12 @@ def test_null(client):
     assert_response(
         response,
         200,
-        {"id": "1", "name": "Twice Updated Child", "parent": None},
+        {
+            "id": "1",
+            "name": "Twice Updated Child",
+            "parent": None,
+            "other_parent": None,
+        },
     )
 
 
@@ -294,7 +320,12 @@ def test_null_nested(client):
     assert_response(
         response,
         200,
-        {"id": "1", "name": "Twice Updated Child", "parent": None},
+        {
+            "id": "1",
+            "name": "Twice Updated Child",
+            "parent": None,
+            "other_parent": None,
+        },
     )
 
 
@@ -310,6 +341,29 @@ def test_many_falsy(client):
         response,
         200,
         {"id": "1", "name": "Twice Updated Parent", "children": []},
+    )
+
+
+def test_combine(client):
+    response = client.put(
+        "/children_with_other_parent/1",
+        data={
+            "id": "1",
+            "name": "Updated Child",
+            "parent_id": "1",
+            "other_parent": {"id": "2", "name": "Other Parent"},
+        },
+    )
+
+    assert_response(
+        response,
+        200,
+        {
+            "id": "1",
+            "name": "Updated Child",
+            "parent": {"id": "1", "name": "Parent"},
+            "other_parent": {"id": "2", "name": "Other Parent"},
+        },
     )
 
 
@@ -367,20 +421,6 @@ def test_error_missing_id(client):
     )
 
 
-def test_related__or__(models):
-    related_foo = RelatedId(GenericModelView, "view_id")
-    related_bar = GenericModelView
-    related_baz = Related(models["parent"])
-    left = Related(foo=related_foo, bar=related_bar)
-    right = Related(bar=related_baz)
-    union = left | right
-    assert len(union._resolvers) == 2
-    assert union._resolvers["foo"] is related_foo
-    assert union._resolvers["bar"] is related_baz
-
-
-def test_related__or__typeerror():
-    left = Related()
-    right = object()
+def test_error_combine_related_type_error():
     with pytest.raises(TypeError):
-        left | right
+        Related() | {}

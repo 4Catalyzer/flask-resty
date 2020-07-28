@@ -83,12 +83,6 @@ class Related:
     through the sequence and resolve each item in turn, using the rules as
     above.
 
-    `Related` supports view inheritance by implementing the `|` operator. For
-    example, `Related(foo=..., bar=...) | Related(baz=...)` will create a new
-    `Related` instance with resolvers for each `foo`, `bar` and `baz`.
-    Resolvers on the right-hand side take precedence where each `Related`
-    instance has the same key.
-
     :param item_class: The SQLAlchemy mapper corresponding to the related item.
     :param dict kwargs: A mapping from related fields to a callable resolver.
     """
@@ -96,15 +90,6 @@ class Related:
     def __init__(self, item_class=None, **kwargs):
         self._item_class = item_class
         self._resolvers = kwargs
-
-    def __or__(self, other):
-        if not isinstance(other, Related):
-            return NotImplemented
-
-        new = Related()
-        new._resolvers = dict(**self._resolvers)
-        new._resolvers.update(other._resolvers)
-        return new
 
     def resolve_related(self, data):
         """Resolve the related values in the request data.
@@ -175,3 +160,20 @@ class Related:
             return [resolve_item(item) for item in value]
 
         return resolve_item(value)
+
+    def __or__(self, other):
+        """Combine two `Related` instances.
+
+        `Related` supports view inheritance by implementing the `|` operator.
+        For example, `Related(foo=..., bar=...) | Related(baz=...)` will create
+        a new `Related` instance with resolvers for each `foo`, `bar` and
+        `baz`. Resolvers on the right-hand side take precedence where each
+        `Related` instance has the same key.
+        """
+        if not isinstance(other, Related):
+            return NotImplemented
+
+        return self.__class__(
+            other._item_class or self._item_class,
+            **{**self._resolvers, **other._resolvers},
+        )

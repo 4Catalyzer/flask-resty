@@ -58,7 +58,6 @@ def routes(app, models, schemas, filter_fields):
         model = models["widget"]
         schema = schemas["widget"]
 
-    class WidgetListView(WidgetViewBase):
         filtering = Filtering(
             color=operator.eq,
             color_allow_empty=ColumnFilter(
@@ -81,11 +80,14 @@ def routes(app, models, schemas, filter_fields):
             ),
         )
 
+    class WidgetListView(WidgetViewBase):
         def get(self):
             return self.list()
 
     class WidgetSizeRequiredListView(WidgetViewBase):
-        filtering = Filtering(size=ColumnFilter(operator.eq, required=True))
+        filtering = WidgetViewBase.filtering | Filtering(
+            size=ColumnFilter(operator.eq, required=True)
+        )
 
         def get(self):
             return self.list()
@@ -204,6 +206,11 @@ def test_custom_operator(client):
 def test_column_filter_required_present(client):
     response = client.get("/widgets_size_required?size=1")
     assert_response(response, 200, [{"id": "1", "color": "red", "size": 1}])
+
+
+def test_combine(client):
+    response = client.get("/widgets_size_required?size=1&color=green")
+    assert_response(response, 200, [])
 
 
 def test_column_filter_unvalidated(client):
@@ -335,21 +342,6 @@ def test_error_reuse_column_filter():
         Filtering(foo=implicit_column_filter, bar=implicit_column_filter)
 
 
-def test_filter__or__():
-    column_filter_foo = ColumnFilter("foo", operator.eq)
-    column_filter_bar = ColumnFilter("bar", operator.eq)
-    column_filter_baz = ColumnFilter("baz", operator.eq)
-    left = Filtering(foo=column_filter_foo, bar=column_filter_bar)
-    right = Filtering(bar=column_filter_baz)
-    union = left | right
-    assert isinstance(union, Filtering)
-    assert len(union._arg_filters) == 2
-    assert union._arg_filters["foo"] is column_filter_foo
-    assert union._arg_filters["bar"] is column_filter_baz
-
-
-def test_filtering__or__typeerror():
-    left = Filtering()
-    right = object()
+def test_error_combine_filtering_type_error():
     with pytest.raises(TypeError):
-        left | right
+        Filtering() | {}
