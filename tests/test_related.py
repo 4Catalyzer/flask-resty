@@ -159,12 +159,16 @@ def test_baseline(client):
 
     child_1_response = client.get("/children/1")
     assert_response(
-        child_1_response, 200, {"id": "1", "name": "Child 1", "parent": None}
+        child_1_response,
+        200,
+        {"id": "1", "name": "Child 1", "parent": None, "other_parent": None},
     )
 
     child_2_response = client.get("/children/2")
     assert_response(
-        child_2_response, 200, {"id": "2", "name": "Child 2", "parent": None}
+        child_2_response,
+        200,
+        {"id": "2", "name": "Child 2", "parent": None, "other_parent": None},
     )
 
 
