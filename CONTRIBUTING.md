@@ -4,7 +4,7 @@ Contributions are actively welcome!
 
 ## Local Setup
 
-Ideally, create a virtual env for local development, using your tool of choice, e.g.:
+Create a virtualenv for local development using your tool of choice. If you're using pyenv and pyenv-virtualenv:
 
 ```sh
 pyenv virtualenv 3.8.5 flask-resty
