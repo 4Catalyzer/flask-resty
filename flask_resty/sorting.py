@@ -1,4 +1,5 @@
 import flask
+import sqlalchemy as sa
 
 from .exceptions import ApiError
 
@@ -169,3 +170,43 @@ class Sorting(FieldSortingBase):
                 )
 
         return field_orderings
+
+
+class ModelSorting(Sorting):
+    """A sorting component that allows users to specify preconfigured sorting
+    expressions based on the view model.
+
+    For example, to allow users to sort by content length and/or author
+
+        sorting = ModelSorting(
+            author=Post.author
+            content_length=sql.func.length(Post.content)
+        )
+
+    One or both of `author` or `content_length` can be formatted in the `sort_arg`
+    request parameter to determine the sort order. For example, users can sort requests
+    by `name` ascending and `date` descending by making a ``GET`` request to::
+
+        /api/posts?sort=author,-content_length
+
+    :param str default: If provided, specifies a default sort order when the
+        request does not specify an explicit sort order.
+
+    :param dict kwargs: A mapping from sort names to order_by expressions
+    """
+
+    def __init__(self, default=None, **kwargs):
+        super().__init__(*kwargs.keys(), default=default)
+
+        self._field_sorters = {
+            field_name: field_sort for field_name, field_sort in kwargs.items()
+        }
+
+    def get_criterion(self, view, field_ordering):
+        field_name, asc = field_ordering
+
+        sort = self._field_sorters[field_name]
+
+        expr = sort(view.model, field_name) if callable(sort) else sort
+
+        return expr if asc else sa.desc(expr)
