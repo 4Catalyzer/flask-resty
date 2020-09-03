@@ -38,7 +38,6 @@ from .routing import StrictRule
 from .sorting import (
     FieldSortingBase,
     FixedSorting,
-    ModelSorting,
     Sorting,
     SortingBase,
 )

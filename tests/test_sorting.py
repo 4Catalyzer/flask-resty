@@ -6,10 +6,9 @@ from flask_resty import (
     Api,
     FixedSorting,
     GenericModelView,
-    ModelSorting,
     Sorting,
 )
-from flask_resty.testing import assert_response, get_data
+from flask_resty.testing import assert_response
 
 # -----------------------------------------------------------------------------
 
@@ -50,7 +49,14 @@ def routes(app, models, schemas):
         model = models["widget"]
         schema = schemas["widget"]
 
-        sorting = Sorting("name", "size")
+        sorting = Sorting(
+            "name",
+            "size",
+            content_length=sql.func.length(Widget.content),
+            reverse_content=lambda model, field_name: sql.func.reverse(
+                model.content
+            ),
+        )
 
         def get(self):
             return self.list()
@@ -61,22 +67,9 @@ def routes(app, models, schemas):
         def get(self):
             return self.list()
 
-    class ModelWidgetListView(WidgetListView):
-        sorting = ModelSorting(
-            name=Widget.name,
-            content_length=sql.func.length(Widget.content),
-            reverse_content=lambda model, field_name: sql.func.reverse(
-                model.content
-            ),
-        )
-
-        def get(self):
-            return self.list()
-
     api = Api(app)
     api.add_resource("/widgets", WidgetListView)
     api.add_resource("/fixed_widgets", FixedWidgetListView)
-    api.add_resource("/model_widgets", ModelWidgetListView)
 
 
 @pytest.fixture(autouse=True)
@@ -152,8 +145,8 @@ def test_fixed(client):
     )
 
 
-def test_model(client):
-    response = client.get("/model_widgets?sort=content_length")
+def test_custom_expression(client):
+    response = client.get("/widgets?sort=content_length")
 
     assert_response(
         response,
@@ -166,8 +159,8 @@ def test_model(client):
     )
 
 
-def test_model_callable(client):
-    response = client.get("/model_widgets?sort=reverse_content")
+def test_custom_callable(client):
+    response = client.get("/widgets?sort=reverse_content")
 
     assert_response(
         response,
@@ -180,8 +173,8 @@ def test_model_callable(client):
     )
 
 
-def test_model_multiple(client):
-    response = client.get("/model_widgets?sort=name,content_length")
+def test_multiple_named_and_expression_sorts(client):
+    response = client.get("/widgets?sort=name,content_length")
 
     assert_response(
         response,
@@ -214,3 +207,8 @@ def test_error_empty(client):
         400,
         [{"code": "invalid_sort", "source": {"parameter": "sort"}}],
     )
+
+
+def test_duplicate_fields(client):
+    with pytest.raises(AssertionError):
+        Sorting("name", "date", date=True)
