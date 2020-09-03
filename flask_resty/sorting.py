@@ -142,7 +142,7 @@ class Sorting(FieldSortingBase):
     users can sort requests by `name` ascending and `date` descending by
     making a ``GET`` request to::
 
-        /api/post?sort=title,-content_length
+        /api/comments/?sort=title,-content_length
 
     :param str field_names: The fields available for sorting.
         Names should match a column on your View model.
