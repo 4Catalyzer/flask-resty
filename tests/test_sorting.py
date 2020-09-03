@@ -2,12 +2,7 @@ import pytest
 from marshmallow import Schema, fields
 from sqlalchemy import Column, Integer, String, sql
 
-from flask_resty import (
-    Api,
-    FixedSorting,
-    GenericModelView,
-    Sorting,
-)
+from flask_resty import Api, FixedSorting, GenericModelView, Sorting
 from flask_resty.testing import assert_response
 
 # -----------------------------------------------------------------------------
@@ -53,7 +48,7 @@ def routes(app, models, schemas):
             "name",
             "size",
             content_length=sql.func.length(Widget.content),
-            reverse_content=lambda model, field_name: sql.func.reverse(
+            content_length2=lambda model, field_name: sql.func.length(
                 model.content
             ),
         )
@@ -160,15 +155,15 @@ def test_custom_expression(client):
 
 
 def test_custom_callable(client):
-    response = client.get("/widgets?sort=reverse_content")
+    response = client.get("/widgets?sort=content_length2")
 
     assert_response(
         response,
         200,
         [
-            {"id": "3", "name": "Baz", "content": "LorumLorumLorumLorum"},
             {"id": "2", "name": "Foo", "content": "Short"},
             {"id": "1", "name": "Foo", "content": "Some bold text"},
+            {"id": "3", "name": "Baz", "content": "LorumLorumLorumLorum"},
         ],
     )
 
@@ -210,5 +205,8 @@ def test_error_empty(client):
 
 
 def test_duplicate_fields(client):
-    with pytest.raises(ValueError, match="Sort field(s) cannot be passed as both positional and keyword arguments"):
+    with pytest.raises(
+        ValueError,
+        match="Sort field\\(s\\) cannot be passed as both positional and keyword arguments",
+    ):
         Sorting("name", "date", date=True)

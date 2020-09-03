@@ -161,8 +161,10 @@ class Sorting(FieldSortingBase):
         names = frozenset(field_names)
         duplicates = keys.intersection(names)
 
-    if duplicates:
-        raise ValueError(f"Sort field(s) cannot be passed as both positional and keyword arguments: {duplicates}")
+        if duplicates:
+            raise ValueError(
+                f"Sort field(s) cannot be passed as both positional and keyword arguments: {duplicates}"
+            )
 
         self._field_names = names.union(keys)
         self._field_sorters = {

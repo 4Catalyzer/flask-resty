@@ -35,12 +35,7 @@ from .pagination import (
 )
 from .related import Related, RelatedId
 from .routing import StrictRule
-from .sorting import (
-    FieldSortingBase,
-    FixedSorting,
-    Sorting,
-    SortingBase,
-)
+from .sorting import FieldSortingBase, FixedSorting, Sorting, SortingBase
 from .view import ApiView, GenericModelView, ModelView
 
 try:
