@@ -145,7 +145,7 @@ class Sorting(FieldSortingBase):
         /api/comments/?sort=title,-content_length
 
     :param str field_names: The fields available for sorting.
-        Names should match a column on your View model.
+        Names should match a column on your View's ``model``.
     :param str default: If provided, specifies a default sort order when the
         request does not specify an explicit sort order.
     :param dict kwargs: Provide custom sort behavior by mapping a sort
