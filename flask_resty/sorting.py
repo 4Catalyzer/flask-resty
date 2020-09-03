@@ -1,4 +1,5 @@
 import flask
+import sqlalchemy as sa
 
 from .exceptions import ApiError
 
@@ -128,29 +129,60 @@ class FixedSorting(FieldSortingBase):
 class Sorting(FieldSortingBase):
     """A sorting component that allows the user to specify sort fields.
 
-    For example, to allow users to sort by `name` and/or `date`, specify the
-    following in your view::
+    For example, to allow users to sort by `title` and/or `content_length`,
+    specify the following in your view::
 
-        sorting = Sorting('name', 'date')
+        sorting = Sorting(
+            'title',
+            content_length=sql.func.length(Post.content)
+        )
 
-    One or both of `name` or `date` can be formatted in the `sort_arg` request
-    parameter to determine the sort order. For example, users can sort requests
-    by `name` ascending and `date` descending by making a ``GET`` request to::
+    One or both of `title` or `content_length` can be formatted in the
+    `sort_arg` request parameter to determine the sort order. For example,
+    users can sort requests by `name` ascending and `date` descending by
+    making a ``GET`` request to::
 
-        /api/widgets?sort=name,-date
+        /api/comments/?sort=title,-content_length
 
     :param str field_names: The fields available for sorting.
+        Names should match a column on your View's ``model``.
     :param str default: If provided, specifies a default sort order when the
         request does not specify an explicit sort order.
+    :param dict kwargs: Provide custom sort behavior by mapping a sort
+        argument name to a model order_by expression.
     """
 
     #: The request parameter from which the formatted sorting fields will be
     #: retrieved.
     sort_arg = "sort"
 
-    def __init__(self, *field_names, default=None):
-        self._field_names = frozenset(field_names)
+    def __init__(self, *field_names, default=None, **kwargs):
+        keys = frozenset(kwargs.keys())
+        names = frozenset(field_names)
+        duplicates = keys.intersection(names)
+
+        if duplicates:
+            raise ValueError(
+                f"Sort field(s) cannot be passed as both positional and keyword arguments: {duplicates}"
+            )
+
+        self._field_names = names.union(keys)
+        self._field_sorters = {
+            field_name: field_sort for field_name, field_sort in kwargs.items()
+        }
         self._default_sort = default
+
+    def get_criterion(self, view, field_ordering):
+        field_name, asc = field_ordering
+
+        if field_name not in self._field_sorters:
+            return super().get_criterion(view, field_ordering)
+
+        sort = self._field_sorters[field_name]
+
+        expr = sort(view.model, field_name) if callable(sort) else sort
+
+        return expr if asc else sa.desc(expr)
 
     def get_request_field_orderings(self, view):
         sort = flask.request.args.get(self.sort_arg, self._default_sort)
@@ -158,6 +190,7 @@ class Sorting(FieldSortingBase):
             return ()
 
         field_orderings = self.get_field_orderings(sort)
+
         for field_name, _ in field_orderings:
             if field_name not in self._field_names:
                 raise ApiError(

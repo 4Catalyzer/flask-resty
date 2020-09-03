@@ -1,6 +1,6 @@
 import pytest
 from marshmallow import Schema, fields
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, sql
 
 from flask_resty import Api, FixedSorting, GenericModelView, Sorting
 from flask_resty.testing import assert_response
@@ -15,6 +15,7 @@ def models(db):
 
         id = Column(Integer, primary_key=True)
         name = Column(String)
+        content = Column(String)
         size = Column(Integer)
 
     db.create_all()
@@ -29,6 +30,7 @@ def schemas():
     class WidgetSchema(Schema):
         id = fields.Integer(as_string=True)
         name = fields.String()
+        content = fields.String()
         size = fields.Integer()
 
     return {"widget": WidgetSchema()}
@@ -36,11 +38,20 @@ def schemas():
 
 @pytest.fixture(autouse=True)
 def routes(app, models, schemas):
+    Widget = models["widget"]
+
     class WidgetListView(GenericModelView):
         model = models["widget"]
         schema = schemas["widget"]
 
-        sorting = Sorting("name", "size")
+        sorting = Sorting(
+            "name",
+            "size",
+            content_length=sql.func.length(Widget.content),
+            content_length2=lambda model, field_name: sql.func.length(
+                model.content
+            ),
+        )
 
         def get(self):
             return self.list()
@@ -60,9 +71,11 @@ def routes(app, models, schemas):
 def data(db, models):
     db.session.add_all(
         (
-            models["widget"](name="Foo", size=1),
-            models["widget"](name="Foo", size=5),
-            models["widget"](name="Baz", size=3),
+            models["widget"](name="Foo", size=1, content="Some bold text"),
+            models["widget"](name="Foo", size=5, content="Short"),
+            models["widget"](
+                name="Baz", size=3, content="LorumLorumLorumLorum"
+            ),
         )
     )
     db.session.commit()
@@ -127,6 +140,48 @@ def test_fixed(client):
     )
 
 
+def test_custom_expression(client):
+    response = client.get("/widgets?sort=content_length")
+
+    assert_response(
+        response,
+        200,
+        [
+            {"id": "2", "name": "Foo", "content": "Short"},
+            {"id": "1", "name": "Foo", "content": "Some bold text"},
+            {"id": "3", "name": "Baz", "content": "LorumLorumLorumLorum"},
+        ],
+    )
+
+
+def test_custom_callable(client):
+    response = client.get("/widgets?sort=content_length2")
+
+    assert_response(
+        response,
+        200,
+        [
+            {"id": "2", "name": "Foo", "content": "Short"},
+            {"id": "1", "name": "Foo", "content": "Some bold text"},
+            {"id": "3", "name": "Baz", "content": "LorumLorumLorumLorum"},
+        ],
+    )
+
+
+def test_multiple_named_and_expression_sorts(client):
+    response = client.get("/widgets?sort=name,content_length")
+
+    assert_response(
+        response,
+        200,
+        [
+            {"id": "3", "name": "Baz", "content": "LorumLorumLorumLorum"},
+            {"id": "2", "name": "Foo", "content": "Short"},
+            {"id": "1", "name": "Foo", "content": "Some bold text"},
+        ],
+    )
+
+
 # -----------------------------------------------------------------------------
 
 
@@ -147,3 +202,11 @@ def test_error_empty(client):
         400,
         [{"code": "invalid_sort", "source": {"parameter": "sort"}}],
     )
+
+
+def test_duplicate_fields(client):
+    with pytest.raises(
+        ValueError,
+        match="Sort field\\(s\\) cannot be passed as both positional and keyword arguments",
+    ):
+        Sorting("name", "date", date=True)
