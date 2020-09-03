@@ -210,5 +210,5 @@ def test_error_empty(client):
 
 
 def test_duplicate_fields(client):
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError, match="Sort field(s) cannot be passed as both positional and keyword arguments"):
         Sorting("name", "date", date=True)
