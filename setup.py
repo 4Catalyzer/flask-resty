@@ -33,11 +33,15 @@ setup(
         "marshmallow>=3.0.0",
         "SQLAlchemy>=1.0.0",
         "Werkzeug>=0.11",
+        "konch>=4.0",
     ),
     extras_require={
         "docs": ("sphinx", "pallets-sphinx-themes"),
         "jwt": ("PyJWT>=1.4.0", "cryptography>=2.0.0"),
         "tests": ("coverage", "psycopg2-binary", "pytest"),
     },
-    entry_points={"pytest11": ("flask-resty = flask_resty.testing",)},
+    entry_points={
+        "pytest11": ("flask-resty = flask_resty.testing",),
+        "flask.commands": ("shell = flask_resty.shell:cli",),
+    },
 )
