@@ -35,7 +35,7 @@ DEFAULTS = dict(
 def get_models_context(app: flask.Flask) -> dict:
     try:
         db = app.extensions["sqlalchemy"].db
-    except KeyError:
+    except KeyError:  # pragma: no cover
         return {}
 
     ret = {
@@ -54,17 +54,10 @@ def get_models_context(app: flask.Flask) -> dict:
     return ret
 
 
-def get_flask_imports():
-    ret = {}
-    for name in [e for e in dir(flask) if not e.startswith("_")]:
-        ret[name] = getattr(flask, name)
-    return ret
-
-
 def get_schema_context() -> dict:
     try:
         from marshmallow import class_registry
-    except ImportError:
+    except ImportError:  # pragma: no cover
         return {}
     return {
         schema_name: classes[0]
@@ -87,7 +80,9 @@ def format_section(title: str, section: dict) -> str:
     return f"\n{formatted_title}\n{formatted_section}"
 
 
-@click.command(help="Run an interactive shell.")
+@click.command(
+    help="Run an interactive shell with models and schemas automatically imported."
+)
 @click.option(
     "--shell", "-s", type=click.Choice(konch.SHELL_MAP.keys()), default="auto"
 )
@@ -155,7 +150,7 @@ def cli(shell: str):
             ],
         )
     )
-    if Path(".konchrc.local").exists():
+    if Path(".konchrc.local").exists():  # pragma: no cover
         konch.use_file(".konchrc.local", trust=True)
 
     konch.start(**config)
