@@ -319,3 +319,54 @@ You can make requests using the `httpie <https://httpie.org/>`_ utility.
     }
 
 The naive datetimes in the response are only because the example uses SQLite. A real application would use a timezone-aware datetime column in the database, and would have a UTC offset in the response.
+
+Running the Shell
+-----------------
+
+Flask-RESTy includes an enhanced ``flask shell`` command that automatically imports all SQLAlchemy models and marshmallow schemas.
+It will also automatically use IPython, BPython, or ptpython if they are installed.
+
+::
+
+    $ FLASK_APP=example flask shell
+    3.8.5 (default, Jul 24 2020, 12:48:45)
+    [Clang 11.0.3 (clang-1103.0.32.62)]
+
+    _____ _           _         ____  _____ ____ _____
+    |  ___| | __ _ ___| | __    |  _ \| ____/ ___|_   _|   _
+    | |_  | |/ _` / __| |/ /____| |_) |  _| \___ \ | || | | |
+    |  _| | | (_| \__ \   <_____|  _ <| |___ ___) || || |_| |
+    |_|   |_|\__,_|___/_|\_\    |_| \_\_____|____/ |_| \__, |
+                                                        |___/
+    Flask app: example, Database: sqlite:///example.db
+
+    Flask:
+    app, g
+
+    Schemas:
+    AuthorSchema, BookSchema, Schema
+
+    Models:
+    Author, Book, commit, db, flush, rollback, session
+
+    In [1]: Author
+    Out[1]: example.models.Author
+
+    In [2]: AuthorSchema
+    Out[2]: example.schemas.AuthorSchema
+
+.. note::
+    Pass the ``--sqlalchemy-echo`` option to see database queries printed within your shell session.
+
+The following app configuration options are available for customizing ``flask shell``:
+
+- ``RESTY_SHELL_CONTEXT``: Dictionary of additional variables to include in the shell context.
+- ``RESTY_SHELL_LOGO``: Custom logo.
+- ``RESTY_SHELL_PROMPT``: Custom input prompt.
+- ``RESTY_SHELL_OUTPUT``: Custom output prompt.
+- ``RESTY_SHELL_CONTEXT_FORMAT``: Format to display shell context. May be ``'full'``, ``'short'``, or a function that receives the context dictionary as input and returns a string.
+- ``RESTY_SHELL_IPY_AUTORELOAD``: Whether to load and enable the IPython autoreload extension (must be using ``ipython`` shell).
+- ``RESTY_SHELL_IPY_EXTENSIONS``: List of IPython extension names to load (must be using ``ipython`` shell).
+- ``RESTY_SHELL_IPY_COLORS``: IPython color style.
+- ``RESTY_SHELL_IPY_HIGHLIGHTING_STYLE``: IPython code highlighting style.
+- ``RESTY_SHELL_PTPY_VI_MODE``: Enable vi mode (must be using ``ptpython`` shell).
