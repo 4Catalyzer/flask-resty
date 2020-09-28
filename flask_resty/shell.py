@@ -86,13 +86,15 @@ def format_section(title: str, section: dict) -> str:
 @click.option(
     "--shell", "-s", type=click.Choice(konch.SHELL_MAP.keys()), default="auto"
 )
+@click.option("--sqlalchemy-echo", is_flag=True)
 @with_appcontext
-def cli(shell: str):
+def cli(shell: str, sqlalchemy_echo: bool):
     """An improved Flask shell command."""
     from flask.globals import _app_ctx_stack
 
     app = _app_ctx_stack.top.app
     options = {key: app.config.get(key, DEFAULTS[key]) for key in DEFAULTS}
+    app.config["SQLALCHEMY_ECHO"] = sqlalchemy_echo
     base_context = {"app": app}
     flask_context = app.make_shell_context()
     schema_context = get_schema_context()
