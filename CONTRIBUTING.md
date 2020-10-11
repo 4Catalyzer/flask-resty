@@ -16,7 +16,7 @@ Install dependencies:
 ```sh
 # optionally include [jwt] for the full test suite, but requires cryptography,
 #  and its dependent binary libraries
-pip install -e .[testing,docs]
+pip install -e .[tests,docs]
 ```
 
 ### Running tests
