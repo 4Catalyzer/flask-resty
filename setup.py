@@ -1,5 +1,14 @@
 from setuptools import setup
 
+EXTRAS_REQUIRE = {
+    "docs": ("sphinx", "pallets-sphinx-themes"),
+    "jwt": ("PyJWT>=1.4.0", "cryptography>=2.0.0"),
+    "tests": ("coverage", "psycopg2-binary", "pytest"),
+}
+EXTRAS_REQUIRE["dev"] = (
+    EXTRAS_REQUIRE["docs"] + EXTRAS_REQUIRE["tests"] + ("tox",)
+)
+
 setup(
     name="Flask-RESTy",
     version="1.5.0",
@@ -35,11 +44,7 @@ setup(
         "Werkzeug>=0.11",
         "konch>=4.0",
     ),
-    extras_require={
-        "docs": ("sphinx", "pallets-sphinx-themes"),
-        "jwt": ("PyJWT>=1.4.0", "cryptography>=2.0.0"),
-        "tests": ("coverage", "psycopg2-binary", "pytest"),
-    },
+    extras_require=EXTRAS_REQUIRE,
     entry_points={
         "pytest11": ("flask-resty = flask_resty.testing",),
         "flask.commands": ("shell = flask_resty.shell:cli",),
