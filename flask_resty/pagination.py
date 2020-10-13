@@ -1,5 +1,4 @@
 import base64
-
 import flask
 import sqlalchemy as sa
 from marshmallow import ValidationError

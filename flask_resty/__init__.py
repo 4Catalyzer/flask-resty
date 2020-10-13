@@ -39,6 +39,6 @@ from .sorting import FieldSortingBase, FixedSorting, Sorting, SortingBase
 from .view import ApiView, GenericModelView, ModelView
 
 try:
-    from .jwt import JwtAuthentication, JwkSetAuthentication, JwkSetPyJwt
+    from .jwt import JwkSetAuthentication, JwkSetPyJwt, JwtAuthentication
 except ImportError:
     pass

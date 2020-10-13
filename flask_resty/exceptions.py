@@ -1,6 +1,5 @@
-import traceback
-
 import flask
+import traceback
 from werkzeug.exceptions import default_exceptions
 
 from .utils import iter_validation_errors

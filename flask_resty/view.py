@@ -1,6 +1,5 @@
-import itertools
-
 import flask
+import itertools
 from flask.views import MethodView
 from marshmallow import ValidationError, fields
 from sqlalchemy.exc import IntegrityError
@@ -633,7 +632,11 @@ class ModelView(ApiView):
         return item
 
     def get_item(
-        self, id, *, with_for_update=False, create_transient_stub=False,
+        self,
+        id,
+        *,
+        with_for_update=False,
+        create_transient_stub=False,
     ):
         """Get an item by ID.
 
@@ -1046,7 +1049,11 @@ class GenericModelView(ModelView):
         return self.make_created_response(item)
 
     def update(
-        self, id, *, with_for_update=False, partial=False,
+        self,
+        id,
+        *,
+        with_for_update=False,
+        partial=False,
     ):
         """Update the item for the specified ID with the request data.
 

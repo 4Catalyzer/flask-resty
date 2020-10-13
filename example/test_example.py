@@ -1,6 +1,5 @@
-from unittest.mock import ANY
-
 import pytest
+from unittest.mock import ANY
 
 from flask_resty.testing import ApiClient, assert_response, assert_shape
 

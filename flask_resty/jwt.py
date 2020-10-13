@@ -1,7 +1,6 @@
 import base64
-import json
-
 import flask
+import json
 import jwt
 from cryptography.hazmat.backends import default_backend
 from cryptography.x509 import load_der_x509_certificate

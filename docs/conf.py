@@ -1,6 +1,5 @@
 import os
 import sys
-
 from pallets_sphinx_themes import get_version
 
 # -- Project information -----------------------------------------------------

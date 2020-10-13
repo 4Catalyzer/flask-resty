@@ -1,5 +1,4 @@
 import operator
-
 import pytest
 from marshmallow import Schema, fields, validate
 from sqlalchemy import Column, Integer, String

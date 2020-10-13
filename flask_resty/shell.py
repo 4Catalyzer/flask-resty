@@ -1,11 +1,10 @@
 """Entry point for the ``shell`` Flask-RESTy CLI commmand."""
 # Code adapted from flask-konch
-from pathlib import Path
-
 import click
 import flask
 import konch
 from flask.cli import with_appcontext
+from pathlib import Path
 
 LOGO = r"""
   _____ _           _         ____  _____ ____ _____
