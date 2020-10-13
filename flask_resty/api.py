@@ -1,7 +1,6 @@
+import flask
 import functools
 import posixpath
-
-import flask
 from werkzeug.exceptions import HTTPException
 
 from .exceptions import ApiError

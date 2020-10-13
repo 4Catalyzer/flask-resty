@@ -1,6 +1,5 @@
-import os
-
 import flask_sqlalchemy as fsa
+import os
 import pytest
 from flask import Flask
 from flask.testing import FlaskClient

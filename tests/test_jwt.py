@@ -1,5 +1,4 @@
 import json
-
 import pytest
 from marshmallow import Schema, fields
 from sqlalchemy import Column, Integer, String
@@ -10,7 +9,7 @@ from flask_resty.testing import assert_response
 # -----------------------------------------------------------------------------
 
 try:
-    from flask_resty import JwtAuthentication, JwkSetAuthentication
+    from flask_resty import JwkSetAuthentication, JwtAuthentication
 except ImportError:
     pytestmark = pytest.mark.skip(reason="JWT support not installed")
 
