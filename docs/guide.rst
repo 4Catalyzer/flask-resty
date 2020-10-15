@@ -102,6 +102,71 @@ The concrete view classes simply call the appropriate CRUD methods from `Generic
 
     Unimplemented HTTP methods will return ``405 Method not allowed``.
 
+By default, responses that contain data are structured per the `JSON:API Top Level object <https://jsonapi.org/format/#document-top-level>`_ pattern.
+
+.. code-block:: json
+
+    {
+        "data": [
+            {
+                "author_id": 2,
+                "created_at": "2019-06-16T01:09:33.450768",
+                "id": 2,
+                "published_at": "2013-11-05T00:00:00",
+                "title": "The Design of Everyday Things"
+            },
+            {
+                "author_id": 2,
+                "created_at": "2019-06-16T01:09:33.450900",
+                "id": 3,
+                "published_at": "2010-10-29T00:00:00",
+                "title": "Living With Complexity"
+            }
+        ],
+        "meta": {
+            "has_next_page": false
+        }
+    }
+
+Default error responses at least include a `"code"` and `"detail"` member per error.
+
+.. code-block:: json
+
+    {
+        "errors": [
+            {
+            "code": "not_found",
+            "detail": "The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again."
+            }
+        ]
+    }
+
+In the general case, the error code and detail will be typical of the HTTP error code (e.g., the above example represents a `404`).
+Otherwise, the application will return a code that is descriptive of a specific error that will be one of:
+
+.. csv-table::
+    :escape: \
+    :header: "code", "status", "description"
+    :widths: 10, 5, 50
+
+    "invalid_body", "400", "A JSON object is not at the top level of the request body."
+    "invalid_cursor.encoding", "400", "Unable to decode an individual pagination cursor value."
+    "invalid_cursor.length", "400", "Number of fields provided for pagination cursor mismatched to number of fields specified to sort query."
+    "invalid_cursor", "400", "Marshmallow `ValidationError` raised while parsing pagination cursor values."
+    "invalid_data.conflict", "409", "Database integrity error."
+    "invalid_data.missing", "400", "Request body doesn't have a 'data' member."
+    "invalid_data", "422", "Marshmallow schema raised a `ValidationError`."
+    "invalid_filter.missing", "400", "Required filter arg not present."
+    "invalid_filter", "400", "Error deserializing a query filter argument."
+    "invalid_id.forbidden", "403", "ID value provided where not allowed, e.g., POST to resource with auto-increment primary key."
+    "invalid_id.mismatch", "409", "ID value provided that does not match expected ID per the URI, e.g., PUT request to `/1` with `{\"id\": 2}`."
+    "invalid_id.missing", "422", "ID value not provided where expected, e.g., PUT request."
+    "invalid_limit", "400", "Pagination limit cannot be parsed or is invalid."
+    "invalid_offset", "400", "Pagination offset cannot be parsed or is invalid."
+    "invalid_page", "400", "Pagination page number cannot be parsed or is invalid."
+    "invalid_parameter", "422", "Error deserializing a query arg."
+    "invalid_related.missing_id", "422", "Expected ID field not present in related item data stub"
+    "invalid_related.not_found", "422", "Cannot retrieve a related item with specified `RelatedID` value."
 
 Pagination
 ----------
