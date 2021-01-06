@@ -6,7 +6,7 @@ from flask_resty import Api, ModelView, get_item_or_404
 # -----------------------------------------------------------------------------
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def models(db):
     class Widget(db.Model):
         __tablename__ = "widgets"

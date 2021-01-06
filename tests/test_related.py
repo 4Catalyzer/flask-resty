@@ -9,7 +9,7 @@ from flask_resty.testing import assert_response
 # -----------------------------------------------------------------------------
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def models(db):
     class Parent(db.Model):
         __tablename__ = "parents"

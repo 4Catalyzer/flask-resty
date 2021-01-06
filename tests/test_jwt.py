@@ -17,7 +17,7 @@ except ImportError:
 
 
 class AbstractTestJwt:
-    @pytest.yield_fixture
+    @pytest.fixture
     def models(self, db):
         class Widget(db.Model):
             __tablename__ = "widgets"
