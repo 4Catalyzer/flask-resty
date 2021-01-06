@@ -2,7 +2,7 @@ from setuptools import setup
 
 EXTRAS_REQUIRE = {
     "docs": ("sphinx", "pallets-sphinx-themes"),
-    "jwt": ("PyJWT>=1.4.0", "cryptography>=2.0.0"),
+    "jwt": ("PyJWT>=1.4.0,<2.0.0", "cryptography>=2.0.0"),
     "tests": ("coverage", "psycopg2-binary", "pytest"),
 }
 EXTRAS_REQUIRE["dev"] = (
