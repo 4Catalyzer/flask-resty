@@ -19,7 +19,7 @@ from flask_resty.testing import assert_response, get_body, get_meta
 # -----------------------------------------------------------------------------
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def models(db):
     class Widget(db.Model):
         __tablename__ = "widgets"
