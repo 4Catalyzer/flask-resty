@@ -11,7 +11,7 @@ EXTRAS_REQUIRE["dev"] = (
 
 setup(
     name="Flask-RESTy",
-    version="1.5.0",
+    version="1.5.1",
     description="Building blocks for REST APIs for Flask",
     url="https://github.com/4Catalyzer/flask-resty",
     author="4Catalyzer",
