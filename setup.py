@@ -10,6 +10,7 @@ EXTRAS_REQUIRE["dev"] = (
     EXTRAS_REQUIRE["docs"] + EXTRAS_REQUIRE["tests"] + ("tox",)
 )
 
+
 def find_version(fname):
     """Attempts to find the version number in the file names fname.
     Raises RuntimeError if not found.
@@ -25,6 +26,7 @@ def find_version(fname):
     if not version:
         raise RuntimeError("Cannot find version information")
     return version
+
 
 setup(
     name="Flask-RESTy",
