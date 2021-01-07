@@ -93,7 +93,7 @@ jobs:
       - name: "Install in dev mode"
         run: "python -m pip install -e .[dev]"
       - name: "Import package"
-        run: "python -c 'import attr; print(attr.__version__)'"
+        run: "python -c 'import flask_resty; print(flask_resty.__version__)'"
 
   publish:
     name: "Publish"
