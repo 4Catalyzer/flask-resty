@@ -1,3 +1,4 @@
+import re
 from setuptools import setup
 
 EXTRAS_REQUIRE = {
@@ -9,9 +10,25 @@ EXTRAS_REQUIRE["dev"] = (
     EXTRAS_REQUIRE["docs"] + EXTRAS_REQUIRE["tests"] + ("tox",)
 )
 
+def find_version(fname):
+    """Attempts to find the version number in the file names fname.
+    Raises RuntimeError if not found.
+    """
+    version = ""
+    with open(fname) as fp:
+        reg = re.compile(r'__version__ = [\'"]([^\'"]*)[\'"]')
+        for line in fp:
+            m = reg.match(line)
+            if m:
+                version = m.group(1)
+                break
+    if not version:
+        raise RuntimeError("Cannot find version information")
+    return version
+
 setup(
     name="Flask-RESTy",
-    version="1.6.0",
+    version=find_version("flask_resty/__init__.py"),
     description="Building blocks for REST APIs for Flask",
     url="https://github.com/4Catalyzer/flask-resty",
     author="4Catalyzer",
