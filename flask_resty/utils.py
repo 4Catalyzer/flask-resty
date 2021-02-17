@@ -1,6 +1,21 @@
 """Internal utility helpers."""
 
-UNDEFINED = object()
+# UNDEFINED is a singleton; ensure that it is falsy and returns the same instance when copied
+class _Undefined:
+    def __bool__(self):
+        return False
+
+    def __copy__(self):
+        return self
+
+    def __deepcopy__(self, _):
+        return self
+
+    def __repr__(self):
+        return "<UNDEFINED>"
+
+
+UNDEFINED = _Undefined()
 
 # -----------------------------------------------------------------------------
 
