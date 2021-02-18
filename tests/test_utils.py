@@ -1,4 +1,6 @@
-from flask_resty.utils import SettableProperty, settable_property
+import copy
+
+from flask_resty.utils import UNDEFINED, SettableProperty, settable_property
 
 # -----------------------------------------------------------------------------
 
@@ -28,3 +30,11 @@ def test_settable_property():
 
     foo.value = 6
     assert foo.value == 6
+
+
+def test_undefined():
+    assert bool(UNDEFINED) is False
+    assert copy.copy(UNDEFINED) is UNDEFINED
+    d = {"foo": UNDEFINED}
+    d_deepcopy = copy.deepcopy(d)
+    assert d["foo"] is d_deepcopy["foo"]
