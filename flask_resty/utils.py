@@ -11,7 +11,7 @@ class _Undefined:
     def __deepcopy__(self, _):
         return self
 
-    def __repr__(self):
+    def __repr__(self):  # pragma: no cover
         return "<UNDEFINED>"
 
 
