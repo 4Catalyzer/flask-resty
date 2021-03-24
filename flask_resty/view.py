@@ -843,6 +843,7 @@ class ModelView(ApiView):
         """
         for key, value in data.items():
             setattr(item, key, value)
+        return item
 
     def delete_item(self, item):
         """Delete an existing item.
