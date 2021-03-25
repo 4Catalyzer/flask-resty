@@ -92,18 +92,3 @@ jobs:
         run: "python -m pip install -e .[dev]"
       - name: "Import package"
         run: "python -c 'import flask_resty; print(flask_resty.__version__)'"
-
-  publish:
-    name: "Publish"
-    runs-on: "ubuntu-latest"
-
-    steps:
-      - uses: "actions/checkout@v2"
-      - uses: "actions/setup-python@v2"
-        with:
-          python-version: "3.9"
-      - if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
-        uses: pypa/gh-action-pypi-publish@master
-        with:
-          user: __token__
-          password: ${{ secrets.PYPI_API_TOKEN }}
