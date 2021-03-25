@@ -31,6 +31,22 @@ DEFAULTS = dict(
 )
 
 
+def get_models(db) -> dict:
+    try:
+        models = {
+            mapper.class_.__name__: mapper.class_
+            for mapper in db.Model.registry.mappers
+        }
+    except AttributeError:  # pragma: no cover
+        # SQLAlchemy<1.4
+        models = {
+            name: cls
+            for name, cls in db.Model._decl_class_registry.items()
+            if isinstance(cls, type) and issubclass(cls, db.Model)
+        }
+    return models
+
+
 def get_models_context(app: flask.Flask) -> dict:
     try:
         db = app.extensions["sqlalchemy"].db
@@ -44,12 +60,7 @@ def get_models_context(app: flask.Flask) -> dict:
         "rollback": db.session.rollback,
         "flush": db.session.flush,
     }
-    models = {
-        name: cls
-        for name, cls in db.Model._decl_class_registry.items()
-        if isinstance(cls, type) and issubclass(cls, db.Model)
-    }
-    ret.update(models)
+    ret.update(get_models(db))
     return ret
 
 
