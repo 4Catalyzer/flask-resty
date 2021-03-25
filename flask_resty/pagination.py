@@ -449,6 +449,13 @@ class CursorPaginationBase(LimitPagination):
         )
 
         column, asc, value = column_cursors[-1]
+
+        # SQL Alchemy won't let you > or < a boolean, so we convert
+        # to an integer, the DB's seem to handle this just fine
+        if isinstance(value, bool):
+            column = sa.cast(column, sa.Integer)
+            value = int(value)
+
         if asc:
             current_clause = column > value
         else:

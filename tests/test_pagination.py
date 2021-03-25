@@ -1,7 +1,7 @@
 import operator
 import pytest
 from marshmallow import Schema, fields, validate
-from sqlalchemy import Column, Integer
+from sqlalchemy import Boolean, Column, Integer
 
 from flask_resty import (
     Api,
@@ -19,6 +19,10 @@ from flask_resty.testing import assert_response, get_body, get_meta
 # -----------------------------------------------------------------------------
 
 
+def encode_cursor(cursor):
+    return RelayCursorPagination(2).encode_cursor(cursor)
+
+
 @pytest.fixture
 def models(db):
     class Widget(db.Model):
@@ -26,6 +30,7 @@ def models(db):
 
         id = Column(Integer, primary_key=True)
         size = Column(Integer)
+        is_cool = Column(Boolean)
 
     db.create_all()
 
@@ -39,6 +44,7 @@ def schemas():
     class WidgetSchema(Schema):
         id = fields.Integer(as_string=True)
         size = fields.Integer()
+        is_cool = fields.Boolean()
 
     class WidgetValidateSchema(WidgetSchema):
         size = fields.Integer(validate=validate.Range(max=1))
@@ -76,7 +82,7 @@ def routes(app, models, schemas):
         pagination = PagePagination(2)
 
     class RelayCursorListView(WidgetListViewBase):
-        sorting = Sorting("id", "size")
+        sorting = Sorting("id", "size", "is_cool")
         pagination = RelayCursorPagination(2)
 
     class RelayCursorNoValidateListView(RelayCursorListView):
@@ -99,12 +105,12 @@ def routes(app, models, schemas):
 def data(db, models):
     db.session.add_all(
         (
-            models["widget"](size=1),
-            models["widget"](size=2),
-            models["widget"](size=3),
-            models["widget"](size=1),
-            models["widget"](size=2),
-            models["widget"](size=3),
+            models["widget"](id=1, size=1, is_cool=True),
+            models["widget"](id=2, size=2, is_cool=False),
+            models["widget"](id=3, size=3, is_cool=True),
+            models["widget"](id=4, size=1, is_cool=False),
+            models["widget"](id=5, size=2, is_cool=False),
+            models["widget"](id=6, size=3, is_cool=True),
         )
     )
     db.session.commit()
@@ -340,6 +346,38 @@ def test_relay_cursor_sorted_inverse(client):
         "has_next_page": True,
         "cursors": ["Mg.Mg", "MQ.NA"],
     }
+
+
+# Note! Ordering of implicit id follows previous sort order
+# (id=6, size=3, is_cool=True)
+# (id=3, size=3, is_cool=True)
+# (id=1, size=1, is_cool=True)
+# (id=5, size=2, is_cool=False)
+# (id=4, size=1, is_cool=False)
+# (id=2, size=2, is_cool=False)
+@pytest.mark.parametrize(
+    (
+        "sort",
+        "cursor",
+        "expected",
+    ),
+    (
+        ("is_cool", encode_cursor((False, 5)), [{"id": "1"}, {"id": "3"}]),
+        ("is_cool", encode_cursor((False, 2)), [{"id": "4"}, {"id": "5"}]),
+        ("is_cool", encode_cursor((True, 1)), [{"id": "3"}, {"id": "6"}]),
+        ("is_cool", encode_cursor((True, 3)), [{"id": "6"}]),
+        ("is_cool,-id", encode_cursor((False, 2)), [{"id": "6"}, {"id": "3"}]),
+        ("-is_cool", encode_cursor((True, 6)), [{"id": "3"}, {"id": "1"}]),
+        ("-is_cool", encode_cursor((True, 1)), [{"id": "5"}, {"id": "4"}]),
+        ("-is_cool", encode_cursor((False, 5)), [{"id": "4"}, {"id": "2"}]),
+        ("-is_cool", encode_cursor((False, 4)), [{"id": "2"}]),
+        ("-is_cool,id", encode_cursor((True, 6)), [{"id": "2"}, {"id": "4"}]),
+    ),
+)
+def test_relay_cursor_boolean_sorts(client, sort, cursor, expected):
+    response = client.get(f"/relay_cursor_widgets?sort={sort}&cursor={cursor}")
+
+    assert_response(response, 200, expected)
 
 
 def test_relay_cursor_create(client):
