@@ -1,3 +1,4 @@
+# Adapted from https://github.com/python-attrs/attrs/blob/main/.github/workflows/main.yml
 ---
 name: CI
 
@@ -55,7 +56,7 @@ jobs:
           fail_ci_if_error: true
 
   package:
-    name: "Build & verify package"
+    name: "Build, verify, and publish package"
     runs-on: "ubuntu-latest"
 
     steps:
@@ -74,6 +75,13 @@ jobs:
         run: "check-wheel-contents dist/*.whl"
       - name: "Check long_description"
         run: "python -m twine check dist/*"
+      - name: Publish distribution 📦 to PyPI
+        if: startsWith(github.event.ref, 'refs/tags')
+        uses: pypa/gh-action-pypi-publish@master
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
+
 
   install-dev:
     strategy:
