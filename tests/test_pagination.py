@@ -1,7 +1,7 @@
 import operator
 import pytest
 from marshmallow import Schema, fields, validate
-from sqlalchemy import Column, Integer, Boolean
+from sqlalchemy import Boolean, Column, Integer
 
 from flask_resty import (
     Api,
