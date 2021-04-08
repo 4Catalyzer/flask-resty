@@ -62,15 +62,30 @@ def assert_shape(actual, expected):
         # superset of the expected items, rather than that they match.
         for key, value in expected.items():
             if value is not UNDEFINED:
-                assert key in actual
+                assert (
+                    key in actual
+                ), f"Expected key {key} not found in: {actual}"
+
                 assert_shape(actual[key], value)
             else:
                 assert key not in actual
     elif isinstance(expected, (str, bytes)):
         assert expected == actual
     elif isinstance(expected, Sequence):
-        assert isinstance(actual, Sequence)
-        assert len(actual) == len(expected)
+        assert isinstance(
+            actual, Sequence
+        ), "Received a Sequence but actual value is not a Sequence"
+
+        actual_len = len(actual)
+        expected_len = len(expected)
+
+        assert (
+            actual_len == expected_len
+        ), "Expected sequences to be the same length but " + (
+            f"the actual value has {actual_len - expected_len} more items"
+            if actual_len > expected_len
+            else f"the actual value has {expected_len - actual_len} less items"
+        )
         for actual_item, expected_item in zip(actual, expected):
             assert_shape(actual_item, expected_item)
     elif isinstance(expected, float):
@@ -125,8 +140,6 @@ def assert_response(
     errors in the response body, depending on the response status. This check
     ignores extra dictionary items in the response contents.
     """
-    status_code = response.status_code
-    assert status_code == expected_status_code
 
     if not response.content_length:
         response_data = UNDEFINED
@@ -136,6 +149,12 @@ def assert_response(
         response_data = get_errors(response)
     else:
         response_data = response.data
+
+    status_code = response.status_code
+
+    assert (
+        status_code == expected_status_code
+    ), f"Expected status code to match for request data {response_data}"
 
     if expected_data is not UNDEFINED:
         if not isinstance(expected_data, Predicate):
