@@ -64,7 +64,7 @@ def assert_shape(actual, expected):
             if value is not UNDEFINED:
                 assert (
                     key in actual
-                ), f"Expected key {key} not found in: {actual}"
+                ), f"expected key {key!r} not found in: {actual!r}"
 
                 assert_shape(actual[key], value)
             else:
@@ -74,7 +74,7 @@ def assert_shape(actual, expected):
     elif isinstance(expected, Sequence):
         assert isinstance(
             actual, Sequence
-        ), "Received a Sequence but actual value is not a Sequence"
+        ), f"{actual!r} is not a Sequence"
 
         actual_len = len(actual)
         expected_len = len(expected)
@@ -154,7 +154,7 @@ def assert_response(
 
     assert (
         status_code == expected_status_code
-    ), f"Expected status code to match for request data {response_data}"
+    ), f"expected status code {expected_status_code!r}, got {status_code!r}"
 
     if expected_data is not UNDEFINED:
         if not isinstance(expected_data, Predicate):
