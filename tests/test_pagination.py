@@ -1,7 +1,7 @@
 import operator
 import pytest
 from marshmallow import Schema, fields, validate
-from sqlalchemy import Boolean, Column, Integer
+from sqlalchemy import Boolean, Column, Integer, Text
 
 from flask_resty import (
     Api,
@@ -31,6 +31,7 @@ def models(db):
         id = Column(Integer, primary_key=True)
         size = Column(Integer)
         is_cool = Column(Boolean)
+        name = Column(Text)
 
     db.create_all()
 
@@ -44,6 +45,7 @@ def schemas():
     class WidgetSchema(Schema):
         id = fields.Integer(as_string=True)
         size = fields.Integer()
+        name = fields.String()
         is_cool = fields.Boolean()
 
     class WidgetValidateSchema(WidgetSchema):
@@ -101,16 +103,25 @@ def routes(app, models, schemas):
     )
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture()
+def add_widgets(db, models):
+    def impl(widgets):
+        db.session.add_all([models["widget"](**data) for data in widgets])
+        db.session.commit()
+
+    return impl
+
+
+@pytest.fixture()
 def data(db, models):
     db.session.add_all(
         (
-            models["widget"](id=1, size=1, is_cool=True),
-            models["widget"](id=2, size=2, is_cool=False),
-            models["widget"](id=3, size=3, is_cool=True),
-            models["widget"](id=4, size=1, is_cool=False),
-            models["widget"](id=5, size=2, is_cool=False),
-            models["widget"](id=6, size=3, is_cool=True),
+            models["widget"](id=1, size=1, is_cool=True, name="Whatzit"),
+            models["widget"](id=2, size=2, is_cool=False, name="AAA Time"),
+            models["widget"](id=3, size=3, is_cool=True, name="Plus Ultra"),
+            models["widget"](id=4, size=1, is_cool=False, name="Zendaz"),
+            models["widget"](id=5, size=2, is_cool=False, name="Fooz"),
+            models["widget"](id=6, size=3, is_cool=True, name="Doodad"),
         )
     )
     db.session.commit()
@@ -119,7 +130,7 @@ def data(db, models):
 # -----------------------------------------------------------------------------
 
 
-def test_max_limit(client):
+def test_max_limit(client, data):
     response = client.get("/max_limit_widgets")
     assert_response(
         response, 200, [{"id": "1", "size": 1}, {"id": "2", "size": 2}]
@@ -127,7 +138,7 @@ def test_max_limit(client):
     assert get_meta(response) == {"has_next_page": True}
 
 
-def test_limit(client):
+def test_limit(client, data):
     response = client.get("/optional_limit_widgets?limit=2")
     assert_response(
         response, 200, [{"id": "1", "size": 1}, {"id": "2", "size": 2}]
@@ -135,7 +146,7 @@ def test_limit(client):
     assert get_meta(response) == {"has_next_page": True}
 
 
-def test_unset_limit(client):
+def test_unset_limit(client, data):
     response = client.get("/optional_limit_widgets")
     assert_response(
         response,
@@ -152,7 +163,7 @@ def test_unset_limit(client):
     assert get_meta(response) == {"has_next_page": False}
 
 
-def test_limit_offset(client):
+def test_limit_offset(client, data):
     response = client.get("/limit_offset_widgets?offset=2&limit=3")
 
     assert_response(
@@ -167,7 +178,7 @@ def test_limit_offset(client):
     assert get_meta(response) == {"has_next_page": True}
 
 
-def test_limit_offset_default(client):
+def test_limit_offset_default(client, data):
     response = client.get("/limit_offset_widgets")
 
     assert_response(
@@ -176,7 +187,7 @@ def test_limit_offset_default(client):
     assert get_meta(response) == {"has_next_page": True}
 
 
-def test_limit_offset_limit(client):
+def test_limit_offset_limit(client, data):
     response = client.get("/limit_offset_widgets?limit=3")
 
     assert_response(
@@ -191,7 +202,7 @@ def test_limit_offset_limit(client):
     assert get_meta(response) == {"has_next_page": True}
 
 
-def test_limit_offset_max_limit(client):
+def test_limit_offset_max_limit(client, data):
     response = client.get("/limit_offset_widgets?limit=5")
 
     assert_response(
@@ -207,7 +218,7 @@ def test_limit_offset_max_limit(client):
     assert get_meta(response) == {"has_next_page": True}
 
 
-def test_limit_offset_offset(client):
+def test_limit_offset_offset(client, data):
     response = client.get("/limit_offset_widgets?offset=2")
 
     assert_response(
@@ -216,7 +227,7 @@ def test_limit_offset_offset(client):
     assert get_meta(response) == {"has_next_page": True}
 
 
-def test_limit_offset_offset_end(client):
+def test_limit_offset_offset_end(client, data):
     response = client.get("/limit_offset_widgets?offset=4")
 
     assert_response(
@@ -225,34 +236,34 @@ def test_limit_offset_offset_end(client):
     assert get_meta(response) == {"has_next_page": False}
 
 
-def test_limit_offset_offset_truncate(client):
+def test_limit_offset_offset_truncate(client, data):
     response = client.get("/limit_offset_widgets?offset=5")
 
     assert_response(response, 200, [{"id": "6", "size": 3}])
     assert get_meta(response) == {"has_next_page": False}
 
 
-def test_limit_offset_filtered(client):
+def test_limit_offset_filtered(client, data):
     response = client.get("/limit_offset_widgets?size=2&limit=1")
 
     assert_response(response, 200, [{"id": "2", "size": 2}])
     assert get_meta(response) == {"has_next_page": True}
 
 
-def test_limit_offset_filtered_offset(client):
+def test_limit_offset_filtered_offset(client, data):
     response = client.get("/limit_offset_widgets?size=2&offset=1")
 
     assert_response(response, 200, [{"id": "5", "size": 2}])
     assert get_meta(response) == {"has_next_page": False}
 
 
-def test_limit_offset_create(client):
+def test_limit_offset_create(client, data):
     response = client.post("/limit_offset_widgets", data={"size": 1})
 
     assert "meta" not in get_body(response)
 
 
-def test_page(client):
+def test_page(client, data):
     response = client.get("/page_widgets?page=1")
 
     assert_response(
@@ -261,7 +272,7 @@ def test_page(client):
     assert get_meta(response) == {"has_next_page": True}
 
 
-def test_page_default(client):
+def test_page_default(client, data):
     response = client.get("/page_widgets")
 
     assert_response(
@@ -270,13 +281,13 @@ def test_page_default(client):
     assert get_meta(response) == {"has_next_page": True}
 
 
-def test_page_create(client):
+def test_page_create(client, data):
     response = client.post("/page_widgets", data={"size": 1})
 
     assert "meta" not in get_body(response)
 
 
-def test_relay_cursor(client):
+def test_relay_cursor(client, data):
     response = client.get("/relay_cursor_widgets?cursor=MQ")
 
     assert_response(
@@ -288,7 +299,7 @@ def test_relay_cursor(client):
     }
 
 
-def test_relay_cursor_default(client):
+def test_relay_cursor_default(client, data):
     response = client.get("/relay_cursor_widgets")
 
     assert_response(
@@ -300,7 +311,7 @@ def test_relay_cursor_default(client):
     }
 
 
-def test_relay_cursor_sorted(client):
+def test_relay_cursor_sorted(client, data):
     response = client.get("/relay_cursor_widgets?sort=size&cursor=MQ.MQ")
 
     assert_response(
@@ -312,7 +323,7 @@ def test_relay_cursor_sorted(client):
     }
 
 
-def test_relay_cursor_sorted_default(client):
+def test_relay_cursor_sorted_default(client, data):
     response = client.get("/relay_cursor_widgets?sort=size")
 
     assert_response(
@@ -324,7 +335,7 @@ def test_relay_cursor_sorted_default(client):
     }
 
 
-def test_relay_cursor_sorted_redundant(client):
+def test_relay_cursor_sorted_redundant(client, data):
     response = client.get("/relay_cursor_widgets?sort=size,id&cursor=MQ.MQ")
 
     assert_response(
@@ -336,7 +347,7 @@ def test_relay_cursor_sorted_redundant(client):
     }
 
 
-def test_relay_cursor_sorted_inverse(client):
+def test_relay_cursor_sorted_inverse(client, data):
     response = client.get("/relay_cursor_widgets?sort=-size&cursor=Mg.NQ")
 
     assert_response(
@@ -345,6 +356,80 @@ def test_relay_cursor_sorted_inverse(client):
     assert get_meta(response) == {
         "has_next_page": True,
         "cursors": ["Mg.Mg", "MQ.NA"],
+    }
+
+
+def test_relay_reverse_cursor(client, add_widgets):
+    add_widgets(
+        (
+            {"id": "1", "size": 2},
+            {"id": "2", "size": 2},
+            {"id": "3", "size": 1},
+            {"id": "4", "size": 5},
+            {"id": "5", "size": 3},
+        )
+    )
+
+    first_three_items = [
+        {"id": "3", "size": 1},
+        {"id": "1", "size": 2},
+        {"id": "2", "size": 2},
+    ]
+
+    resp = client.get(f"/relay_cursor_widgets?sort=size&limit=3")
+    assert_response(resp, 200, first_three_items)
+
+    # this should be the next item in the list above
+    before = encode_cursor((3, "5"))
+    resp = client.get(
+        f"/relay_cursor_widgets?sort=size&limit=3&before={before}"
+    )
+    assert_response(resp, 200, first_three_items)
+
+    resp = client.get(f"/relay_cursor_widgets?sort=size&before={before}")
+
+    assert_response(resp, 200, first_three_items[1:])
+
+    assert get_meta(resp) == {
+        "has_next_page": True,
+        "cursors": [encode_cursor((2, "1")), encode_cursor((2, "2"))],
+    }
+
+
+def test_relay_reverse_cursor_inverse(client, add_widgets):
+    add_widgets(
+        (
+            {"id": "1", "size": 2},
+            {"id": "2", "size": 2},
+            {"id": "3", "size": 1},
+            {"id": "4", "size": 5},
+            {"id": "5", "size": 3},
+        )
+    )
+
+    first_three_items = [
+        {"id": "4", "size": 5},
+        {"id": "5", "size": 3},
+        {"id": "2", "size": 2},
+    ]
+
+    resp = client.get(f"/relay_cursor_widgets?sort=-size&limit=3")
+    assert_response(resp, 200, first_three_items)
+
+    # this should be the next item in the list above
+    before = encode_cursor((2, "1"))
+    resp = client.get(
+        f"/relay_cursor_widgets?sort=-size&limit=3&before={before}"
+    )
+    assert_response(resp, 200, first_three_items)
+
+    resp = client.get(f"/relay_cursor_widgets?sort=-size&before={before}")
+
+    assert_response(resp, 200, first_three_items[1:])
+
+    assert get_meta(resp) == {
+        "has_next_page": True,
+        "cursors": [encode_cursor((3, "5")), encode_cursor((2, "2"))],
     }
 
 
@@ -374,27 +459,27 @@ def test_relay_cursor_sorted_inverse(client):
         ("-is_cool,id", encode_cursor((True, 6)), [{"id": "2"}, {"id": "4"}]),
     ),
 )
-def test_relay_cursor_boolean_sorts(client, sort, cursor, expected):
+def test_relay_cursor_boolean_sorts(client, sort, cursor, expected, data):
     response = client.get(f"/relay_cursor_widgets?sort={sort}&cursor={cursor}")
 
     assert_response(response, 200, expected)
 
 
-def test_relay_cursor_create(client):
+def test_relay_cursor_create(client, data):
     response = client.post("/relay_cursor_widgets", data={"size": 1})
 
     assert_response(response, 201, {"size": 1})
     assert get_meta(response) == {"cursor": "Nw"}
 
 
-def test_relay_cursor_create_sorted(client):
+def test_relay_cursor_create_sorted(client, data):
     response = client.post("/relay_cursor_widgets?sort=size", data={"size": 1})
 
     assert_response(response, 201, {"size": 1})
     assert get_meta(response) == {"cursor": "MQ.Nw"}
 
 
-def test_relay_cursor_no_validate(app, client):
+def test_relay_cursor_no_validate(app, client, data):
     response = client.post(
         "/relay_cursor_no_validate_widgets", data={"size": 3}
     )
@@ -411,7 +496,7 @@ def test_relay_cursor_no_validate(app, client):
 # -----------------------------------------------------------------------------
 
 
-def test_error_invalid_limit_type(client):
+def test_error_invalid_limit_type(client, data):
     response = client.get("/limit_offset_widgets?limit=foo")
     assert_response(
         response,
@@ -420,7 +505,7 @@ def test_error_invalid_limit_type(client):
     )
 
 
-def test_error_invalid_limit_value(client):
+def test_error_invalid_limit_value(client, data):
     response = client.get("/limit_offset_widgets?limit=-1")
     assert_response(
         response,
@@ -429,7 +514,7 @@ def test_error_invalid_limit_value(client):
     )
 
 
-def test_error_invalid_offset_type(client):
+def test_error_invalid_offset_type(client, data):
     response = client.get("/limit_offset_widgets?offset=foo")
     assert_response(
         response,
@@ -438,7 +523,7 @@ def test_error_invalid_offset_type(client):
     )
 
 
-def test_error_invalid_offset_value(client):
+def test_error_invalid_offset_value(client, data):
     response = client.get("/limit_offset_widgets?offset=-1")
     assert_response(
         response,
@@ -447,7 +532,7 @@ def test_error_invalid_offset_value(client):
     )
 
 
-def test_error_invalid_page_type(client):
+def test_error_invalid_page_type(client, data):
     response = client.get("/page_widgets?page=foo")
     assert_response(
         response,
@@ -456,7 +541,7 @@ def test_error_invalid_page_type(client):
     )
 
 
-def test_error_invalid_page_value(client):
+def test_error_invalid_page_value(client, data):
     response = client.get("/page_widgets?page=-1")
     assert_response(
         response,
@@ -465,7 +550,7 @@ def test_error_invalid_page_value(client):
     )
 
 
-def test_error_invalid_relay_cursor_encoding(client):
+def test_error_invalid_relay_cursor_encoding(client, data):
     response = client.get("/relay_cursor_widgets?cursor=_")
     assert_response(
         response,
@@ -479,7 +564,7 @@ def test_error_invalid_relay_cursor_encoding(client):
     )
 
 
-def test_error_invalid_relay_cursor_length(client):
+def test_error_invalid_relay_cursor_length(client, data):
     response = client.get("/relay_cursor_widgets?cursor=MQ.MQ")
     assert_response(
         response,
@@ -488,7 +573,7 @@ def test_error_invalid_relay_cursor_length(client):
     )
 
 
-def test_error_invalid_relay_cursor_field(client):
+def test_error_invalid_relay_cursor_field(client, data):
     response = client.get("/relay_cursor_widgets?cursor=Zm9v")
     assert_response(
         response,
