@@ -376,7 +376,7 @@ def test_relay_reverse_cursor(client, add_widgets):
         {"id": "2", "size": 2},
     ]
 
-    resp = client.get(f"/relay_cursor_widgets?sort=size&limit=3")
+    resp = client.get("/relay_cursor_widgets?sort=size&limit=3")
     assert_response(resp, 200, first_three_items)
 
     # this should be the next item in the list above
@@ -413,7 +413,7 @@ def test_relay_reverse_cursor_inverse(client, add_widgets):
         {"id": "2", "size": 2},
     ]
 
-    resp = client.get(f"/relay_cursor_widgets?sort=-size&limit=3")
+    resp = client.get("/relay_cursor_widgets?sort=-size&limit=3")
     assert_response(resp, 200, first_three_items)
 
     # this should be the next item in the list above
