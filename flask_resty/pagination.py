@@ -1,10 +1,11 @@
 import base64
-from typing import Any, List, Tuple
-from flask_resty.view import ModelView
-from flask_resty.sorting import FieldOrderings, FieldSortingBase
 import flask
 import sqlalchemy as sa
 from marshmallow import ValidationError
+from typing import Any, List, Tuple
+
+from flask_resty.sorting import FieldOrderings, FieldSortingBase
+from flask_resty.view import ModelView
 
 from . import meta
 from .exceptions import ApiError
