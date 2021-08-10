@@ -58,6 +58,12 @@ class FieldSortingBase(SortingBase):
 
     def sort_query(self, query, view):
         field_orderings = self.get_request_field_orderings(view)
+
+        if view.pagination:
+            field_orderings = view.pagination.adjust_sort_ordering(
+                view, field_orderings
+            )
+
         return self.sort_query_by_fields(query, view, field_orderings)
 
     def sort_query_by_fields(self, query, view, field_orderings):
