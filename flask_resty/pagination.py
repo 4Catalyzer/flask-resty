@@ -1,5 +1,5 @@
 import base64
-from typing import Any, List, Optional, Tuple
+from typing import Any, List, Tuple
 from flask_resty.view import ModelView
 from flask_resty.sorting import FieldOrderings, FieldSortingBase
 import flask
