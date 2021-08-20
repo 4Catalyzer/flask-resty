@@ -17,6 +17,9 @@ Install dependencies:
 # optionally include [jwt] for the full test suite, but requires cryptography,
 #  and its dependent binary libraries
 pip install -e .[dev]
+
+# Or for zsh users
+pip install -e .\[dev\]
 ```
 
 ### Running tests

@@ -1,5 +1,6 @@
 import flask
 import sqlalchemy as sa
+from typing import Tuple
 
 from .exceptions import ApiError
 
@@ -36,6 +37,11 @@ class SortingBase:
 # -----------------------------------------------------------------------------
 
 
+FieldOrdering = Tuple[str, bool]
+
+FieldOrderings = Tuple[FieldOrdering, ...]
+
+
 class FieldSortingBase(SortingBase):
     """The base class for sorting components that sort on model fields.
 
@@ -52,13 +58,19 @@ class FieldSortingBase(SortingBase):
 
     def sort_query(self, query, view):
         field_orderings = self.get_request_field_orderings(view)
+
+        if view.pagination:
+            field_orderings = view.pagination.adjust_sort_ordering(
+                view, field_orderings
+            )
+
         return self.sort_query_by_fields(query, view, field_orderings)
 
     def sort_query_by_fields(self, query, view, field_orderings):
         criteria = self.get_criteria(view, field_orderings)
         return query.order_by(*criteria)
 
-    def get_request_field_orderings(self, view):
+    def get_request_field_orderings(self, view) -> FieldOrderings:
         """Get the field orderings to use for the current request.
 
         These should be created from a sort field string with
@@ -87,7 +99,7 @@ class FieldSortingBase(SortingBase):
             self.get_field_ordering(field) for field in fields.split(",")
         )
 
-    def get_field_ordering(self, field):
+    def get_field_ordering(self, field: str) -> FieldOrdering:
         if field and field[0] == "-":
             return field[1:], False
 

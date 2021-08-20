@@ -2,6 +2,10 @@ import base64
 import flask
 import sqlalchemy as sa
 from marshmallow import ValidationError
+from typing import Any, List, Tuple
+
+from flask_resty.sorting import FieldOrderings, FieldSortingBase
+from flask_resty.view import ModelView
 
 from . import meta
 from .exceptions import ApiError
@@ -21,6 +25,11 @@ class PaginationBase:
     Subclasses must implement :py:meth:`get_page` to provide the pagination
     logic.
     """
+
+    def adjust_sort_ordering(
+        self, view, field_orderings: FieldOrderings
+    ) -> FieldOrderings:
+        return field_orderings
 
     def get_page(self, query, view):
         """Restrict the specified query to a single page.
@@ -60,7 +69,7 @@ class LimitPaginationBase(PaginationBase):
     of returned items.
     """
 
-    def get_page(self, query, view):
+    def get_page(self, query, view) -> List:
         limit = self.get_limit()
         if limit is not None:
             query = query.limit(limit + 1)
@@ -235,6 +244,8 @@ class PagePagination(LimitOffsetPagination):
 
 # -----------------------------------------------------------------------------
 
+Cursor = Tuple[Any, ...]
+
 
 class CursorPaginationBase(LimitPagination):
     """The base class for pagination schemes that use cursors.
@@ -257,11 +268,23 @@ class CursorPaginationBase(LimitPagination):
     #: The name of the query parameter to inspect for the cursor value.
     cursor_arg = "cursor"
 
+    #: the name of the query parameter to inspect for explicit forward pagination
+    after_arg = "after"
+
+    #: the name of the query parameter to inspect for explicit backward pagination
+    before_arg = "before"
+
     def __init__(self, *args, validate_values=True, **kwargs):
         super().__init__(*args, **kwargs)
         self._validate_values = validate_values
 
-    def ensure_query_sorting(self, query, view):
+    @property
+    def reversed(self):
+        return self.get_raw_request_cursor()[1] == self.before_arg
+
+    def adjust_sort_ordering(
+        self, view: ModelView, field_orderings
+    ) -> FieldOrderings:
         """Ensure the query is sorted correctly and get the field orderings.
 
         The implementation of cursor-based pagination in Flask-RESTy requires
@@ -271,49 +294,27 @@ class CursorPaginationBase(LimitPagination):
         sorting criterion, then returns the field orderings for use in the
         other methods, as in `get_field_orderings` below.
 
-        :param query: The query to paginate.
-        :type query: :py:class:`sqlalchemy.orm.query.Query`
         :param view: The view with the model we wish to paginate.
         :type view: :py:class:`ModelView`
-        :return: The sorted query & the field orderings
-        :rtype: tuple
+        :return: The field orderings necessary to do cursor pagination deterministically
+        :rtype: FieldOrderings
         """
-        (
-            sorting_field_orderings,
-            missing_field_orderings,
-        ) = self.get_sorting_and_missing_field_orderings(view)
 
-        query = view.sorting.sort_query_by_fields(
-            query, view, missing_field_orderings
-        )
-        field_orderings = sorting_field_orderings + missing_field_orderings
+        # ignore the passed in sort so that it's consistent
+        # with further calls in get_page
+        return self.get_field_orderings(view)
 
-        return query, field_orderings
+    def get_field_orderings(self, view: ModelView):
+        sorting: FieldSortingBase = view.sorting
 
-    def get_field_orderings(self, view):
-        """Get the field orderings needed to generate the cursor.
-
-        The return value provides the `field_orderings` for use with
-        `get_request_cursor`, `get_filter`, `make_cursors`, and `make_cursor`.
-
-        :param view: The view with the model we wish to paginate.
-        :type view: :py:class:`ModelView`
-        :return: A sequence of field orderings
-        :rtype: seq
-        """
-        (
-            sorting_field_orderings,
-            missing_field_orderings,
-        ) = self.get_sorting_and_missing_field_orderings(view)
-        return sorting_field_orderings + missing_field_orderings
-
-    def get_sorting_and_missing_field_orderings(self, view):
-        sorting = view.sorting
         assert (
             sorting is not None
         ), "sorting must be defined when using cursor pagination"
 
         sorting_field_orderings = sorting.get_request_field_orderings(view)
+        sorting_ordering_fields = frozenset(
+            field_name for field_name, _ in sorting_field_orderings
+        )
 
         sorting_ordering_fields = frozenset(
             field_name for field_name, _ in sorting_field_orderings
@@ -333,7 +334,24 @@ class CursorPaginationBase(LimitPagination):
             if id_field not in sorting_ordering_fields
         )
 
-        return sorting_field_orderings, missing_field_orderings
+        field_ordering = sorting_field_orderings + missing_field_orderings
+
+        if self.reversed:
+            field_ordering = tuple(
+                [(field, not order) for field, order in field_ordering]
+            )
+
+        return field_ordering
+
+    def get_raw_request_cursor(self):
+        cursor_args = [self.cursor_arg, self.after_arg, self.before_arg]
+
+        for arg in cursor_args:
+            cursor = flask.request.args.get(arg)
+            if cursor is not None:
+                return (cursor, arg)
+
+        return (None, "")
 
     def get_request_cursor(self, view, field_orderings):
         """Get the cursor value specified in the request.
@@ -353,16 +371,23 @@ class CursorPaginationBase(LimitPagination):
         :raises: :py:class:`ApiError` if an invalid cursor is provided in
             `cursor_arg`.
         """
-        cursor = flask.request.args.get(self.cursor_arg)
-        if not cursor:
+
+        cursor, arg = self.get_raw_request_cursor()
+
+        if cursor is None:
             return None
 
         try:
-            return self.parse_cursor(cursor, view, field_orderings)
+            return self.parse_cursor(view, cursor, field_orderings)
         except ApiError as e:
-            raise e.update({"source": {"parameter": self.cursor_arg}})
+            raise e.update({"source": {"parameter": arg}})
 
-    def parse_cursor(self, cursor, view, field_orderings):
+    def parse_cursor(
+        self,
+        view: ModelView,
+        cursor: str,
+        field_orderings: FieldOrderings,
+    ) -> Cursor:
         cursor = self.decode_cursor(cursor)
 
         if len(cursor) != len(field_orderings):
@@ -386,7 +411,7 @@ class CursorPaginationBase(LimitPagination):
 
         return cursor
 
-    def decode_cursor(self, cursor):
+    def decode_cursor(self, cursor: str) -> Tuple[str, ...]:
         try:
             cursor = cursor.split(".")
             cursor = tuple(self.decode_value(value) for value in cursor)
@@ -395,7 +420,7 @@ class CursorPaginationBase(LimitPagination):
 
         return cursor
 
-    def decode_value(self, value):
+    def decode_value(self, value: str):
         value = value.encode("ascii")
         value += (3 - ((len(value) + 3) % 4)) * b"="  # Add back padding.
         value = base64.urlsafe_b64decode(value)
@@ -414,7 +439,9 @@ class CursorPaginationBase(LimitPagination):
     def format_validation_error(self, message, path):
         return {"code": "invalid_cursor", "detail": message}
 
-    def get_filter(self, view, field_orderings, cursor):
+    def get_filter(
+        self, view, field_orderings: FieldOrderings, cursor: Cursor
+    ):
         """Build the filter clause corresponding to a cursor.
 
         Given the field orderings and the cursor as above, this will construct
@@ -424,14 +451,14 @@ class CursorPaginationBase(LimitPagination):
 
         :param view: The view with the model we wish to paginate.
         :type view: :py:class:`ModelView`
-        :param field_orderings: A sequence of field_ordering tuples
+        :param field_orderings: A sequence of field_ordering tuples derived from the view's Sorting with explicit id ordering
         :type field_orderings: seq
         :param cursor: A set of values corresponding to the fields in
             `field_orderings`
         :type cursor: seq
         :return: A filter clause
         """
-        sorting = view.sorting
+        sorting: FieldSortingBase = view.sorting
 
         column_cursors = tuple(
             (sorting.get_column(view, field_name), asc, value)
@@ -537,9 +564,10 @@ class RelayCursorPagination(CursorPaginationBase):
     """
 
     def get_page(self, query, view):
-        query, field_orderings = self.ensure_query_sorting(query, view)
+        field_orderings = self.get_field_orderings(view)
 
         cursor_in = self.get_request_cursor(view, field_orderings)
+
         if cursor_in is not None:
             query = query.filter(
                 self.get_filter(view, field_orderings, cursor_in)
@@ -547,14 +575,17 @@ class RelayCursorPagination(CursorPaginationBase):
 
         items = super().get_page(query, view)
 
+        if self.reversed:
+            items.reverse()
+
         # Relay expects a cursor for each item.
         cursors_out = self.make_cursors(items, view, field_orderings)
+
         meta.update_response_meta({"cursors": cursors_out})
 
         return items
 
     def get_item_meta(self, item, view):
-        field_orderings = self.get_field_orderings(view)
 
-        cursor = self.make_cursor(item, view, field_orderings)
+        cursor = self.make_cursor(item, view, self.get_field_orderings(view))
         return {"cursor": cursor}
