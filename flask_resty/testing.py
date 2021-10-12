@@ -1,6 +1,6 @@
 import json
 import re
-from collections import Mapping, Sequence
+from collections.abc import Mapping, Sequence
 from flask.testing import FlaskClient
 
 from .utils import UNDEFINED
