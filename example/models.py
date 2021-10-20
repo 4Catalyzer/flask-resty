@@ -1,6 +1,7 @@
 # example/models.py
 
 import datetime as dt
+
 from flask_sqlalchemy import SQLAlchemy
 
 from . import app

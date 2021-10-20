@@ -1,4 +1,5 @@
 import re
+
 from setuptools import setup
 
 EXTRAS_REQUIRE = {
