@@ -1,8 +1,9 @@
 import base64
+from typing import Any, List, Tuple
+
 import flask
 import sqlalchemy as sa
 from marshmallow import ValidationError
-from typing import Any, List, Tuple
 
 from flask_resty.sorting import FieldOrderings, FieldSortingBase
 from flask_resty.view import ModelView
@@ -338,7 +339,7 @@ class CursorPaginationBase(LimitPagination):
 
         if self.reversed:
             field_ordering = tuple(
-                [(field, not order) for field, order in field_ordering]
+                (field, not order) for field, order in field_ordering
             )
 
         return field_ordering

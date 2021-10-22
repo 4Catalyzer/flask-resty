@@ -1,6 +1,7 @@
+from typing import Tuple
+
 import flask
 import sqlalchemy as sa
-from typing import Tuple
 
 from .exceptions import ApiError
 

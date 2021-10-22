@@ -1,5 +1,6 @@
-import flask
 import itertools
+
+import flask
 from flask.views import MethodView
 from marshmallow import ValidationError, fields
 from sqlalchemy.exc import IntegrityError

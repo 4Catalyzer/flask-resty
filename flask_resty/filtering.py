@@ -1,6 +1,7 @@
 import copy
-import flask
 import functools
+
+import flask
 import marshmallow
 import sqlalchemy as sa
 from marshmallow import ValidationError

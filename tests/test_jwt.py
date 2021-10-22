@@ -1,4 +1,5 @@
 import json
+
 import pytest
 from marshmallow import Schema, fields
 from sqlalchemy import Column, Integer, String
