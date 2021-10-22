@@ -19,7 +19,9 @@ class RelatedItem(fields.Nested):
 
     def _deserialize(self, value, *args, **kwargs):
         if self.many and not marshmallow.utils.is_collection(value):
-            self.fail("type", input=value, type=value.__class__.__name__)
+            raise self.make_error(
+                "type", input=value, type=value.__class__.__name__
+            )
 
         # Do partial load of related item, as we only need the id.
         return self.schema.load(value, partial=True)
@@ -66,7 +68,7 @@ class DelimitedList(fields.List):
                 if marshmallow.utils.is_iterable_but_not_string(value)
                 else value.split(self.delimiter)
             )
-        except AttributeError:
-            self.fail("invalid")
+        except AttributeError as error:
+            raise self.make_error("invalid") from error
 
         return super()._deserialize(ret, attr, data, **kwargs)

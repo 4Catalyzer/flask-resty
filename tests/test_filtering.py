@@ -13,6 +13,8 @@ from flask_resty import (
 )
 from flask_resty.testing import assert_response
 
+from ._constants import LOAD_DEFAULT_KWARG
+
 # -----------------------------------------------------------------------------
 
 
@@ -100,7 +102,7 @@ def routes(app, models, schemas, filter_fields):
     class WidgetDefaultFiltersView(WidgetViewBase):
         filtering = Filtering(
             color=ModelFilter(
-                fields.String(missing="red"),
+                fields.String(**{LOAD_DEFAULT_KWARG: "red"}),
                 lambda model, value: model.color == value,
             ),
             size=ColumnFilter(operator.eq, missing=1),

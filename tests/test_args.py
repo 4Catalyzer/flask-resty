@@ -5,6 +5,8 @@ from flask_resty import Api, ApiView
 from flask_resty.fields import DelimitedList
 from flask_resty.testing import assert_response
 
+from ._constants import LOAD_DEFAULT_KWARG
+
 # -----------------------------------------------------------------------------
 
 
@@ -20,7 +22,7 @@ def schemas():
         names = DelimitedList(fields.String(), data_key="name", required=True)
 
     class NameDefaultSchema(Schema):
-        name = fields.String(missing="foo")
+        name = fields.String(**{LOAD_DEFAULT_KWARG: "foo"})
 
     return {
         "name": NameSchema(),
