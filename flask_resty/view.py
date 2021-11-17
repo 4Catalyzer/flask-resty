@@ -867,7 +867,6 @@ class ModelView(ApiView):
         else:
             item = self.update_item(item, data) or item
             return item, False
-            
 
     def delete_item(self, item):
         """Delete an existing item.
@@ -1114,12 +1113,15 @@ class GenericModelView(ModelView):
         :rtype: :py:class:`flask.Response`
         """
         data_in = self.get_request_data(expected_id=id)
-        
+
         item, created = self.upsert_item(id, data_in)
         self.commit()
 
-        return self.make_created_response(item) if created else self.make_item_response(item)
-
+        return (
+            self.make_created_response(item)
+            if created
+            else self.make_item_response(item)
+        )
 
     def destroy(self, id):
         """Delete the item for the specified ID.
