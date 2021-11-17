@@ -847,7 +847,7 @@ class ModelView(ApiView):
         return item
 
     def upsert_item(self, id, data, with_for_update=False):
-        """Updates an existing item with the matching id or if the item does not exist yet, create and insert it.
+        """Update an existing item with the matching id or if the item does not exist yet, create and insert it.
 
         This combines `self.create_and_add_item` and `self.update_item` depending on if the item exists
         or not.
