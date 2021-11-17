@@ -854,6 +854,8 @@ class ModelView(ApiView):
 
         :param id: The item's identifier.
         :param dict data: The data to insert or update.
+        :param bool with_for_update: If set, lock the item row for updating
+            using ``FOR UPDATE``.
         :return: The newly created or the updated item
         :rtype: object
         """
