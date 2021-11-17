@@ -854,19 +854,20 @@ class ModelView(ApiView):
 
         :param id: The item's identifier.
         :param dict data: The data to insert or update.
-        :param bool with_for_update: If set, lock the item row for updating
-            using ``FOR UPDATE``.
-        :return: The newly created or the updated item
-        :rtype: object
+        :param bool with_for_update: If set, lock the item row for updating using ``FOR UPDATE``.
+        :return: a tuple consisting of the newly created or the updated item and True if the item was created, False
+            otherwise.
+        :rtype: object, bool
         """
         try:
-            item = self.get_item(id, with_for_update)
+            item = self.get_item(id, with_for_update=with_for_update)
         except NoResultFound:
             item = self.create_and_add_item(data)
+            return item, True
         else:
             item = self.update_item(item, data) or item
+            return item, False
             
-        return item
 
     def delete_item(self, item):
         """Delete an existing item.
@@ -1113,10 +1114,10 @@ class GenericModelView(ModelView):
         :rtype: :py:class:`flask.Response`
         """
         data_in = self.get_request_data(expected_id=id)
-        item = self.upsert_item(id, data_in, with_for_update)
+        item, created = self.upsert_item(id, data_in, with_for_update)
         
         self.commit()
-        return self.make_item_response(item)
+        return self.make_created_response(item) if created else self.make_response(item)
 
     def destroy(self, id):
         """Delete the item for the specified ID.
