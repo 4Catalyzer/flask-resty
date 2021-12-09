@@ -3,7 +3,7 @@ from typing import Any, List, Tuple
 
 import flask
 import sqlalchemy as sa
-from marshmallow import ValidationError
+from marshmallow import ValidationError, fields
 
 from flask_resty.sorting import FieldOrderings, FieldSortingBase
 from flask_resty.view import ModelView
@@ -564,18 +564,31 @@ class RelayCursorPagination(CursorPaginationBase):
     https://facebook.github.io/relay/graphql/connections.htm.
     """
 
-    page_info_arg = "page_info"
-
-    def __init__(self, *args, default_include_page_info=False, **kwargs):
+    def __init__(
+        self,
+        *args,
+        page_info_arg=None,
+        default_include_page_info=False,
+        **kwargs,
+    ):
         super().__init__(*args, **kwargs)
+
         self._default_include_page_info = default_include_page_info
+        self.page_info_arg = page_info_arg
 
     def get_page_info(self, query, view, field_orderings, cursor):
-        include = flask.request.args.get(
-            self.page_info_arg, self._default_include_page_info
+        include_page_info = (
+            self.deserialize_value(
+                fields.Boolean(),
+                flask.request.args.get(
+                    self.page_info_arg, self._default_include_page_info
+                ),
+            )
+            if self.page_info_arg
+            else self._default_include_page_info
         )
 
-        if not bool(include):
+        if not include_page_info:
             return {}
 
         total = query.count()

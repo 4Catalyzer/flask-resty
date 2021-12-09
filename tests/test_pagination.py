@@ -86,12 +86,17 @@ def routes(app, models, schemas):
 
     class RelayCursorListView(WidgetListViewBase):
         sorting = Sorting("id", "size", "is_cool")
-        pagination = RelayCursorPagination(2)
+        pagination = RelayCursorPagination(
+            2,
+            page_info_arg="page_info",
+        )
 
     class RelayCursorNoValidateListView(RelayCursorListView):
         schema = schemas["widget_validate"]
 
-        pagination = RelayCursorPagination(2, validate_values=False)
+        pagination = RelayCursorPagination(
+            2, page_info_arg="page_info", validate_values=False
+        )
 
     api = Api(app)
     api.add_resource("/max_limit_widgets", MaxLimitWidgetListView)
