@@ -54,29 +54,64 @@ def Matching(expected_regex):
     return Predicate(re.compile(expected_regex).match)
 
 
-def assert_shape(actual, expected):
+def assert_shape(actual, expected, key=None):
     """Assert that ``actual`` and ``expected`` have the same data shape."""
+
+    suffix = ""
+
+    if key is not None:
+        suffix = (
+            " for parent "
+            + ("index" if isinstance(key, int) else "key")
+            + f" {key!r}"
+        )
+
     if isinstance(expected, Mapping):
         assert isinstance(actual, Mapping)
         # Unlike all the others, this checks that the actual items are a
         # superset of the expected items, rather than that they match.
         for key, value in expected.items():
             if value is not UNDEFINED:
-                assert key in actual
-                assert_shape(actual[key], value)
+                assert key in actual, (
+                    f"expected key {key!r} not found in: {actual!r}" + suffix
+                )
+
+                assert_shape(actual[key], value, key=key)
             else:
-                assert key not in actual
+                assert key not in actual, (
+                    f"expected key {key!r} not found in: {actual!r}" + suffix
+                )
     elif isinstance(expected, (str, bytes)):
         assert expected == actual
     elif isinstance(expected, Sequence):
-        assert isinstance(actual, Sequence)
-        assert len(actual) == len(expected)
-        for actual_item, expected_item in zip(actual, expected):
-            assert_shape(actual_item, expected_item)
+        assert isinstance(actual, Sequence), (
+            f"{actual!r} is not a Sequence" + suffix
+        )
+
+        actual_len = len(actual)
+        expected_len = len(expected)
+
+        assert actual_len == expected_len, (
+            "expected sequences to be the same length but "
+            + (
+                f"the actual value has {actual_len - expected_len} more items"
+                if actual_len > expected_len
+                else f"the actual value has {expected_len - actual_len} less items"
+            )
+            + suffix
+        )
+        for idx, (actual_item, expected_item) in enumerate(
+            zip(actual, expected)
+        ):
+            assert_shape(actual_item, expected_item, key=idx)
     elif isinstance(expected, float):
-        assert abs(actual - expected) < 1e-6
+        assert (
+            abs(actual - expected) < 1e-6
+        ), "float not within the allowed tolerance of 1e-6"
     else:
-        assert expected == actual
+        assert expected == actual, (
+            f"{actual!r} is not equal to {expected!r}" + suffix
+        )
 
 
 def Shape(expected):
@@ -125,8 +160,6 @@ def assert_response(
     errors in the response body, depending on the response status. This check
     ignores extra dictionary items in the response contents.
     """
-    status_code = response.status_code
-    assert status_code == expected_status_code
 
     if not response.content_length:
         response_data = UNDEFINED
@@ -136,6 +169,12 @@ def assert_response(
         response_data = get_errors(response)
     else:
         response_data = response.data
+
+    status_code = response.status_code
+
+    assert (
+        status_code == expected_status_code
+    ), f"expected status code {expected_status_code!r}, got {status_code!r}"
 
     if expected_data is not UNDEFINED:
         if not isinstance(expected_data, Predicate):
