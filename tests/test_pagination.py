@@ -15,6 +15,7 @@ from flask_resty import (
     RelayCursorPagination,
     Sorting,
 )
+from flask_resty.pagination import CursorInfo
 from flask_resty.testing import assert_response, get_body, get_meta
 
 # -----------------------------------------------------------------------------
@@ -388,13 +389,13 @@ def test_relay_reverse_cursor(client, add_widgets):
         {"id": "2", "size": 2},
     ]
 
-    resp = client.get("/relay_cursor_widgets?sort=size&limit=3")
+    resp = client.get("/relay_cursor_widgets?sort=size&first=3")
     assert_response(resp, 200, first_three_items)
 
     # this should be the next item in the list above
     before = encode_cursor((3, "5"))
     resp = client.get(
-        f"/relay_cursor_widgets?sort=size&limit=3&before={before}"
+        f"/relay_cursor_widgets?sort=size&last=3&before={before}"
     )
     assert_response(resp, 200, first_three_items)
 
@@ -426,7 +427,7 @@ def test_relay_reverse_cursor_inverse(client, add_widgets):
     ]
 
     resp = client.get(
-        "/relay_cursor_widgets?sort=-size&limit=3&page_info=true"
+        "/relay_cursor_widgets?sort=-size&first=3&page_info=true"
     )
     assert_response(resp, 200, first_three_items)
 
@@ -444,7 +445,7 @@ def test_relay_reverse_cursor_inverse(client, add_widgets):
     # this should be the next item in the list above
     before = encode_cursor((2, "1"))
     resp = client.get(
-        f"/relay_cursor_widgets?sort=-size&limit=3&before={before}"
+        f"/relay_cursor_widgets?sort=-size&last=3&before={before}"
     )
     assert_response(resp, 200, first_three_items)
 
@@ -615,3 +616,82 @@ def test_error_invalid_relay_cursor_field(client, data):
             }
         ],
     )
+
+
+@pytest.mark.parametrize(
+    ("args", "expected"),
+    (
+        (
+            {"cursor": "foo"},
+            CursorInfo(False, "foo", "cursor", None, None),
+        ),
+        (
+            {"cursor": "foo", "limit": 30},
+            CursorInfo(False, "foo", "cursor", 30, "limit"),
+        ),
+        (
+            {"cursor": "foo", "last": 30},
+            CursorInfo(False, "foo", "cursor", None, None),
+        ),
+        (
+            {"after": "foo"},
+            CursorInfo(False, "foo", "after", None, None),
+        ),
+        (
+            {"after": "foo", "limit": 30},
+            CursorInfo(False, "foo", "after", 30, "limit"),
+        ),
+        (
+            {"after": "foo", "first": 30},
+            CursorInfo(False, "foo", "after", 30, "first"),
+        ),
+        (
+            {"after": "foo", "first": 30, "limit": 15},
+            CursorInfo(False, "foo", "after", 30, "first"),
+        ),
+        (
+            {"after": "foo", "cursor": "bar", "first": 30, "limit": 15},
+            CursorInfo(False, "foo", "after", 30, "first"),
+        ),
+        (
+            {"first": 30},
+            CursorInfo(False, None, None, 30, "first"),
+        ),
+        (
+            {"cursor": "foo", "first": 30},
+            CursorInfo(False, "foo", "cursor", 30, "first"),
+        ),
+        (
+            {"before": "foo", "limit": 30},
+            CursorInfo(True, "foo", "before", 30, "limit"),
+        ),
+        (
+            {"before": "foo", "last": 30},
+            CursorInfo(True, "foo", "before", 30, "last"),
+        ),
+        (
+            {"before": "foo"},
+            CursorInfo(True, "foo", "before", None, None),
+        ),
+        (
+            {"last": 30},
+            CursorInfo(True, None, None, 30, "last"),
+        ),
+        (
+            {"last": 30, "limit": 20},
+            CursorInfo(True, None, None, 30, "last"),
+        ),
+        (
+            {"last": 30, "first": 20},
+            CursorInfo(False, None, None, 20, "first"),
+        ),
+    ),
+)
+def test_pagination_arg_compatibility(app, args, expected):
+    with app.test_request_context() as req:
+        req.request.args = args
+        pagination = RelayCursorPagination(10)
+
+        assert pagination.get_cursor_info() == expected
+
+        assert pagination.get_limit() == (expected.limit or 10)
