@@ -339,7 +339,7 @@ class CursorPaginationBase(LimitPagination):
             reversed = True
             limit, limit_arg = self.try_get_arg(self.last_arg)
 
-        # other wise fall back on limit
+        # otherwise fall back on limit
         else:
             reversed = False
             limit, limit_arg = self.try_get_arg(self.limit_arg)
