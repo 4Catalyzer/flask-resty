@@ -329,7 +329,7 @@ class CursorPaginationBase(LimitPagination):
 
         # Ambigious cases where limits are provided but not cursors
 
-        # Therre may be two explicit limit args provided, default to "first"
+        # Thrre may be two explicit limit args provided, default to "first"
         # in keeping with the cursor logic
         elif self.first_arg in flask.request.args:
             reversed = False

@@ -15,6 +15,7 @@ from flask_resty import (
     RelayCursorPagination,
     Sorting,
 )
+from flask_resty.exceptions import ApiError
 from flask_resty.pagination import CursorInfo
 from flask_resty.testing import assert_response, get_body, get_meta
 
@@ -695,3 +696,44 @@ def test_pagination_arg_compatibility(app, args, expected):
         assert pagination.get_cursor_info() == expected
 
         assert pagination.get_limit() == (expected.limit or 10)
+
+
+@pytest.mark.parametrize(
+    "param",
+    ("limit", "first", "last"),
+)
+def test_pagination_limit_parsing(app, param):
+    with app.test_request_context() as req:
+        req.request.args = {param: "not-a-number"}
+
+        with pytest.raises(ApiError) as e:
+            RelayCursorPagination().get_limit()
+
+        assert e.value.body["errors"][0]["source"]["parameter"] == param
+
+
+@pytest.mark.parametrize(
+    "param",
+    ("cursor", "after", "before"),
+)
+def test_pagination_cursor_parsing(app, param, models, schemas):
+    class View(GenericModelView):
+        model = models["widget"]
+        schema = schemas["widget"]
+
+        sorting = Sorting("id", "size", "is_cool")
+        pagination = RelayCursorPagination()
+
+        def get(self):
+            return self.list()
+
+        def post(self):
+            return self.create()
+
+    with app.test_request_context() as req:
+        req.request.args = {param: "not-a-valid-cursor"}
+        view = View()
+        with pytest.raises(ApiError) as e:
+            view.pagination.get_page(view.query, view)
+
+        assert e.value.body["errors"][0]["source"]["parameter"] == param
