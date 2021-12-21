@@ -86,12 +86,17 @@ def routes(app, models, schemas):
 
     class RelayCursorListView(WidgetListViewBase):
         sorting = Sorting("id", "size", "is_cool")
-        pagination = RelayCursorPagination(2)
+        pagination = RelayCursorPagination(
+            2,
+            page_info_arg="page_info",
+        )
 
     class RelayCursorNoValidateListView(RelayCursorListView):
         schema = schemas["widget_validate"]
 
-        pagination = RelayCursorPagination(2, validate_values=False)
+        pagination = RelayCursorPagination(
+            2, page_info_arg="page_info", validate_values=False
+        )
 
     api = Api(app)
     api.add_resource("/max_limit_widgets", MaxLimitWidgetListView)
@@ -325,7 +330,7 @@ def test_relay_cursor_sorted(client, data):
 
 
 def test_relay_cursor_sorted_default(client, data):
-    response = client.get("/relay_cursor_widgets?sort=size")
+    response = client.get("/relay_cursor_widgets?sort=size&page_info=true")
 
     assert_response(
         response, 200, [{"id": "1", "size": 1}, {"id": "4", "size": 1}]
@@ -333,6 +338,8 @@ def test_relay_cursor_sorted_default(client, data):
     assert get_meta(response) == {
         "has_next_page": True,
         "cursors": ["MQ.MQ", "MQ.NA"],
+        "index": 0,
+        "total": 6,
     }
 
 
@@ -349,7 +356,9 @@ def test_relay_cursor_sorted_redundant(client, data):
 
 
 def test_relay_cursor_sorted_inverse(client, data):
-    response = client.get("/relay_cursor_widgets?sort=-size&cursor=Mg.NQ")
+    response = client.get(
+        "/relay_cursor_widgets?sort=-size&cursor=Mg.NQ&page_info=true"  # widget 5 size=2
+    )
 
     assert_response(
         response, 200, [{"id": "2", "size": 2}, {"id": "4", "size": 1}]
@@ -357,6 +366,8 @@ def test_relay_cursor_sorted_inverse(client, data):
     assert get_meta(response) == {
         "has_next_page": True,
         "cursors": ["Mg.Mg", "MQ.NA"],
+        "index": 2,
+        "total": 6,
     }
 
 
@@ -400,11 +411,11 @@ def test_relay_reverse_cursor(client, add_widgets):
 def test_relay_reverse_cursor_inverse(client, add_widgets):
     add_widgets(
         (
-            {"id": "1", "size": 2},
-            {"id": "2", "size": 2},
-            {"id": "3", "size": 1},
             {"id": "4", "size": 5},
             {"id": "5", "size": 3},
+            {"id": "2", "size": 2},
+            {"id": "1", "size": 2},
+            {"id": "3", "size": 1},
         )
     )
 
@@ -414,8 +425,21 @@ def test_relay_reverse_cursor_inverse(client, add_widgets):
         {"id": "2", "size": 2},
     ]
 
-    resp = client.get("/relay_cursor_widgets?sort=-size&limit=3")
+    resp = client.get(
+        "/relay_cursor_widgets?sort=-size&limit=3&page_info=true"
+    )
     assert_response(resp, 200, first_three_items)
+
+    assert get_meta(resp) == {
+        "has_next_page": True,
+        "cursors": [
+            encode_cursor((5, "4")),
+            encode_cursor((3, "5")),
+            encode_cursor((2, "2")),
+        ],
+        "index": 0,
+        "total": 5,
+    }
 
     # this should be the next item in the list above
     before = encode_cursor((2, "1"))
@@ -424,13 +448,17 @@ def test_relay_reverse_cursor_inverse(client, add_widgets):
     )
     assert_response(resp, 200, first_three_items)
 
-    resp = client.get(f"/relay_cursor_widgets?sort=-size&before={before}")
+    resp = client.get(
+        f"/relay_cursor_widgets?sort=-size&before={before}&page_info=true"
+    )
 
     assert_response(resp, 200, first_three_items[1:])
 
     assert get_meta(resp) == {
         "has_next_page": True,
         "cursors": [encode_cursor((3, "5")), encode_cursor((2, "2"))],
+        "index": 3,
+        "total": 5,
     }
 
 
@@ -487,7 +515,7 @@ def test_relay_cursor_no_validate(app, client, data):
     assert_response(response, 422)
 
     response = client.get(
-        "/relay_cursor_no_validate_widgets?sort=size&cursor=Mg.Mg"
+        "/relay_cursor_no_validate_widgets?sort=size&cursor=Mg.Mg"  # Widget 2.2
     )
     assert_response(
         response, 200, [{"id": "5", "size": 2}, {"id": "3", "size": 3}]

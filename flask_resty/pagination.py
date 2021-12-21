@@ -3,7 +3,7 @@ from typing import Any, List, Tuple
 
 import flask
 import sqlalchemy as sa
-from marshmallow import ValidationError
+from marshmallow import ValidationError, fields
 
 from flask_resty.sorting import FieldOrderings, FieldSortingBase
 from flask_resty.view import ModelView
@@ -564,17 +564,64 @@ class RelayCursorPagination(CursorPaginationBase):
     https://facebook.github.io/relay/graphql/connections.htm.
     """
 
+    def __init__(
+        self,
+        *args,
+        page_info_arg=None,
+        default_include_page_info=False,
+        **kwargs,
+    ):
+        super().__init__(*args, **kwargs)
+
+        self._default_include_page_info = default_include_page_info
+        self.page_info_arg = page_info_arg
+
+    def get_page_info(self, query, view, field_orderings, cursor):
+        include_page_info = (
+            self.deserialize_value(
+                fields.Boolean(),
+                flask.request.args.get(
+                    self.page_info_arg, self._default_include_page_info
+                ),
+            )
+            if self.page_info_arg
+            else self._default_include_page_info
+        )
+
+        if not include_page_info:
+            return {}
+
+        total = query.count()
+
+        index = 0
+        if cursor:
+            filter_clause = self.get_filter(
+                view,
+                tuple((field, not order) for field, order in field_orderings),
+                cursor,
+            )
+            index = query.filter(filter_clause).count()
+
+        # in the reversed case, both the order by and sort of inverted.
+        # so in practice this gives us a reverse index, e.g. distance from
+        # the end of the list. We normalize it back by subtracting from the total
+        if self.reversed:
+            index = max(total - index - 1, 0)
+
+        return {"index": index, "total": total}
+
     def get_page(self, query, view):
         field_orderings = self.get_field_orderings(view)
 
         cursor_in = self.get_request_cursor(view, field_orderings)
 
+        page_query = query
         if cursor_in is not None:
-            query = query.filter(
+            page_query = page_query.filter(
                 self.get_filter(view, field_orderings, cursor_in)
             )
 
-        items = super().get_page(query, view)
+        items = super().get_page(page_query, view)
 
         if self.reversed:
             items.reverse()
@@ -582,7 +629,9 @@ class RelayCursorPagination(CursorPaginationBase):
         # Relay expects a cursor for each item.
         cursors_out = self.make_cursors(items, view, field_orderings)
 
-        meta.update_response_meta({"cursors": cursors_out})
+        page_info = self.get_page_info(query, view, field_orderings, cursor_in)
+
+        meta.update_response_meta({"cursors": cursors_out, **page_info})
 
         return items
 
