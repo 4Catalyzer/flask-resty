@@ -1,5 +1,6 @@
 import base64
-from typing import Any, List, Tuple
+from dataclasses import dataclass
+from typing import Any, List, Tuple, Union
 
 import flask
 import sqlalchemy as sa
@@ -248,6 +249,17 @@ class PagePagination(LimitOffsetPagination):
 Cursor = Tuple[Any, ...]
 
 
+@dataclass
+class CursorInfo:
+    reversed: bool
+
+    cursor: Union[str, None]
+    cursor_arg: Union[str, None]
+
+    limit: Union[str, None]
+    limit_arg: Union[str, None]
+
+
 class CursorPaginationBase(LimitPagination):
     """The base class for pagination schemes that use cursors.
 
@@ -268,20 +280,75 @@ class CursorPaginationBase(LimitPagination):
 
     #: The name of the query parameter to inspect for the cursor value.
     cursor_arg = "cursor"
+    limit_arg = "limit"
 
     #: the name of the query parameter to inspect for explicit forward pagination
     after_arg = "after"
+    first_arg = "first"
 
     #: the name of the query parameter to inspect for explicit backward pagination
     before_arg = "before"
+    last_arg = "last"
 
     def __init__(self, *args, validate_values=True, **kwargs):
         super().__init__(*args, **kwargs)
         self._validate_values = validate_values
 
+    def try_get_arg(self, arg):
+        value = flask.request.args.get(arg)
+        if value is not None:
+            return (value, arg)
+
+        return (None, None)
+
+    # There are a number of different cases that this covers in order to be backwards compatible with
+    def get_cursor_info(self) -> CursorInfo:
+        cursor = None
+        cursor_arg = None
+
+        limit = None
+        limit_arg = None
+
+        # Unambiguous cases where a cursor is provided.
+        if self.after_arg in flask.request.args:
+            reversed = False
+            cursor, cursor_arg = self.try_get_arg(self.after_arg)
+            limit, limit_arg = self.try_get_arg(self.first_arg)
+
+        elif self.before_arg in flask.request.args:
+            reversed = True
+            cursor, cursor_arg = self.try_get_arg(self.before_arg)
+            limit, limit_arg = self.try_get_arg(self.last_arg)
+
+        # Ambiguous cases where limits are provided but not cursors
+        # Relay sometimes sends both first and after, default to "first"
+        # in keeping with the cursor precedence
+        elif self.first_arg in flask.request.args:
+            reversed = False
+            limit, limit_arg = self.try_get_arg(self.first_arg)
+
+        elif self.last_arg in flask.request.args:
+            reversed = True
+            limit, limit_arg = self.try_get_arg(self.last_arg)
+        # legacy "cursor_arg" config cases always map to after/first
+        else:
+            reversed = False
+            cursor, cursor_arg = self.try_get_arg(self.cursor_arg)
+            limit, limit_arg = self.try_get_arg(self.limit_arg)
+
+        return CursorInfo(reversed, cursor, cursor_arg, limit, limit_arg)
+
+    def get_limit(self):
+        cursor_info = self.get_cursor_info()
+
+        try:
+            return self.parse_limit(cursor_info.limit)
+        except ApiError as e:
+            raise e.update({"source": {"parameter": cursor_info.limit_arg}})
+
     @property
     def reversed(self):
-        return self.get_raw_request_cursor()[1] == self.before_arg
+        return self.get_cursor_info().reversed
 
     def adjust_sort_ordering(
         self, view: ModelView, field_orderings
@@ -344,16 +411,6 @@ class CursorPaginationBase(LimitPagination):
 
         return field_ordering
 
-    def get_raw_request_cursor(self):
-        cursor_args = [self.cursor_arg, self.after_arg, self.before_arg]
-
-        for arg in cursor_args:
-            cursor = flask.request.args.get(arg)
-            if cursor is not None:
-                return (cursor, arg)
-
-        return (None, "")
-
     def get_request_cursor(self, view, field_orderings):
         """Get the cursor value specified in the request.
 
@@ -373,15 +430,15 @@ class CursorPaginationBase(LimitPagination):
             `cursor_arg`.
         """
 
-        cursor, arg = self.get_raw_request_cursor()
+        cursor_info = self.get_cursor_info()
 
-        if cursor is None:
+        if cursor_info.cursor is None:
             return None
 
         try:
-            return self.parse_cursor(view, cursor, field_orderings)
+            return self.parse_cursor(view, cursor_info.cursor, field_orderings)
         except ApiError as e:
-            raise e.update({"source": {"parameter": arg}})
+            raise e.update({"source": {"parameter": cursor_info.cursor_arg}})
 
     def parse_cursor(
         self,
