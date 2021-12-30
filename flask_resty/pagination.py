@@ -294,11 +294,10 @@ class CursorPaginationBase(LimitPagination):
         super().__init__(*args, **kwargs)
         self._validate_values = validate_values
 
-    def try_get_arg(self, *args):
-        for arg in args:
-            value = flask.request.args.get(arg)
-            if value is not None:
-                return (value, arg)
+    def try_get_arg(self, arg):
+        value = flask.request.args.get(arg)
+        if value is not None:
+            return (value, arg)
 
         return (None, None)
 
@@ -311,26 +310,19 @@ class CursorPaginationBase(LimitPagination):
         limit_arg = None
 
         # Unambiguous cases where a cursor is provided.
-        # legacy "cursor_arg" cases always map to after/first
-        if (
-            self.after_arg in flask.request.args
-            or self.cursor_arg in flask.request.args
-        ):
+        if self.after_arg in flask.request.args:
             reversed = False
-            cursor, cursor_arg = self.try_get_arg(
-                self.after_arg, self.cursor_arg
-            )
-            limit, limit_arg = self.try_get_arg(self.first_arg, self.limit_arg)
+            cursor, cursor_arg = self.try_get_arg(self.after_arg)
+            limit, limit_arg = self.try_get_arg(self.first_arg)
 
         elif self.before_arg in flask.request.args:
             reversed = True
             cursor, cursor_arg = self.try_get_arg(self.before_arg)
-            limit, limit_arg = self.try_get_arg(self.last_arg, self.limit_arg)
+            limit, limit_arg = self.try_get_arg(self.last_arg)
 
         # Ambiguous cases where limits are provided but not cursors
-
-        # There may be two explicit limit args provided, default to "first"
-        # in keeping with the cursor logic
+        # Relay sometimes sends both first and after, default to "first"
+        # in keeping with the cursor precedence
         elif self.first_arg in flask.request.args:
             reversed = False
             limit, limit_arg = self.try_get_arg(self.first_arg)
@@ -338,10 +330,10 @@ class CursorPaginationBase(LimitPagination):
         elif self.last_arg in flask.request.args:
             reversed = True
             limit, limit_arg = self.try_get_arg(self.last_arg)
-
-        # otherwise fall back on limit
+        # legacy "cursor_arg" config cases always map to after/first
         else:
             reversed = False
+            cursor, cursor_arg = self.try_get_arg(self.cursor_arg)
             limit, limit_arg = self.try_get_arg(self.limit_arg)
 
         return CursorInfo(reversed, cursor, cursor_arg, limit, limit_arg)

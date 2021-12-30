@@ -632,7 +632,7 @@ def test_error_invalid_relay_cursor_field(client, data):
         ),
         (
             {"cursor": "foo", "last": 30},
-            CursorInfo(False, "foo", "cursor", None, None),
+            CursorInfo(True, None, None, 30, "last"),
         ),
         (
             {"after": "foo"},
@@ -640,7 +640,7 @@ def test_error_invalid_relay_cursor_field(client, data):
         ),
         (
             {"after": "foo", "limit": 30},
-            CursorInfo(False, "foo", "after", 30, "limit"),
+            CursorInfo(False, "foo", "after", None, None),
         ),
         (
             {"after": "foo", "first": 30},
@@ -660,11 +660,11 @@ def test_error_invalid_relay_cursor_field(client, data):
         ),
         (
             {"cursor": "foo", "first": 30},
-            CursorInfo(False, "foo", "cursor", 30, "first"),
+            CursorInfo(False, None, None, 30, "first"),
         ),
         (
             {"before": "foo", "limit": 30},
-            CursorInfo(True, "foo", "before", 30, "limit"),
+            CursorInfo(True, "foo", "before", None, None),
         ),
         (
             {"before": "foo", "last": 30},
