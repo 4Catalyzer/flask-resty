@@ -29,6 +29,7 @@ DEFAULTS = dict(
     RESTY_SHELL_IPY_COLORS=None,
     RESTY_SHELL_IPY_HIGHLIGHTING_STYLE=None,
     RESTY_SHELL_PTPY_VI_MODE=False,
+    RESTY_SHELL_SETUP=None,
 )
 
 
@@ -112,6 +113,7 @@ def cli(shell: str, sqlalchemy_echo: bool):
     context = dict(base_context)
     model_context = get_models_context(app)
     settings_context = options["RESTY_SHELL_CONTEXT"]
+    shell_setup = options["RESTY_SHELL_SETUP"]
 
     def context_formatter(full_context: dict):
         """Flask-RESTy-specific context formatter. Groups objects
@@ -144,6 +146,10 @@ def cli(shell: str, sqlalchemy_echo: bool):
     }
     context_format = options["RESTY_SHELL_CONTEXT_FORMAT"] or context_formatter
     banner = get_banner(app, logo=options["RESTY_SHELL_LOGO"])
+
+    if shell_setup:
+        shell_setup(context)
+
     # Use singleton _cfg to allow overrides in .konchrc.local
     config = konch._cfg
     config.update(
@@ -163,6 +169,7 @@ def cli(shell: str, sqlalchemy_echo: bool):
             ],
         )
     )
+
     if Path(".konchrc.local").exists():  # pragma: no cover
         konch.use_file(".konchrc.local", trust=True)
 

@@ -364,6 +364,7 @@ The following app configuration options are available for customizing ``flask sh
 - ``RESTY_SHELL_LOGO``: Custom logo.
 - ``RESTY_SHELL_PROMPT``: Custom input prompt.
 - ``RESTY_SHELL_OUTPUT``: Custom output prompt.
+- ``RESTY_SHELL_SETUP``: Additional shell setup, a function.
 - ``RESTY_SHELL_CONTEXT_FORMAT``: Format to display shell context. May be ``'full'``, ``'short'``, or a function that receives the context dictionary as input and returns a string.
 - ``RESTY_SHELL_IPY_AUTORELOAD``: Whether to load and enable the IPython autoreload extension (must be using ``ipython`` shell).
 - ``RESTY_SHELL_IPY_EXTENSIONS``: List of IPython extension names to load (must be using ``ipython`` shell).

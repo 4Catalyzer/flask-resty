@@ -126,3 +126,16 @@ def test_context_format(run_command):
 
     result = run_command(config={"RESTY_SHELL_CONTEXT_FORMAT": format_ctx})
     assert "foobarbaz" in result.output
+
+
+def test_shell_setup(run_command):
+    def shell_setup(context):
+        context["shell_setup_test"] = "foobar"
+
+    result = run_command()
+    assert "shell_setup_test" not in result.output
+
+    run_command(config={"RESTY_SHELL_SETUP": shell_setup})
+
+    result = run_command()
+    assert "shell_setup_test" in result.output
