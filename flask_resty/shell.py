@@ -169,7 +169,6 @@ def cli(shell: str, sqlalchemy_echo: bool):
             ],
         )
     )
-
     if Path(".konchrc.local").exists():  # pragma: no cover
         konch.use_file(".konchrc.local", trust=True)
 
