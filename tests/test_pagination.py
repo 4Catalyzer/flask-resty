@@ -368,7 +368,7 @@ def test_relay_cursor_sorted_inverse(client, data):
     assert get_meta(response) == {
         "has_next_page": True,
         "cursors": ["Mg.Mg", "MQ.NA"],
-        "index": 2,
+        "index": 3,
         "total": 6,
     }
 
@@ -459,7 +459,7 @@ def test_relay_reverse_cursor_inverse(client, add_widgets):
     assert get_meta(resp) == {
         "has_next_page": True,
         "cursors": [encode_cursor((3, "5")), encode_cursor((2, "2"))],
-        "index": 3,
+        "index": 1,
         "total": 5,
     }
 
@@ -522,6 +522,92 @@ def test_relay_cursor_no_validate(app, client, data):
     assert_response(
         response, 200, [{"id": "5", "size": 2}, {"id": "3", "size": 3}]
     )
+
+
+def test_relay_page_info_forwards(client, add_widgets):
+    add_widgets([{"id": str(i), "size": i} for i in range(1, 16)])
+
+    resp = client.get("/relay_cursor_widgets?sort=size&first=5&page_info=true")
+
+    assert get_meta(resp) == {
+        "has_next_page": True,
+        "cursors": [encode_cursor((i, str(i))) for i in range(1, 6)],
+        "index": 0,
+        "total": 15,
+    }
+
+    resp = client.get(
+        f"/relay_cursor_widgets?sort=size&first=5&after={encode_cursor((5, '5'))}&page_info=true"
+    )
+
+    assert get_meta(resp) == {
+        "has_next_page": True,
+        "cursors": [encode_cursor((i, str(i))) for i in range(6, 11)],
+        "index": 5,
+        "total": 15,
+    }
+
+    resp = client.get(
+        f"/relay_cursor_widgets?sort=size&first=5&after={encode_cursor((10, '10'))}&page_info=true"
+    )
+
+    assert get_meta(resp) == {
+        "has_next_page": False,
+        "cursors": [encode_cursor((i, str(i))) for i in range(11, 16)],
+        "index": 10,
+        "total": 15,
+    }
+
+
+def test_relay_page_info_backwards(client, add_widgets):
+    add_widgets([{"id": str(i), "size": i} for i in range(1, 16)])
+
+    resp = client.get("/relay_cursor_widgets?sort=size&last=5&page_info=true")
+
+    assert get_meta(resp) == {
+        "has_next_page": True,
+        "cursors": [encode_cursor((i, str(i))) for i in range(11, 16)],
+        "index": 10,
+        "total": 15,
+    }
+
+    resp = client.get(
+        f"/relay_cursor_widgets?sort=size&last=5&before={encode_cursor((11, '11'))}&page_info=true"
+    )
+
+    assert get_meta(resp) == {
+        "has_next_page": True,
+        "cursors": [encode_cursor((i, str(i))) for i in range(6, 11)],
+        "index": 5,
+        "total": 15,
+    }
+
+    resp = client.get(
+        f"/relay_cursor_widgets?sort=size&last=5&before={encode_cursor((6, '6'))}&page_info=true"
+    )
+
+    assert get_meta(resp) == {
+        "has_next_page": False,
+        "cursors": [encode_cursor((i, str(i))) for i in range(1, 6)],
+        "index": 0,
+        "total": 15,
+    }
+
+    # Handles an uneven page when adjusting the index to the start
+    # 0: 1."1"
+    # 1: 2."2"
+    # --------- ^
+    # 2: 3."3"
+    resp = client.get(
+        f"/relay_cursor_widgets?sort=size&last=5&before={encode_cursor((3, '3'))}&page_info=true"
+    )
+
+    assert get_meta(resp) == {
+        "has_next_page": False,
+        "cursors": [encode_cursor((i, str(i))) for i in range(1, 3)],
+        "index": 0,
+        "total": 15,
+    }
 
 
 # -----------------------------------------------------------------------------
