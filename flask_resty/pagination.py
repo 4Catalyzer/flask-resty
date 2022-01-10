@@ -633,7 +633,7 @@ class RelayCursorPagination(CursorPaginationBase):
         self._default_include_page_info = default_include_page_info
         self.page_info_arg = page_info_arg
 
-    def get_page_info(self, query, view, field_orderings, cursor):
+    def get_page_info(self, query, view, field_orderings, cursor, items):
         include_page_info = (
             self.deserialize_value(
                 fields.Boolean(),
@@ -657,13 +657,14 @@ class RelayCursorPagination(CursorPaginationBase):
                 tuple((field, not order) for field, order in field_orderings),
                 cursor,
             )
-            index = query.filter(filter_clause).count()
+            index = query.filter(filter_clause).count() + 1
 
-        # in the reversed case, both the order by and sort of inverted.
+        # in the reversed case, both the `order by` and sort are inverted.
         # so in practice this gives us a reverse index, e.g. distance from
         # the end of the list. We normalize it back by subtracting from the total
         if self.reversed:
-            index = max(total - index - 1, 0)
+            before_index = total - index
+            index = max(before_index - len(items), 0)
 
         return {"index": index, "total": total}
 
@@ -686,7 +687,9 @@ class RelayCursorPagination(CursorPaginationBase):
         # Relay expects a cursor for each item.
         cursors_out = self.make_cursors(items, view, field_orderings)
 
-        page_info = self.get_page_info(query, view, field_orderings, cursor_in)
+        page_info = self.get_page_info(
+            query, view, field_orderings, cursor_in, items
+        )
 
         meta.update_response_meta({"cursors": cursors_out, **page_info})
 
