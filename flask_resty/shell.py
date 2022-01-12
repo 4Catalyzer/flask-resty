@@ -104,9 +104,9 @@ def context_formatter(
     into sections with a bold header for each.
     """
     sections = [("Flask", flask_context)]
-    if schema_context:
+    if schema_context:  # pragma: no cover
         sections.append(("Schemas", schema_context))
-    if model_context:
+    if model_context:  # pragma: no cover
         sections.append(("Models", model_context))
 
     additional_context_keys = (
