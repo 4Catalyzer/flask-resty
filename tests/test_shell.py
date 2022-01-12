@@ -121,7 +121,7 @@ def test_prompt(run_command):
 
 
 def test_context_format(run_command):
-    def format_ctx(ctx):
+    def format_ctx(ctx, **kwargs):
         return "foobarbaz"
 
     result = run_command(config={"RESTY_SHELL_CONTEXT_FORMAT": format_ctx})
