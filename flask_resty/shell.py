@@ -1,5 +1,6 @@
 """Entry point for the ``shell`` Flask-RESTy CLI commmand."""
 # Code adapted from flask-konch
+from functools import partial
 from pathlib import Path
 
 import click
@@ -92,6 +93,36 @@ def format_section(title: str, section: dict) -> str:
     return f"\n{formatted_title}\n{formatted_section}"
 
 
+def context_formatter(
+    full_context: dict,
+    *,
+    flask_context: dict,
+    schema_context: dict,
+    model_context: dict,
+):
+    """Flask-RESTy-specific context formatter. Groups objects
+    into sections with a bold header for each.
+    """
+    sections = [("Flask", flask_context)]
+    if schema_context:  # pragma: no cover
+        sections.append(("Schemas", schema_context))
+    if model_context:  # pragma: no cover
+        sections.append(("Models", model_context))
+
+    additional_context_keys = (
+        full_context.keys()
+        - flask_context.keys()
+        - schema_context.keys()
+        - model_context.keys()
+    )
+    additional_context = {
+        key: full_context[key] for key in additional_context_keys
+    }
+    if additional_context:
+        sections.append(("Additional", additional_context))
+    return "\n".join([format_section(*section) for section in sections])
+
+
 @click.command(
     help="Run an interactive shell with models and schemas automatically imported."
 )
@@ -115,29 +146,6 @@ def cli(shell: str, sqlalchemy_echo: bool):
     settings_context = options["RESTY_SHELL_CONTEXT"]
     shell_setup = options["RESTY_SHELL_SETUP"]
 
-    def context_formatter(full_context: dict):
-        """Flask-RESTy-specific context formatter. Groups objects
-        into sections with a bold header for each.
-        """
-        sections = [("Flask", flask_context)]
-        if schema_context:
-            sections.append(("Schemas", schema_context))
-        if model_context:
-            sections.append(("Models", model_context))
-
-        additional_context_keys = (
-            full_context.keys()
-            - flask_context.keys()
-            - schema_context.keys()
-            - model_context.keys()
-        )
-        additional_context = {
-            key: full_context[key] for key in additional_context_keys
-        }
-        if additional_context:
-            sections.append(("Additional", additional_context))
-        return "\n".join([format_section(*section) for section in sections])
-
     context = {
         **flask_context,
         **schema_context,
@@ -145,6 +153,12 @@ def cli(shell: str, sqlalchemy_echo: bool):
         **settings_context,
     }
     context_format = options["RESTY_SHELL_CONTEXT_FORMAT"] or context_formatter
+    context_format_partial = partial(
+        context_format,
+        flask_context=flask_context,
+        schema_context=schema_context,
+        model_context=model_context,
+    )
     banner = get_banner(app, logo=options["RESTY_SHELL_LOGO"])
 
     if shell_setup:
@@ -155,7 +169,7 @@ def cli(shell: str, sqlalchemy_echo: bool):
     config.update(
         dict(
             context=context,
-            context_format=context_format,
+            context_format=context_format_partial,
             banner=banner,
             shell=shell,
             prompt=options["RESTY_SHELL_PROMPT"],
