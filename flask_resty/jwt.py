@@ -2,10 +2,10 @@ import base64
 import json
 
 import flask
-import jwt
+import jwt as jwt_lib
 from cryptography.hazmat.backends import default_backend
 from cryptography.x509 import load_der_x509_certificate
-from jwt import InvalidAlgorithmError, InvalidTokenError, PyJWT
+from jwt import InvalidAlgorithmError, InvalidTokenError, PyJWS, PyJWT
 
 from .authentication import HeaderAuthentication
 from .exceptions import ApiError
@@ -48,7 +48,7 @@ class JwtAuthentication(HeaderAuthentication):
 
     @property
     def pyjwt(self):
-        return jwt
+        return jwt_lib
 
     def get_jwt_decode_args(self):
         config = flask.current_app.config
@@ -72,7 +72,7 @@ class JwkSetPyJwt(PyJWT):
         self.jwk_set = jwk_set
 
     def decode(self, jwt, **kwargs):
-        unverified_header = self.get_unverified_header(jwt)
+        unverified_header = jwt_lib.get_unverified_header(jwt)
 
         jwk = self.get_jwk_for_jwt(unverified_header)
 
@@ -110,7 +110,7 @@ class JwkSetPyJwt(PyJWT):
                 base64.b64decode(jwk["x5c"][0]), default_backend()
             ).public_key()
 
-        algorithm = self._algorithms[alg]
+        algorithm = PyJWS()._algorithms[alg]
 
         # Awkward:
         return algorithm.from_jwk(json.dumps(jwk))
