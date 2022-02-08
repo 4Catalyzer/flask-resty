@@ -44,10 +44,10 @@ class JwtAuthentication(HeaderAuthentication):
         return payload
 
     def decode_token(self, token):
-        return self._pyjwt.decode(token, **self.get_jwt_decode_args())
+        return self.__pyjwt.decode(token, **self.get_jwt_decode_args())
 
     @property
-    def _pyjwt(self):
+    def __pyjwt(self):
         return jwt_lib
 
     def get_jwt_decode_args(self):
@@ -123,7 +123,7 @@ class JwkSetAuthentication(JwtAuthentication):
         self._jwk_set = jwk_set
 
     @property
-    def _pyjwt(self):
+    def __pyjwt(self):
         return JwkSetPyJwt(self.jwk_set)
 
     @property
