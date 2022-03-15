@@ -152,6 +152,7 @@ def data_with_none(db, models):
     )
     db.session.commit()
 
+
 # -----------------------------------------------------------------------------
 
 
@@ -369,35 +370,42 @@ def test_relay_cursor_sorted_default_with_none(client, data_with_none):
     )
     assert get_meta(response) == {
         "has_next_page": True,
-        "cursors": ['Mw.Ng', 'Mw.Mw'],
+        "cursors": ["Mw.Ng", "Mw.Mw"],
         "index": 0,
         "total": 9,
     }
-    cursor = get_meta(response)['cursors'][-1]
-    response = client.get(f"/relay_cursor_widgets?sort=-size&cursor={cursor}&page_info=true")
+    cursor = get_meta(response)["cursors"][-1]
+    response = client.get(
+        f"/relay_cursor_widgets?sort=-size&cursor={cursor}&page_info=true"
+    )
     assert_response(
         response, 200, [{"id": "5", "size": 2}, {"id": "2", "size": 2}]
     )
     # assert get_meta(response)['index'] == 2
-    cursor = get_meta(response)['cursors'][-1]
-    response = client.get(f"/relay_cursor_widgets?sort=-size&cursor={cursor}&page_info=true")
+    cursor = get_meta(response)["cursors"][-1]
+    response = client.get(
+        f"/relay_cursor_widgets?sort=-size&cursor={cursor}&page_info=true"
+    )
     assert_response(
         response, 200, [{"id": "4", "size": 1}, {"id": "1", "size": 1}]
     )
     # assert get_meta(response)['index'] == 4
 
-    cursor = get_meta(response)['cursors'][-1]
-    response = client.get(f"/relay_cursor_widgets?sort=-size&cursor={cursor}&page_info=true")
+    cursor = get_meta(response)["cursors"][-1]
+    response = client.get(
+        f"/relay_cursor_widgets?sort=-size&cursor={cursor}&page_info=true"
+    )
     assert_response(
         response, 200, [{"id": "10", "size": None}, {"id": "8", "size": None}]
     )
     # assert get_meta(response)['index'] == 6
 
-    cursor = get_meta(response)['cursors'][-1]
+    cursor = get_meta(response)["cursors"][-1]
 
-    response = client.get(f"/relay_cursor_widgets?sort=-size&cursor={cursor}&page_info=true")
+    response = client.get(
+        f"/relay_cursor_widgets?sort=-size&cursor={cursor}&page_info=true"
+    )
     assert_response(response, 200, [{"id": "7", "size": None}])
-
 
 
 def test_relay_cursor_sorted_redundant(client, data):

@@ -484,7 +484,7 @@ class CursorPaginationBase(LimitPagination):
         value = base64.urlsafe_b64decode(value)
         value = value.decode()
 
-        return None if value == 'None' else value
+        return None if value == "None" else value
 
     def deserialize_value(self, field, value):
         if not field.required and value is None:
@@ -550,8 +550,8 @@ class CursorPaginationBase(LimitPagination):
         else:
             current_clause = column < value
 
-        if getattr(column.expression,'nullable',True):
-            current_clause = (current_clause | column.is_(None))
+        if getattr(column.expression, "nullable", True):
+            current_clause = current_clause | column.is_(None)
         return sa.and_(previous_clauses, current_clause)
 
     def make_cursors(self, items, view, field_orderings):
