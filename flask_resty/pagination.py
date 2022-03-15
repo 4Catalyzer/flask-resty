@@ -482,9 +482,13 @@ class CursorPaginationBase(LimitPagination):
         value = value.encode("ascii")
         value += (3 - ((len(value) + 3) % 4)) * b"="  # Add back padding.
         value = base64.urlsafe_b64decode(value)
-        return value.decode()
+        value = value.decode()
+
+        return None if value == 'None' else value
 
     def deserialize_value(self, field, value):
+        if not field.required and value is None:
+            return None
         return (
             field.deserialize(value)
             if self._validate_values
@@ -534,18 +538,20 @@ class CursorPaginationBase(LimitPagination):
         )
 
         column, asc, value = column_cursors[-1]
-
+        if value is None:
+            return previous_clauses
         # SQL Alchemy won't let you > or < a boolean, so we convert
         # to an integer, the DB's seem to handle this just fine
         if isinstance(value, bool):
             column = sa.cast(column, sa.Integer)
             value = int(value)
-
         if asc:
             current_clause = column > value
         else:
             current_clause = column < value
 
+        if getattr(column.expression,'nullable',True):
+            current_clause = (current_clause | column.is_(None))
         return sa.and_(previous_clauses, current_clause)
 
     def make_cursors(self, items, view, field_orderings):

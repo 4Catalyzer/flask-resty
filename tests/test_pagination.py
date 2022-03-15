@@ -135,6 +135,23 @@ def data(db, models):
     db.session.commit()
 
 
+@pytest.fixture()
+def data_with_none(db, models):
+    db.session.add_all(
+        (
+            models["widget"](id=1, size=1, is_cool=True, name="Whatzit"),
+            models["widget"](id=2, size=2, is_cool=False, name="AAA Time"),
+            models["widget"](id=3, size=3, is_cool=True, name="Plus Ultra"),
+            models["widget"](id=4, size=1, is_cool=False, name="Zendaz"),
+            models["widget"](id=5, size=2, is_cool=False, name="Fooz"),
+            models["widget"](id=6, size=3, is_cool=True, name="Doodad"),
+            models["widget"](id=7, size=None, is_cool=True, name="Doodad"),
+            models["widget"](id=8, size=None, is_cool=True, name="Doodad"),
+            models["widget"](id=10, size=None, is_cool=True, name="Doodad"),
+        )
+    )
+    db.session.commit()
+
 # -----------------------------------------------------------------------------
 
 
@@ -343,6 +360,44 @@ def test_relay_cursor_sorted_default(client, data):
         "index": 0,
         "total": 6,
     }
+
+
+def test_relay_cursor_sorted_default_with_none(client, data_with_none):
+    response = client.get("/relay_cursor_widgets?sort=-size&page_info=true")
+    assert_response(
+        response, 200, [{"id": "6", "size": 3}, {"id": "3", "size": 3}]
+    )
+    assert get_meta(response) == {
+        "has_next_page": True,
+        "cursors": ['Mw.Ng', 'Mw.Mw'],
+        "index": 0,
+        "total": 9,
+    }
+    cursor = get_meta(response)['cursors'][-1]
+    response = client.get(f"/relay_cursor_widgets?sort=-size&cursor={cursor}&page_info=true")
+    assert_response(
+        response, 200, [{"id": "5", "size": 2}, {"id": "2", "size": 2}]
+    )
+    # assert get_meta(response)['index'] == 2
+    cursor = get_meta(response)['cursors'][-1]
+    response = client.get(f"/relay_cursor_widgets?sort=-size&cursor={cursor}&page_info=true")
+    assert_response(
+        response, 200, [{"id": "4", "size": 1}, {"id": "1", "size": 1}]
+    )
+    # assert get_meta(response)['index'] == 4
+
+    cursor = get_meta(response)['cursors'][-1]
+    response = client.get(f"/relay_cursor_widgets?sort=-size&cursor={cursor}&page_info=true")
+    assert_response(
+        response, 200, [{"id": "10", "size": None}, {"id": "8", "size": None}]
+    )
+    # assert get_meta(response)['index'] == 6
+
+    cursor = get_meta(response)['cursors'][-1]
+
+    response = client.get(f"/relay_cursor_widgets?sort=-size&cursor={cursor}&page_info=true")
+    assert_response(response, 200, [{"id": "7", "size": None}])
+
 
 
 def test_relay_cursor_sorted_redundant(client, data):
