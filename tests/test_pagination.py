@@ -153,6 +153,23 @@ def data_with_none(db, models):
     db.session.commit()
 
 
+@pytest.fixture()
+def data_with_none_bools(db, models):
+    db.session.add_all(
+        (
+            models["widget"](id=1, size=1, is_cool=True, name="Whatzit"),
+            models["widget"](id=2, size=2, is_cool=False, name="AAA Time"),
+            models["widget"](id=3, size=3, is_cool=True, name="Plus Ultra"),
+            models["widget"](id=4, size=1, is_cool=None, name="Zendaz"),
+            models["widget"](id=5, size=2, is_cool=False, name="Fooz"),
+            models["widget"](id=6, size=3, is_cool=True, name="Doodad"),
+            models["widget"](id=7, size=None, is_cool=None, name="Doodad"),
+            models["widget"](id=8, size=None, is_cool=True, name="Doodad"),
+            models["widget"](id=10, size=None, is_cool=None, name="Doodad"),
+        )
+    )
+    db.session.commit()
+
 # -----------------------------------------------------------------------------
 
 
@@ -406,6 +423,205 @@ def test_relay_cursor_sorted_default_with_none(client, data_with_none):
         f"/relay_cursor_widgets?sort=-size&cursor={cursor}&page_info=true"
     )
     assert_response(response, 200, [{"id": "7", "size": None}])
+
+
+def test_relay_cursor_sorted_default_with_none_reversed(client, data_with_none):
+    response = client.get("/relay_cursor_widgets?sort=size&page_info=true")
+    assert_response(
+        response, 200, [{"id": "7", "size": None}, {"id": "8", "size": None}]
+    )
+    assert get_meta(response) == {
+        "has_next_page": True,
+        "cursors": ['Tm9uZQ.Nw', 'Tm9uZQ.OA'],
+        "index": 0,
+        "total": 9,
+    }
+    cursor = get_meta(response)["cursors"][-1]
+    response = client.get(
+        f"/relay_cursor_widgets?sort=size&cursor={cursor}&page_info=true"
+    )
+    assert_response(
+        response, 200, [{"id": "10", "size": None},{"id":"1","name":"Whatzit","size":1}]
+    )
+
+    # assert get_meta(response)['index'] == 2
+    cursor = get_meta(response)["cursors"][-1]
+    response = client.get(
+        f"/relay_cursor_widgets?sort=size&cursor={cursor}&page_info=true"
+    )
+
+    assert_response(
+        response, 200, [{"id": "4", "size": 1}, {"id": "2", "size": 2}]
+    )
+    # assert get_meta(response)['index'] == 4
+
+    cursor = get_meta(response)["cursors"][-1]
+    response = client.get(
+        f"/relay_cursor_widgets?sort=size&cursor={cursor}&page_info=true"
+    )
+
+    assert_response(
+        response, 200, [{"id":"5","name":"Fooz","size":2},{"id":"3","name":"Plus Ultra","size":3}]
+    )
+    # assert get_meta(response)['index'] == 6
+
+    cursor = get_meta(response)["cursors"][-1]
+
+    response = client.get(
+        f"/relay_cursor_widgets?sort=size&cursor={cursor}&page_info=true"
+    )
+
+    assert_response(response, 200, [{"id":"6","name":"Doodad","size":3}])
+
+
+def test_relay_cursor_sorted_default_with_none_reversed_two(client, data_with_none):
+    # response = client.get("/relay_cursor_widgets?sort=size,is_cool&page_info=true")
+    # assert_response(
+    #     response, 200, [{"id": "7", "size": None}, {"id": "8", "size": None}]
+    # )
+    # assert get_meta(response) == {
+    #     "has_next_page": True,
+    #     "cursors": ["Tm9uZQ.VHJ1ZQ.Nw","Tm9uZQ.VHJ1ZQ.OA"],
+    #     "index": 0,
+    #     "total": 9,
+    # }
+    # cursor = get_meta(response)["cursors"][-1]
+    response = client.get(
+        f"/relay_cursor_widgets?sort=size,is_cool&cursor=Tm9uZQ.VHJ1ZQ.OA&page_info=true"
+    )
+
+    assert_response(
+        response, 200, [{"id": "10", "size": None},{"id":"1","name":"Whatzit","size":1}]
+    )
+    breakpoint()
+
+    # assert get_meta(response)['index'] == 2
+    cursor = get_meta(response)["cursors"][-1]
+    response = client.get(
+        f"/relay_cursor_widgets?sort=size,is_cool&cursor={cursor}&page_info=true"
+    )
+
+    assert_response(
+        response, 200, [{"id": "4", "size": 1}, {"id": "2", "size": 2}]
+    )
+
+    # assert get_meta(response)['index'] == 4
+
+    cursor = get_meta(response)["cursors"][-1]
+    response = client.get(
+        f"/relay_cursor_widgets?sort=size,is_cool&cursor={cursor}&page_info=true"
+    )
+
+    assert_response(
+        response, 200, [{"id":"5","name":"Fooz","size":2},{"id":"3","name":"Plus Ultra","size":3}]
+    )
+    # assert get_meta(response)['index'] == 6
+
+    cursor = get_meta(response)["cursors"][-1]
+
+    response = client.get(
+        f"/relay_cursor_widgets?sort=size,is_cool&cursor={cursor}&page_info=true"
+    )
+
+    assert_response(response, 200, [{"id":"6","name":"Doodad","size":3}])
+
+
+def test_relay_cursor_sorted_default_with_none_reversed_bools(client, data_with_none_bools):
+    response = client.get("/relay_cursor_widgets?sort=-is_cool&page_info=true")
+    assert_response(
+        response, 200, [{"id":"8","is_cool": True},{"id":"6","is_cool":True}]
+    )
+    assert get_meta(response) == {
+        "has_next_page": True,
+        "cursors": ["VHJ1ZQ.OA","VHJ1ZQ.Ng"],
+        "index": 0,
+        "total": 9,
+    }
+    cursor = get_meta(response)["cursors"][-1]
+    response = client.get(
+        f"/relay_cursor_widgets?sort=-is_cool&cursor={cursor}&page_info=true"
+    )
+
+    assert_response(
+        response, 200, [{"id": "3", "is_cool": True},{"id":"1","is_cool":True}]
+    )
+
+    # assert get_meta(response)['index'] == 2
+    cursor = get_meta(response)["cursors"][-1]
+    response = client.get(
+        f"/relay_cursor_widgets?sort=-is_cool&cursor={cursor}&page_info=true"
+    )
+
+    assert_response(
+        response, 200, [{"id":"5","is_cool":False},{"id":"2","is_cool":False}]
+    )
+
+    assert get_meta(response)['index'] == 4
+
+    cursor = get_meta(response)["cursors"][-1]
+    response = client.get(
+        f"/relay_cursor_widgets?sort=-is_cool&cursor={cursor}&page_info=true"
+    )
+    assert_response(
+        response, 200, [{"id": "10", "is_cool": None},{"id":"7","is_cool":None,}]
+    )
+    # assert get_meta(response)['index'] == 6
+
+    cursor = get_meta(response)["cursors"][-1]
+
+    response = client.get(
+        f"/relay_cursor_widgets?sort=-is_cool&cursor={cursor}&page_info=true"
+    )
+    assert_response(response, 200, [{"id":"4","is_cool":None}])
+
+def test_relay_cursor_sorted_default_with_none_bools(client, data_with_none_bools):
+    response = client.get("/relay_cursor_widgets?sort=is_cool&page_info=true")
+    assert_response(
+        response, 200, [{"id":"4","is_cool":None},{"id":"7","is_cool":None,}]
+    )
+    assert get_meta(response) == {
+        "has_next_page": True,
+        "cursors": ["Tm9uZQ.NA","Tm9uZQ.Nw"],
+        "index": 0,
+        "total": 9,
+    }
+    cursor = get_meta(response)["cursors"][-1]
+    response = client.get(
+        f"/relay_cursor_widgets?sort=is_cool&cursor={cursor}&page_info=true"
+    )
+
+    assert_response(
+        response, 200, [{"id": "10", "is_cool": None},{"id":"2","is_cool":False}]
+    )
+
+    # assert get_meta(response)['index'] == 2
+    cursor = get_meta(response)["cursors"][-1]
+    response = client.get(
+        f"/relay_cursor_widgets?sort=is_cool&cursor={cursor}&page_info=true"
+    )
+
+    assert_response(
+        response, 200, [{"id": "5", "is_cool": False},{"id":"1","is_cool":True}]
+    )
+
+    # assert get_meta(response)['index'] == 4
+
+    cursor = get_meta(response)["cursors"][-1]
+    response = client.get(
+        f"/relay_cursor_widgets?sort=is_cool&cursor={cursor}&page_info=true"
+    )
+    assert_response(
+        response, 200, [{"id": "3", "is_cool": True},{"id":"6","is_cool":True}]
+    )
+    # assert get_meta(response)['index'] == 6
+
+    cursor = get_meta(response)["cursors"][-1]
+
+    response = client.get(
+        f"/relay_cursor_widgets?sort=is_cool&cursor={cursor}&page_info=true"
+    )
+
+    assert_response(response, 200, [{"id":"8","is_cool": True}])
 
 
 def test_relay_cursor_sorted_redundant(client, data):

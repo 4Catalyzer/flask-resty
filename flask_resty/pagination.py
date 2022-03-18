@@ -526,32 +526,103 @@ class CursorPaginationBase(LimitPagination):
             (sorting.get_column(view, field_name), asc, value)
             for (field_name, asc), value in zip(field_orderings, cursor)
         )
+        # filters = [self.get_filter_clause(column_cursors[: i + 1]) for i in range(len(column_cursors))]
+        query = None
+        for i in range(len(column_cursors)):
+            # self.get_filter_clause(column_cursors[: i + 1])
+            column_cursor = column_cursors[: i + 1]
+            previous_clauses = sa.and_(
+                column == value for column, _, value in column_cursor[:-1] if value is not None
+            )
 
-        return sa.or_(
-            self.get_filter_clause(column_cursors[: i + 1])
-            for i in range(len(column_cursors))
-        )
+            column, asc, value = column_cursor[-1]
+            # if value is None:
+            #     return column.isnot(None)
+
+            # SQL Alchemy won't let you > or < a boolean, so we convert
+            # to an integer, the DB's seem to handle this just fine
+            previous_clauses_bool = sa.and_(
+                column == value for column, _, value in column_cursor[:-1]
+            )
+            if isinstance(value, bool):
+
+                column = sa.cast(column, sa.Integer)
+                value = int(value)
+                if asc:
+                    current_clause = column > value
+
+                else:
+                    current_clause = column < value
+                    current_clause = current_clause | column.is_(None)
+                query = sa.and_(previous_clauses_bool, current_clause)
+                continue
+            if value:
+                if asc:
+                    current_clause = column > value
+                    current_clause = current_clause | column.is_(None)
+
+
+                else:
+                    current_clause = column < value
+                    if getattr(column.expression, "nullable", True):
+                        current_clause = current_clause | column.is_(None)
+
+            else:
+                if not asc:
+                    if getattr(column.expression, "nullable", True):
+                        current_clause = column.is_(None)
+                else:
+                    current_clause = column.isnot(None)
+
+            # if str(previous_clauses_not_null) != '':
+            #     return sa.and_(sa.or_(previous_clauses,previous_clauses_not_null), current_clause)
+            # if value is None:
+            #     return sa.and_(previous_clauses_not_null, current_clause)
+
+            filter_query = sa.and_(previous_clauses, current_clause)
+            previous_cursor = column_cursor[-2] if len(column_cursor) >= 2 else None
+            if previous_cursor and (previous_cursor[1] is False and previous_cursor[2] is None):
+                query = sa.and_(query, filter_query)
+            else:
+                query = sa.or_(query, filter_query)
+        return query
+        # return result
 
     def get_filter_clause(self, column_cursors):
+
         previous_clauses = sa.and_(
-            column == value for column, _, value in column_cursors[:-1]
+            column == value for column, _, value in column_cursors[:-1] if value is not None
+        )
+        previous_clauses_not_null = sa.and_(
+            column.isnot(None) for column, _, value in column_cursors[:-1] if value is None
         )
 
         column, asc, value = column_cursors[-1]
-        if value is None:
-            return previous_clauses
+        # if value is None:
+        #     return column.isnot(None)
+
         # SQL Alchemy won't let you > or < a boolean, so we convert
         # to an integer, the DB's seem to handle this just fine
         if isinstance(value, bool):
             column = sa.cast(column, sa.Integer)
             value = int(value)
-        if asc:
-            current_clause = column > value
-        else:
-            current_clause = column < value
-
-        if getattr(column.expression, "nullable", True):
+        if value:
+            if asc:
+                current_clause = column > value
+            else:
+                current_clause = column < value
             current_clause = current_clause | column.is_(None)
+        else:
+            if not asc:
+                current_clause = column.is_(None)
+            else:
+                current_clause = column.isnot(None)
+        # if getattr(column.expression, "nullable", True):
+        #     current_clause = current_clause | column.is_(None)
+        # if str(previous_clauses_not_null) != '':
+        #     return sa.and_(sa.or_(previous_clauses,previous_clauses_not_null), current_clause)
+        # if value is None:
+        #     return sa.and_(previous_clauses_not_null, current_clause)
         return sa.and_(previous_clauses, current_clause)
 
     def make_cursors(self, items, view, field_orderings):
@@ -684,9 +755,7 @@ class RelayCursorPagination(CursorPaginationBase):
             page_query = page_query.filter(
                 self.get_filter(view, field_orderings, cursor_in)
             )
-
         items = super().get_page(page_query, view)
-
         if self.reversed:
             items.reverse()
 
