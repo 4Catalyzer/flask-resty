@@ -20,7 +20,7 @@ def app():
 @pytest.fixture
 def db(app):
     app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
-        "DATABASE_URL", "sqlite:///testdb.db"
+        "DATABASE_URL", "sqlite://"
     )
 
     # TODO: Remove once this is the default.
