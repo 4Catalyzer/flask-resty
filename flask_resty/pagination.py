@@ -522,6 +522,15 @@ class CursorPaginationBase(LimitPagination):
         """
         sorting: FieldSortingBase = view.sorting
 
+        def get_previous_clauses(column_cursorss):
+            query = sa.and_()
+            for column, _, value in column_cursorss:
+                if value is not None:
+                    query = sa.and_(query, column == value)
+                # else:
+                #     query = sa.and_(query, column.is_(None))
+            return query
+
         column_cursors = tuple(
             (sorting.get_column(view, field_name), asc, value)
             for (field_name, asc), value in zip(field_orderings, cursor)
@@ -532,18 +541,21 @@ class CursorPaginationBase(LimitPagination):
             # self.get_filter_clause(column_cursors[: i + 1])
             column_cursor = column_cursors[: i + 1]
             previous_clauses = sa.and_(
-                column == value for column, _, value in column_cursor[:-1] if value is not None
+                column == value
+                for column, _, value in column_cursor[:-1]
+                if value is not None
             )
-
+            previous_clauses = get_previous_clauses(column_cursor[:-1])
+            # print(previous_clausesss,'======',previous_clauses)
             column, asc, value = column_cursor[-1]
             # if value is None:
             #     return column.isnot(None)
 
             # SQL Alchemy won't let you > or < a boolean, so we convert
             # to an integer, the DB's seem to handle this just fine
-            previous_clauses_bool = sa.and_(
-                column == value for column, _, value in column_cursor[:-1]
-            )
+            # previous_clauses_bool = sa.and_(
+            #     column == value for column, _, value in column_cursor[:-1]
+            # )
             if isinstance(value, bool):
 
                 column = sa.cast(column, sa.Integer)
@@ -554,17 +566,26 @@ class CursorPaginationBase(LimitPagination):
                 else:
                     current_clause = column < value
                     current_clause = current_clause | column.is_(None)
-                query = sa.and_(previous_clauses_bool, current_clause)
+
+                previous_cursor = (
+                    column_cursor[-2] if len(column_cursor) >= 2 else None
+                )
+                if previous_cursor and (
+                    previous_cursor[1] is False and previous_cursor[2] is None
+                ):
+                    query = sa.and_(query, current_clause)
+                else:
+                    query = sa.or_(query, current_clause)
                 continue
             if value:
                 if asc:
                     current_clause = column > value
                     current_clause = current_clause | column.is_(None)
 
-
                 else:
                     current_clause = column < value
                     if getattr(column.expression, "nullable", True):
+
                         current_clause = current_clause | column.is_(None)
 
             else:
@@ -580,8 +601,12 @@ class CursorPaginationBase(LimitPagination):
             #     return sa.and_(previous_clauses_not_null, current_clause)
 
             filter_query = sa.and_(previous_clauses, current_clause)
-            previous_cursor = column_cursor[-2] if len(column_cursor) >= 2 else None
-            if previous_cursor and (previous_cursor[1] is False and previous_cursor[2] is None):
+            previous_cursor = (
+                column_cursor[-2] if len(column_cursor) >= 2 else None
+            )
+            if previous_cursor and (
+                previous_cursor[1] is False and previous_cursor[2] is None
+            ):
                 query = sa.and_(query, filter_query)
             else:
                 query = sa.or_(query, filter_query)
@@ -591,11 +616,15 @@ class CursorPaginationBase(LimitPagination):
     def get_filter_clause(self, column_cursors):
 
         previous_clauses = sa.and_(
-            column == value for column, _, value in column_cursors[:-1] if value is not None
+            column == value
+            for column, _, value in column_cursors[:-1]
+            if value is not None
         )
-        previous_clauses_not_null = sa.and_(
-            column.isnot(None) for column, _, value in column_cursors[:-1] if value is None
-        )
+        # previous_clauses_not_null = sa.and_(
+        #     column.isnot(None)
+        #     for column, _, value in column_cursors[:-1]
+        #     if value is None
+        # )
 
         column, asc, value = column_cursors[-1]
         # if value is None:
@@ -758,8 +787,8 @@ class RelayCursorPagination(CursorPaginationBase):
         items = super().get_page(page_query, view)
         if self.reversed:
             items.reverse()
-
         # Relay expects a cursor for each item.
+
         cursors_out = self.make_cursors(items, view, field_orderings)
 
         page_info = self.get_page_info(
