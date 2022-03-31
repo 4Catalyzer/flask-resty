@@ -351,7 +351,7 @@ class Filtering:
         :return: The filtered query
         :rtype: :py:class:`sqlalchemy.orm.query.Query`
         """
-        args = flask.request.args
+        args = view.request_args if view.args_schema else flask.request.args
 
         for arg_name, arg_filter in self._arg_filters.items():
             try:
