@@ -127,7 +127,7 @@ def test_create_client_id(app, views, client):
     api.add_resource("/widgets", views["widget_list"], views["widget"])
 
     response = client.post("/widgets", data={"id": "100"})
-    assert response.headers["Location"] == "http://localhost/widgets/100"
+    assert response.headers["Location"] == "/widgets/100"
     assert_response(response, 201, {"id": "100"})
 
 
@@ -149,7 +149,7 @@ def test_training_slash(app, views, client):
     )
 
     response = client.post("/widgets/", data={"id": "100"})
-    assert response.headers["Location"] == "http://localhost/widgets/100/"
+    assert response.headers["Location"] == "/widgets/100/"
 
     assert_response(response, 201, {"id": "100"})
 
@@ -171,7 +171,7 @@ def test_resource_rules(app, views, client):
     assert_response(get_response, 200, {"id": "1"})
 
     post_response = client.post("/widgets", data={})
-    assert post_response.headers["Location"] == "http://localhost/widget/2"
+    assert post_response.headers["Location"] == "/widget/2"
 
     assert_response(post_response, 201, {"id": "2"})
 
