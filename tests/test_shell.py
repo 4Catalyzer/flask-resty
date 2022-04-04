@@ -61,7 +61,7 @@ def runner():
 def run_command(runner, make_app):
     def run(args=tuple(), *, config=None, **kwargs):
         app = make_app(config=config or {})
-        obj = ScriptInfo(create_app=lambda info: app)
+        obj = ScriptInfo(create_app=lambda: app)
         # Always use default python shell
         return runner.invoke(cli, ("--shell", "py", *args), obj=obj, **kwargs)
 
