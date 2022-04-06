@@ -106,7 +106,7 @@ def test_create(client):
     response = client.post(
         "/widgets", data={"name": "Qux", "description": "qux widget"}
     )
-    assert response.headers["Location"] == "http://localhost/widgets/4"
+    assert response.headers["Location"] == "/widgets/4"
 
     assert_response(
         response, 201, {"id": "4", "name": "Qux", "description": "qux widget"}
@@ -141,7 +141,7 @@ def test_upsert_create(client):
         "/widgets/4",
         data={"id": "4", "name": "Qux", "description": "qux widget"},
     )
-    assert response.headers["Location"] == "http://localhost/widgets/4"
+    assert response.headers["Location"] == "/widgets/4"
 
     assert_response(
         response, 201, {"id": "4", "name": "Qux", "description": "qux widget"}

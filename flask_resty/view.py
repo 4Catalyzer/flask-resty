@@ -241,7 +241,7 @@ class ApiView(MethodView):
         :return: The deserialized request data.
         """
         try:
-            data_raw = flask.request.get_json()["data"]
+            data_raw = flask.request.get_json(silent=True)["data"]
         except TypeError as e:
             raise ApiError(400, {"code": "invalid_body"}) from e
         except KeyError as e:
