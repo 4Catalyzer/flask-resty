@@ -119,7 +119,7 @@ def test_not_found(client):
 
 def test_invalid_body(client):
     response = client.post("/widgets", content_type="text", data="foo")
-    assert_response(response, 400, [{"code": "bad_request"}])
+    assert_response(response, 400, [{"code": "invalid_body"}])
 
 
 def test_data_missing(base_client):
