@@ -377,7 +377,7 @@ def test_relay_cursor_sorted_none_desc(client, data_with_nulls):
 
 
 def test_relay_cursor_sorted_none_desc_reversed(client, data_with_nulls):
-    before = encode_cursor(('Whatzit', 1))
+    before = encode_cursor(("Whatzit", 1))
     response = client.get(f"/relay_cursor_widgets?sort=-name&before={before}")
 
     assert_response(
@@ -414,15 +414,14 @@ def test_relay_cursor_sorted_none_asc(client, data_with_nulls):
 
 
 def test_relay_cursor_sorted_none_asc_reversed(client, data_with_nulls):
-    before = encode_cursor(('None', 7))
+    before = encode_cursor(("None", 7))
     response = client.get(f"/relay_cursor_widgets?sort=name&before={before}")
 
     assert_response(
-        response, 200, [{"id": "1", "name": "Whatzit"}, {"id": "4", "name": None}]
+        response,
+        200,
+        [{"id": "1", "name": "Whatzit"}, {"id": "4", "name": None}],
     )
-
-
-
 
 
 def test_relay_cursor_sorted_default(client, data):
