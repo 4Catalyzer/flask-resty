@@ -87,7 +87,7 @@ def routes(app, models, schemas):
         pagination = PagePagination(2)
 
     class RelayCursorListView(WidgetListViewBase):
-        sorting = Sorting("id", "size", "is_cool")
+        sorting = Sorting("id", "size", "is_cool", "name")
         pagination = RelayCursorPagination(
             2,
             page_info_arg="page_info",
@@ -130,6 +130,23 @@ def data(db, models):
             models["widget"](id=4, size=1, is_cool=False, name="Zendaz"),
             models["widget"](id=5, size=2, is_cool=False, name="Fooz"),
             models["widget"](id=6, size=3, is_cool=True, name="Doodad"),
+        )
+    )
+    db.session.commit()
+
+
+@pytest.fixture()
+def data_with_nulls(db, models):
+    db.session.add_all(
+        (
+            models["widget"](id=1, size=1, is_cool=True, name="Whatzit"),
+            models["widget"](id=2, size=2, is_cool=False, name="AAA Time"),
+            models["widget"](id=3, size=3, is_cool=True, name="Plus Ultra"),
+            models["widget"](id=4, size=1, is_cool=False, name=None),
+            models["widget"](id=5, size=2, is_cool=False, name="Fooz"),
+            models["widget"](id=6, size=3, is_cool=True, name="Doodad"),
+            models["widget"](id=7, size=3, is_cool=True, name=None),
+            models["widget"](id=8, size=3, is_cool=True, name=None),
         )
     )
     db.session.commit()
@@ -329,6 +346,62 @@ def test_relay_cursor_sorted(client, data):
         "has_next_page": True,
         "cursors": ["MQ.NA", "Mg.Mg"],
     }
+
+
+def test_relay_cursor_sorted_none_desc(client, data_with_nulls):
+    response = client.get("/relay_cursor_widgets?sort=-name")
+    assert_response(
+        response, 200, [{"id": "8", "name": None}, {"id": "7", "name": None}]
+    )
+    cursor = get_meta(response)["cursors"][-1]
+    response = client.get(f"/relay_cursor_widgets?sort=-name&cursor={cursor}")
+    assert_response(
+        response,
+        200,
+        [{"id": "4", "name": None}, {"id": "1", "name": "Whatzit"}],
+    )
+    cursor = get_meta(response)["cursors"][-1]
+    response = client.get(f"/relay_cursor_widgets?sort=-name&cursor={cursor}")
+    assert_response(
+        response,
+        200,
+        [{"id": "3", "name": "Plus Ultra"}, {"id": "5", "name": "Fooz"}],
+    )
+    cursor = get_meta(response)["cursors"][-1]
+    response = client.get(f"/relay_cursor_widgets?sort=-name&cursor={cursor}")
+    assert_response(
+        response,
+        200,
+        [{"id": "6", "name": "Doodad"}, {"id": "2", "name": "AAA Time"}],
+    )
+
+
+def test_relay_cursor_sorted_none_asc(client, data_with_nulls):
+    response = client.get("/relay_cursor_widgets?sort=name")
+    assert_response(
+        response,
+        200,
+        [{"id": "2", "name": "AAA Time"}, {"id": "6", "name": "Doodad"}],
+    )
+    cursor = get_meta(response)["cursors"][-1]
+    response = client.get(f"/relay_cursor_widgets?sort=name&cursor={cursor}")
+    assert_response(
+        response,
+        200,
+        [{"id": "5", "name": "Fooz"}, {"id": "3", "name": "Plus Ultra"}],
+    )
+    cursor = get_meta(response)["cursors"][-1]
+    response = client.get(f"/relay_cursor_widgets?sort=name&cursor={cursor}")
+    assert_response(
+        response,
+        200,
+        [{"id": "1", "name": "Whatzit"}, {"id": "4", "name": None}],
+    )
+    cursor = get_meta(response)["cursors"][-1]
+    response = client.get(f"/relay_cursor_widgets?sort=name&cursor={cursor}")
+    assert_response(
+        response, 200, [{"id": "7", "name": None}, {"id": "8", "name": None}]
+    )
 
 
 def test_relay_cursor_sorted_default(client, data):
