@@ -486,7 +486,7 @@ class CursorPaginationBase(LimitPagination):
         return None if value == "None" else value
 
     def deserialize_value(self, field, value):
-        if not field.required and value is None:
+        if value is None:
             return None
         return (
             field.deserialize(value)
@@ -535,12 +535,9 @@ class CursorPaginationBase(LimitPagination):
     def get_previous_clause(column_cursors):
         # Invoking and_() without arguments is deprecated, and will be disallowed in a future release.
         # For an empty and_() construct, use and_(True, *args).
-        previous_clauses = sa.and_()
+        previous_clauses = sa.and_(True)
         for column, _, value in column_cursors:
-            if value is None:
-                previous_clauses = sa.and_(previous_clauses, column.is_(None))
-            else:
-                previous_clauses = sa.and_(previous_clauses, column == value)
+            previous_clauses = sa.and_(previous_clauses, column.isnot_distinct_from(value))
         return previous_clauses
 
     @staticmethod
@@ -580,8 +577,7 @@ class CursorPaginationBase(LimitPagination):
         column, asc, value = column_cursors[-1]
 
         current_clause = self._prepare_current_clause(column, asc, value)
-        if not str(previous_clauses):
-            return current_clause
+
         return sa.and_(previous_clauses, current_clause)
 
     def make_cursors(self, items, view, field_orderings):
