@@ -537,7 +537,9 @@ class CursorPaginationBase(LimitPagination):
         # For an empty and_() construct, use and_(True, *args).
         previous_clauses = sa.and_(True)
         for column, _, value in column_cursors:
-            previous_clauses = sa.and_(previous_clauses, column.isnot_distinct_from(value))
+            previous_clauses = sa.and_(
+                previous_clauses, column.isnot_distinct_from(value)
+            )
         return previous_clauses
 
     @staticmethod
