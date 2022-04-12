@@ -16,6 +16,9 @@ from .utils import if_none
 # -----------------------------------------------------------------------------
 
 
+_NULL = str(sa.null())
+
+
 class PaginationBase:
     """The base class for pagination components.
 
@@ -483,7 +486,7 @@ class CursorPaginationBase(LimitPagination):
         value += (3 - ((len(value) + 3) % 4)) * b"="  # Add back padding.
         value = base64.urlsafe_b64decode(value).decode()
 
-        return None if value == str(sa.null()) else value
+        return None if value == _NULL else value
 
     def deserialize_value(self, field, value):
         if value is None:
@@ -640,7 +643,7 @@ class CursorPaginationBase(LimitPagination):
 
     def encode_value(self, value):
         if value is None:
-            value = sa.null()
+            value = _NULL
         value = str(value)
         value = value.encode()
         value = base64.urlsafe_b64encode(value)
