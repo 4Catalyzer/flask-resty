@@ -115,7 +115,7 @@ class FieldSortingBase(SortingBase):
     def get_criterion(self, view, field_ordering):
         field_name, asc = field_ordering
         column = self.get_column(view, field_name)
-        return column if asc else column.desc()
+        return sa.nullslast(column) if asc else sa.nullsfirst(column.desc())
 
     def get_column(self, view, field_name):
         return getattr(view.model, field_name)

@@ -16,6 +16,9 @@ from .utils import if_none
 # -----------------------------------------------------------------------------
 
 
+_NULL = str(sa.null())
+
+
 class PaginationBase:
     """The base class for pagination components.
 
@@ -481,10 +484,13 @@ class CursorPaginationBase(LimitPagination):
     def decode_value(self, value: str):
         value = value.encode("ascii")
         value += (3 - ((len(value) + 3) % 4)) * b"="  # Add back padding.
-        value = base64.urlsafe_b64decode(value)
-        return value.decode()
+        value = base64.urlsafe_b64decode(value).decode()
+
+        return None if value == _NULL else value
 
     def deserialize_value(self, field, value):
+        if value is None:
+            return None
         return (
             field.deserialize(value)
             if self._validate_values
@@ -528,12 +534,26 @@ class CursorPaginationBase(LimitPagination):
             for i in range(len(column_cursors))
         )
 
-    def get_filter_clause(self, column_cursors):
-        previous_clauses = sa.and_(
-            column == value for column, _, value in column_cursors[:-1]
-        )
+    @staticmethod
+    def get_previous_clause(column_cursors):
+        if not column_cursors:
+            return None
+        clauses = [
+            column.isnot_distinct_from(value)
+            for column, _, value in column_cursors
+        ]
 
-        column, asc, value = column_cursors[-1]
+        return sa.and_(*clauses)
+
+    @staticmethod
+    def _handle_nullable(column, value, is_nullable):
+        if is_nullable:
+            return sa.or_(column.is_(None), (column > value))
+        else:
+            return column > value
+
+    def _prepare_current_clause(self, column, asc, value):
+        is_nullable = getattr(column.expression, "nullable", True)
 
         # SQL Alchemy won't let you > or < a boolean, so we convert
         # to an integer, the DB's seem to handle this just fine
@@ -542,10 +562,29 @@ class CursorPaginationBase(LimitPagination):
             value = int(value)
 
         if asc:
-            current_clause = column > value
+            if value is None:
+                return None
+            elif value is not None:
+                current_clause = self._handle_nullable(
+                    column, value, is_nullable
+                )
+            else:
+                current_clause = column > value
         else:
-            current_clause = column < value
+            if value is None:
+                current_clause = column.isnot(None)
+            else:
+                current_clause = column < value
+        return current_clause
 
+    def get_filter_clause(self, column_cursors):
+        previous_clauses = self.get_previous_clause(column_cursors[:-1])
+        column, asc, value = column_cursors[-1]
+
+        current_clause = self._prepare_current_clause(column, asc, value)
+
+        if previous_clauses is None:
+            return current_clause
         return sa.and_(previous_clauses, current_clause)
 
     def make_cursors(self, items, view, field_orderings):
@@ -603,6 +642,8 @@ class CursorPaginationBase(LimitPagination):
         return ".".join(self.encode_value(value) for value in cursor)
 
     def encode_value(self, value):
+        if value is None:
+            value = _NULL
         value = str(value)
         value = value.encode()
         value = base64.urlsafe_b64encode(value)
