@@ -533,14 +533,14 @@ class CursorPaginationBase(LimitPagination):
 
     @staticmethod
     def get_previous_clause(column_cursors):
-        # Invoking and_() without arguments is deprecated, and will be disallowed in a future release.
-        # For an empty and_() construct, use and_(True, *args).
-        previous_clauses = sa.and_(True)
-        for column, _, value in column_cursors:
-            previous_clauses = sa.and_(
-                previous_clauses, column.isnot_distinct_from(value)
-            )
-        return previous_clauses
+        if not column_cursors:
+            return None
+        clauses = [
+            column.isnot_distinct_from(value)
+            for column, _, value in column_cursors
+        ]
+
+        return sa.and_(*clauses)
 
     @staticmethod
     def _handle_nullable(column, value, is_nullable):
@@ -580,6 +580,8 @@ class CursorPaginationBase(LimitPagination):
 
         current_clause = self._prepare_current_clause(column, asc, value)
 
+        if previous_clauses is None:
+            return current_clause
         return sa.and_(previous_clauses, current_clause)
 
     def make_cursors(self, items, view, field_orderings):
