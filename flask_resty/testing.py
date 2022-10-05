@@ -96,7 +96,7 @@ def assert_shape(actual, expected, key=None):
             + (
                 f"the actual value has {actual_len - expected_len} more items"
                 if actual_len > expected_len
-                else f"the actual value has {expected_len - actual_len} less items"
+                else f"the actual value has {expected_len - actual_len} fewer items"
             )
             + suffix
         )
