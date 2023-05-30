@@ -784,8 +784,8 @@ class ModelView(ApiView):
 
         :param object item: The item to add.
         """
-        self.add_item_raw(item)
         self.authorization.authorize_save_item(item)
+        self.add_item_raw(item)
 
     def add_item_raw(self, item):
         """As with `add_item`, but without the authorization check.
