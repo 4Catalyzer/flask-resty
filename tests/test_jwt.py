@@ -19,18 +19,20 @@ except ImportError:
 
 class AbstractTestJwt:
     @pytest.fixture
-    def models(self, db):
+    def models(self, app, db):
         class Widget(db.Model):
             __tablename__ = "widgets"
 
             id = Column(Integer, primary_key=True)
             owner_id = Column(String)
 
-        db.create_all()
+        with app.app_context():
+            db.create_all()
 
         yield {"widget": Widget}
 
-        db.drop_all()
+        with app.app_context():
+            db.drop_all()
 
     @pytest.fixture
     def schemas(self):
@@ -60,14 +62,15 @@ class AbstractTestJwt:
         api.add_resource("/widgets", WidgetListView)
 
     @pytest.fixture(autouse=True)
-    def data(self, db, models):
-        db.session.add_all(
-            (
-                models["widget"](owner_id="foo"),
-                models["widget"](owner_id="bar"),
+    def data(self, app, db, models):
+        with app.app_context():
+            db.session.add_all(
+                (
+                    models["widget"](owner_id="foo"),
+                    models["widget"](owner_id="bar"),
+                )
             )
-        )
-        db.session.commit()
+            db.session.commit()
 
     @pytest.fixture
     def token(self):

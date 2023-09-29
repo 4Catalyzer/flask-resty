@@ -8,7 +8,7 @@ from flask_resty.shell import cli
 
 
 @pytest.fixture
-def models(db):
+def models(app, db):
     class Widget(db.Model):
         __tablename__ = "widgets"
 
@@ -16,11 +16,13 @@ def models(db):
         name = Column(String, nullable=False)
         description = Column(String)
 
-    db.create_all()
+    with app.app_context():
+        db.create_all()
 
     yield {"widget": Widget}
 
-    db.drop_all()
+    with app.app_context():
+        db.drop_all()
 
 
 @pytest.fixture

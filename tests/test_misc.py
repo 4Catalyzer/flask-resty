@@ -9,17 +9,19 @@ from flask_resty.testing import assert_response
 
 
 @pytest.fixture
-def models(db):
+def models(app, db):
     class Widget(db.Model):
         __tablename__ = "widgets"
 
         id = Column(Integer, primary_key=True)
 
-    db.create_all()
+    with app.app_context():
+        db.create_all()
 
     yield {"widget": Widget}
 
-    db.drop_all()
+    with app.app_context():
+        db.drop_all()
 
 
 @pytest.fixture
@@ -68,9 +70,10 @@ def views(models, schemas):
 
 
 @pytest.fixture(autouse=True)
-def data(db, models):
-    db.session.add(models["widget"]())
-    db.session.commit()
+def data(app, db, models):
+    with app.app_context():
+        db.session.add(models["widget"]())
+        db.session.commit()
 
 
 # -----------------------------------------------------------------------------

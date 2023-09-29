@@ -27,7 +27,7 @@ def encode_cursor(cursor):
 
 
 @pytest.fixture
-def models(db):
+def models(app, db):
     class Widget(db.Model):
         __tablename__ = "widgets"
 
@@ -36,11 +36,13 @@ def models(db):
         is_cool = Column(Boolean)
         name = Column(Text)
 
-    db.create_all()
+    with app.app_context():
+        db.create_all()
 
     yield {"widget": Widget}
 
-    db.drop_all()
+    with app.app_context():
+        db.drop_all()
 
 
 @pytest.fixture
@@ -112,44 +114,51 @@ def routes(app, models, schemas):
 
 
 @pytest.fixture()
-def add_widgets(db, models):
+def add_widgets(app, db, models):
     def impl(widgets):
-        db.session.add_all([models["widget"](**data) for data in widgets])
-        db.session.commit()
+        with app.app_context():
+            db.session.add_all([models["widget"](**data) for data in widgets])
+            db.session.commit()
 
     return impl
 
 
 @pytest.fixture()
-def data(db, models):
-    db.session.add_all(
-        (
-            models["widget"](id=1, size=1, is_cool=True, name="Whatzit"),
-            models["widget"](id=2, size=2, is_cool=False, name="AAA Time"),
-            models["widget"](id=3, size=3, is_cool=True, name="Plus Ultra"),
-            models["widget"](id=4, size=1, is_cool=False, name="Zendaz"),
-            models["widget"](id=5, size=2, is_cool=False, name="Fooz"),
-            models["widget"](id=6, size=3, is_cool=True, name="Doodad"),
+def data(app, db, models):
+    with app.app_context():
+        db.session.add_all(
+            (
+                models["widget"](id=1, size=1, is_cool=True, name="Whatzit"),
+                models["widget"](id=2, size=2, is_cool=False, name="AAA Time"),
+                models["widget"](
+                    id=3, size=3, is_cool=True, name="Plus Ultra"
+                ),
+                models["widget"](id=4, size=1, is_cool=False, name="Zendaz"),
+                models["widget"](id=5, size=2, is_cool=False, name="Fooz"),
+                models["widget"](id=6, size=3, is_cool=True, name="Doodad"),
+            )
         )
-    )
-    db.session.commit()
+        db.session.commit()
 
 
 @pytest.fixture()
-def data_with_nulls(db, models):
-    db.session.add_all(
-        (
-            models["widget"](id=1, size=1, is_cool=True, name="Whatzit"),
-            models["widget"](id=2, size=2, is_cool=False, name="AAA Time"),
-            models["widget"](id=3, size=3, is_cool=True, name="Plus Ultra"),
-            models["widget"](id=4, size=1, is_cool=False, name=None),
-            models["widget"](id=5, size=2, is_cool=False, name="Fooz"),
-            models["widget"](id=6, size=3, is_cool=True, name="Doodad"),
-            models["widget"](id=7, size=3, is_cool=True, name=None),
-            models["widget"](id=8, size=3, is_cool=True, name=None),
+def data_with_nulls(app, db, models):
+    with app.app_context():
+        db.session.add_all(
+            (
+                models["widget"](id=1, size=1, is_cool=True, name="Whatzit"),
+                models["widget"](id=2, size=2, is_cool=False, name="AAA Time"),
+                models["widget"](
+                    id=3, size=3, is_cool=True, name="Plus Ultra"
+                ),
+                models["widget"](id=4, size=1, is_cool=False, name=None),
+                models["widget"](id=5, size=2, is_cool=False, name="Fooz"),
+                models["widget"](id=6, size=3, is_cool=True, name="Doodad"),
+                models["widget"](id=7, size=3, is_cool=True, name=None),
+                models["widget"](id=8, size=3, is_cool=True, name=None),
+            )
         )
-    )
-    db.session.commit()
+        db.session.commit()
 
 
 # -----------------------------------------------------------------------------

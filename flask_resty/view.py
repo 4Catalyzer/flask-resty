@@ -493,7 +493,7 @@ class ModelView(ApiView):
     @settable_property
     def session(self):
         """Convenience property for the current SQLAlchemy session."""
-        return flask.current_app.extensions["sqlalchemy"].db.session
+        return flask.current_app.extensions["sqlalchemy"].session
 
     @settable_property
     def query_raw(self):
