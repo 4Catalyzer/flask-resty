@@ -39,7 +39,6 @@ setup(
     license="MIT",
     python_requires=">=3.7",
     classifiers=[
-        "Development Status :: 3 - Alpha",
         "Framework :: Flask",
         "Environment :: Web Environment",
         "Intended Audience :: Developers",
@@ -47,8 +46,6 @@ setup(
         "Operating System :: OS Independent",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.7",
-        "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3 :: Only",
@@ -56,13 +53,15 @@ setup(
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
     keywords="rest flask",
-    packages=("flask_resty",),
+    packages=["flask_resty",],
     install_requires=(
-        "Flask>=1.1.0",
-        "Flask-SQLAlchemy>=1.0",
+        # core deps
+        "flask~=3.0.0",
+        "flask-sqlalchemy~=3.0",
+        "sqlalchemy~=2.0.0",
+        # misc
         "marshmallow>=3.0.0",
-        "SQLAlchemy>=1.0.0",
-        "Werkzeug>=0.11",
+        "werkzeug>=3.0",
         "konch>=4.0",
     ),
     extras_require=EXTRAS_REQUIRE,
