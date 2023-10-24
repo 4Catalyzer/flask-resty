@@ -37,7 +37,7 @@ setup(
     author="4Catalyzer",
     author_email="tesrin@gmail.com",
     license="MIT",
-    python_requires=">=3.7",
+    python_requires=">=3.9",
     classifiers=[
         "Framework :: Flask",
         "Environment :: Web Environment",
