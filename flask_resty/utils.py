@@ -1,5 +1,6 @@
 """Internal utility helpers."""
 
+
 # UNDEFINED is a singleton; ensure that it is falsy and returns the same instance when copied
 class _Undefined:
     def __bool__(self):
@@ -52,9 +53,9 @@ class SettableProperty:
     def __get__(self, instance, owner):
         if instance is None:
             return self
-        try:
+        if hasattr(instance, self.internal_field_name):
             return getattr(instance, self.internal_field_name)
-        except AttributeError:
+        else:
             return self.get_default(instance)
 
     def __set__(self, instance, value):
