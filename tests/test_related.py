@@ -55,7 +55,7 @@ def schemas(models):
         @classmethod
         def get_query_options(cls, load):
             return (
-                load.joinedload(models["parent"]),
+                load.joinedload(models["child"].parent),
                 load.joinedload(models["child"].other_parent),
             )
 
