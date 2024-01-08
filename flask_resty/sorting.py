@@ -1,5 +1,3 @@
-from typing import Tuple
-
 import flask
 import sqlalchemy as sa
 

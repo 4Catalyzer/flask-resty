@@ -1,6 +1,6 @@
 import base64
 from dataclasses import dataclass
-from typing import Any, List, Tuple, Union
+from typing import Any, Union
 
 import flask
 import sqlalchemy as sa
@@ -737,6 +737,5 @@ class RelayCursorPagination(CursorPaginationBase):
         return items
 
     def get_item_meta(self, item, view):
-
         cursor = self.make_cursor(item, view, self.get_field_orderings(view))
         return {"cursor": cursor}
