@@ -52,7 +52,7 @@ def get_models(db) -> dict:
 
 def get_models_context(app: flask.Flask) -> dict:
     try:
-        db = app.extensions["sqlalchemy"].db
+        db = app.extensions["sqlalchemy"]
     except KeyError:  # pragma: no cover
         return {}
 
@@ -133,16 +133,17 @@ def context_formatter(
 @with_appcontext
 def cli(shell: str, sqlalchemy_echo: bool):
     """An improved Flask shell command."""
-    from flask.globals import _app_ctx_stack
+    from flask.globals import current_app
 
-    app = _app_ctx_stack.top.app
-    options = {key: app.config.get(key, DEFAULTS[key]) for key in DEFAULTS}
-    app.config["SQLALCHEMY_ECHO"] = sqlalchemy_echo
-    base_context = {"app": app}
-    flask_context = app.make_shell_context()
+    options = {
+        key: current_app.config.get(key, DEFAULTS[key]) for key in DEFAULTS
+    }
+    current_app.config["SQLALCHEMY_ECHO"] = sqlalchemy_echo
+    base_context = {"app": current_app}
+    flask_context = current_app.make_shell_context()
     schema_context = get_schema_context()
     context = dict(base_context)
-    model_context = get_models_context(app)
+    model_context = get_models_context(current_app)
     settings_context = options["RESTY_SHELL_CONTEXT"]
     shell_setup = options["RESTY_SHELL_SETUP"]
 
@@ -159,7 +160,7 @@ def cli(shell: str, sqlalchemy_echo: bool):
         schema_context=schema_context,
         model_context=model_context,
     )
-    banner = get_banner(app, logo=options["RESTY_SHELL_LOGO"])
+    banner = get_banner(current_app, logo=options["RESTY_SHELL_LOGO"])
 
     if shell_setup:
         shell_setup(context)
