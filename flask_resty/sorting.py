@@ -38,9 +38,9 @@ class SortingBase:
 # -----------------------------------------------------------------------------
 
 
-FieldOrdering = Tuple[str, bool]
+FieldOrdering = tuple[str, bool]
 
-FieldOrderings = Tuple[FieldOrdering, ...]
+FieldOrderings = tuple[FieldOrdering, ...]
 
 
 class FieldSortingBase(SortingBase):
