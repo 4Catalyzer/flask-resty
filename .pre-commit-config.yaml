@@ -8,8 +8,9 @@ repos:
   rev: v0.11.1
   hooks:
     - id: fourmat
+      additional_dependencies: [setuptools>69]
 - repo: https://github.com/asottile/blacken-docs
-  rev: v1.12.0
+  rev: 1.16.0
   hooks:
-  - id: blacken-docs
-    additional_dependencies: [black==23.10.1]
+    - id: blacken-docs
+      additional_dependencies: [black==23.12.1]

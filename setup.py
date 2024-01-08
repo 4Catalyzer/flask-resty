@@ -53,7 +53,9 @@ setup(
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
     keywords="rest flask",
-    packages=["flask_resty",],
+    packages=[
+        "flask_resty",
+    ],
     install_requires=(
         # core deps
         "flask~=3.0.0",
