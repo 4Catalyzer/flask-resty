@@ -78,7 +78,7 @@ def test_no_args(run_command):
     assert result.exit_code == 0
     # Flask imports
     assert "Flask:" in result.output
-    assert "app, g" in result.output
+    assert "app, db, g" in result.output
     # Models
     assert "Models:" in result.output
     # Schemas
