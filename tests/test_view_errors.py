@@ -184,8 +184,11 @@ def test_integrity_error_conflict(client, path):
 
 @pytest.mark.parametrize("path", ("/widgets", "/widgets_flush"))
 def test_integrity_error_uncaught(db, app, client, path):
-    if db.engine.driver != "psycopg2":
-        pytest.xfail("IntegrityError cause detection only works with psycopg2")
+    with app.app_context():
+        if db.engine.driver != "psycopg2":
+            pytest.xfail(
+                "IntegrityError cause detection only works with psycopg2"
+            )
 
     app.testing = False
 
