@@ -20,7 +20,7 @@ from ._constants import LOAD_DEFAULT_KWARG
 
 
 @pytest.fixture
-def models(db):
+def models(app, db):
     class Widget(db.Model):
         __tablename__ = "widgets"
 
@@ -28,11 +28,13 @@ def models(db):
         color = Column(String)
         size = Column(Integer)
 
-    db.create_all()
+    with app.app_context():
+        db.create_all()
 
     yield {"widget": Widget}
 
-    db.drop_all()
+    with app.app_context():
+        db.drop_all()
 
 
 @pytest.fixture
@@ -120,16 +122,17 @@ def routes(app, models, schemas, filter_fields):
 
 
 @pytest.fixture(autouse=True)
-def data(db, models):
-    db.session.add_all(
-        (
-            models["widget"](color="red", size=1),
-            models["widget"](color="green", size=2),
-            models["widget"](color="blue", size=3),
-            models["widget"](color="red", size=6),
+def data(app, db, models):
+    with app.app_context():
+        db.session.add_all(
+            (
+                models["widget"](color="red", size=1),
+                models["widget"](color="green", size=2),
+                models["widget"](color="blue", size=3),
+                models["widget"](color="red", size=6),
+            )
         )
-    )
-    db.session.commit()
+        db.session.commit()
 
 
 # -----------------------------------------------------------------------------

@@ -151,20 +151,12 @@ Exceptions
   :members:
   :inherited-members:
 
-Routing
--------
-
-.. autoclass:: StrictRule
-  :members:
-  :inherited-members:
-
 Fields
 -------
 
 .. autoclass:: RelatedItem
 
 .. autoclass:: DelimitedList
-
 
 Testing
 -------

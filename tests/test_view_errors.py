@@ -10,18 +10,20 @@ from flask_resty.testing import assert_response, get_body, get_errors
 
 
 @pytest.fixture
-def models(db):
+def models(app, db):
     class Widget(db.Model):
         __tablename__ = "widgets"
 
         id = Column(Integer, primary_key=True)
         name = Column(String, nullable=False, unique=True)
 
-    db.create_all()
+    with app.app_context():
+        db.create_all()
 
     yield {"widget": Widget}
 
-    db.drop_all()
+    with app.app_context():
+        db.drop_all()
 
 
 @pytest.fixture
@@ -104,9 +106,10 @@ def routes(app, views):
 
 
 @pytest.fixture(autouse=True)
-def data(db, models):
-    db.session.add(models["widget"](name="Foo"))
-    db.session.commit()
+def data(app, db, models):
+    with app.app_context():
+        db.session.add(models["widget"](name="Foo"))
+        db.session.commit()
 
 
 # -----------------------------------------------------------------------------
@@ -181,8 +184,11 @@ def test_integrity_error_conflict(client, path):
 
 @pytest.mark.parametrize("path", ("/widgets", "/widgets_flush"))
 def test_integrity_error_uncaught(db, app, client, path):
-    if db.engine.driver != "psycopg2":
-        pytest.xfail("IntegrityError cause detection only works with psycopg2")
+    with app.app_context():
+        if db.engine.driver != "psycopg2":
+            pytest.xfail(
+                "IntegrityError cause detection only works with psycopg2"
+            )
 
     app.testing = False
 

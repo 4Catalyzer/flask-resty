@@ -2,24 +2,26 @@ import pytest
 from marshmallow import Schema, fields
 from sqlalchemy import Column, Integer
 
-from flask_resty import Api, GenericModelView, StrictRule
+from flask_resty import Api, GenericModelView
 from flask_resty.testing import assert_response
 
 # -----------------------------------------------------------------------------
 
 
 @pytest.fixture
-def models(db):
+def models(app, db):
     class Widget(db.Model):
         __tablename__ = "widgets"
 
         id = Column(Integer, primary_key=True)
 
-    db.create_all()
+    with app.app_context():
+        db.create_all()
 
     yield {"widget": Widget}
 
-    db.drop_all()
+    with app.app_context():
+        db.drop_all()
 
 
 @pytest.fixture
@@ -68,9 +70,10 @@ def views(models, schemas):
 
 
 @pytest.fixture(autouse=True)
-def data(db, models):
-    db.session.add(models["widget"]())
-    db.session.commit()
+def data(app, db, models):
+    with app.app_context():
+        db.session.add(models["widget"]())
+        db.session.commit()
 
 
 # -----------------------------------------------------------------------------
@@ -104,19 +107,6 @@ def test_rule_with_slash(app, views, client):
 
     response = client.get("/widgets")
     assert_response(response, 308)
-
-    response = client.get("/widgets/")
-    assert_response(response, 200)
-
-
-def test_no_append_slash(monkeypatch, app, views, client):
-    monkeypatch.setattr(app, "url_rule_class", StrictRule)
-
-    api = Api(app, "/api")
-    api.add_resource("/widgets/", views["widget_list"])
-
-    response = client.get("/widgets")
-    assert_response(response, 404)
 
     response = client.get("/widgets/")
     assert_response(response, 200)

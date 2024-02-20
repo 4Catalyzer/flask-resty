@@ -10,7 +10,7 @@ from flask_resty.testing import assert_response
 
 
 @pytest.fixture
-def models(db):
+def models(app, db):
     class Parent(db.Model):
         __tablename__ = "parents"
 
@@ -31,15 +31,17 @@ def models(db):
         other_parent_id = Column(ForeignKey(Parent.id))
         other_parent = relationship(Parent, foreign_keys=other_parent_id)
 
-    db.create_all()
+    with app.app_context():
+        db.create_all()
 
     yield {"parent": Parent, "child": Child}
 
-    db.drop_all()
+    with app.app_context():
+        db.drop_all()
 
 
 @pytest.fixture
-def schemas():
+def schemas(models):
     class ParentSchema(Schema):
         id = fields.Integer(as_string=True)
         name = fields.String(required=True)
@@ -52,7 +54,10 @@ def schemas():
     class ChildSchema(Schema):
         @classmethod
         def get_query_options(cls, load):
-            return (load.joinedload("parent"), load.joinedload("other_parent"))
+            return (
+                load.joinedload(models["child"].parent),
+                load.joinedload(models["child"].other_parent),
+            )
 
         id = fields.Integer(as_string=True)
         name = fields.String(required=True)
@@ -137,15 +142,16 @@ def routes(app, models, schemas):
 
 
 @pytest.fixture(autouse=True)
-def data(db, models):
-    db.session.add_all(
-        (
-            models["parent"](name="Parent"),
-            models["child"](name="Child 1"),
-            models["child"](name="Child 2"),
+def data(app, db, models):
+    with app.app_context():
+        db.session.add_all(
+            (
+                models["parent"](name="Parent"),
+                models["child"](name="Child 1"),
+                models["child"](name="Child 2"),
+            )
         )
-    )
-    db.session.commit()
+        db.session.commit()
 
 
 # -----------------------------------------------------------------------------

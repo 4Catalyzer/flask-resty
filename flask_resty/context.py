@@ -1,4 +1,4 @@
-from flask import _request_ctx_stack as context_stack
+from flask import g
 
 from .utils import UNDEFINED
 
@@ -6,7 +6,7 @@ from .utils import UNDEFINED
 
 
 def _get_resty_context():
-    context = context_stack.top
+    context = g
     if not context:
         raise RuntimeError("working outside of request context")
 

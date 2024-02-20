@@ -8,7 +8,7 @@ from flask_resty.shell import cli
 
 
 @pytest.fixture
-def models(db):
+def models(app, db):
     class Widget(db.Model):
         __tablename__ = "widgets"
 
@@ -16,11 +16,13 @@ def models(db):
         name = Column(String, nullable=False)
         description = Column(String)
 
-    db.create_all()
+    with app.app_context():
+        db.create_all()
 
     yield {"widget": Widget}
 
-    db.drop_all()
+    with app.app_context():
+        db.drop_all()
 
 
 @pytest.fixture
@@ -76,7 +78,7 @@ def test_no_args(run_command):
     assert result.exit_code == 0
     # Flask imports
     assert "Flask:" in result.output
-    assert "app, g" in result.output
+    assert "app, db, g" in result.output
     # Models
     assert "Models:" in result.output
     # Schemas

@@ -9,20 +9,22 @@ from . import app
 
 @pytest.fixture(scope="session")
 def db():
-    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
-    database = app.extensions["sqlalchemy"].db
-    database.create_all()
-    return database
+    with app.app_context():
+        app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
+        database = app.extensions["sqlalchemy"]
+        database.create_all()
+        return database
 
 
 @pytest.fixture(autouse=True)
 def clean_tables(db):
-    for table in reversed(db.metadata.sorted_tables):
-        db.session.execute(table.delete())
+    with app.app_context():
+        for table in reversed(db.metadata.sorted_tables):
+            db.session.execute(table.delete())
 
-    db.session.commit()
-    yield
-    db.session.rollback()
+        db.session.commit()
+        yield
+        db.session.rollback()
 
 
 @pytest.fixture

@@ -1,6 +1,6 @@
 import base64
 from dataclasses import dataclass
-from typing import Any, List, Tuple, Union
+from typing import Any, Union
 
 import flask
 import sqlalchemy as sa
@@ -74,7 +74,7 @@ class LimitPaginationBase(PaginationBase):
     of returned items.
     """
 
-    def get_page(self, query, view) -> List:
+    def get_page(self, query, view) -> list:
         limit = self.get_limit()
         if limit is not None:
             query = query.limit(limit + 1)
@@ -249,7 +249,7 @@ class PagePagination(LimitOffsetPagination):
 
 # -----------------------------------------------------------------------------
 
-Cursor = Tuple[Any, ...]
+Cursor = tuple[Any, ...]
 
 
 @dataclass
@@ -472,7 +472,7 @@ class CursorPaginationBase(LimitPagination):
 
         return cursor
 
-    def decode_cursor(self, cursor: str) -> Tuple[str, ...]:
+    def decode_cursor(self, cursor: str) -> tuple[str, ...]:
         try:
             cursor = cursor.split(".")
             cursor = tuple(self.decode_value(value) for value in cursor)
@@ -737,6 +737,5 @@ class RelayCursorPagination(CursorPaginationBase):
         return items
 
     def get_item_meta(self, item, view):
-
         cursor = self.make_cursor(item, view, self.get_field_orderings(view))
         return {"cursor": cursor}

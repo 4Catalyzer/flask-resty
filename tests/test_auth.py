@@ -21,7 +21,7 @@ from flask_resty.testing import assert_response
 
 
 @pytest.fixture
-def models(db):
+def models(app, db):
     class Widget(db.Model):
         __tablename__ = "widgets"
 
@@ -29,11 +29,13 @@ def models(db):
         owner_id = Column(String)
         name = Column(String)
 
-    db.create_all()
+    with app.app_context():
+        db.create_all()
 
     yield {"widget": Widget}
 
-    db.drop_all()
+    with app.app_context():
+        db.drop_all()
 
 
 @pytest.fixture
@@ -177,15 +179,16 @@ def routes(app, models, schemas, auth):
 
 
 @pytest.fixture(autouse=True)
-def data(db, models):
-    db.session.add_all(
-        (
-            models["widget"](owner_id="foo", name="Foo"),
-            models["widget"](owner_id="bar", name="Bar"),
-            models["widget"](owner_id=None, name="Public"),
+def data(app, db, models):
+    with app.app_context():
+        db.session.add_all(
+            (
+                models["widget"](owner_id="foo", name="Foo"),
+                models["widget"](owner_id="bar", name="Bar"),
+                models["widget"](owner_id=None, name="Public"),
+            )
         )
-    )
-    db.session.commit()
+        db.session.commit()
 
 
 # -----------------------------------------------------------------------------
