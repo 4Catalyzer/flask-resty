@@ -51,6 +51,8 @@ jobs:
           python -m coverage xml
       - name: "Upload coverage to Codecov"
         if: "${{ env.COVERAGE_PYTHON_VERSION == matrix.python-version }}"
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         uses: "codecov/codecov-action@v1"
         with:
           fail_ci_if_error: true
