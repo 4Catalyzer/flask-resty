@@ -43,12 +43,12 @@ jobs:
         with:
           python-version: ${{ env.COVERAGE_PYTHON_VERSION }}
 
-      - name: "Combine coverage"
+      - name: "Generate coverage"
+        if: "${{ env.COVERAGE_PYTHON_VERSION == matrix.python-version }}"
         run: |
           set -xe
           python -m pip install coverage[toml]
           python -m coverage xml
-        if: "${{ env.COVERAGE_PYTHON_VERSION == matrix.python-version }}"
       - name: "Upload coverage to Codecov"
         if: "${{ env.COVERAGE_PYTHON_VERSION == matrix.python-version }}"
         uses: "codecov/codecov-action@v1"
