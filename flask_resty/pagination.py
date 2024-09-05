@@ -1,6 +1,6 @@
 import base64
 from dataclasses import dataclass
-from typing import Any, Union
+from typing import Any
 
 import flask
 import sqlalchemy as sa
