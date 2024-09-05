@@ -18,9 +18,7 @@ class ApiClient(FlaskClient):
     """
 
     def open(self, path, *args, **kwargs):
-        full_path = "{}{}".format(
-            self.application.extensions["resty"].api.prefix, path
-        )
+        full_path = "{}{}".format(self.application.extensions["resty"].api.prefix, path)
 
         if "data" in kwargs:
             kwargs.setdefault("content_type", "application/json")
@@ -61,9 +59,7 @@ def assert_shape(actual, expected, key=None):
 
     if key is not None:
         suffix = (
-            " for parent "
-            + ("index" if isinstance(key, int) else "key")
-            + f" {key!r}"
+            " for parent " + ("index" if isinstance(key, int) else "key") + f" {key!r}"
         )
 
     if isinstance(expected, Mapping):
@@ -84,9 +80,7 @@ def assert_shape(actual, expected, key=None):
     elif isinstance(expected, (str, bytes)):
         assert expected == actual
     elif isinstance(expected, Sequence):
-        assert isinstance(actual, Sequence), (
-            f"{actual!r} is not a Sequence" + suffix
-        )
+        assert isinstance(actual, Sequence), f"{actual!r} is not a Sequence" + suffix
 
         actual_len = len(actual)
         expected_len = len(expected)
@@ -100,18 +94,14 @@ def assert_shape(actual, expected, key=None):
             )
             + suffix
         )
-        for idx, (actual_item, expected_item) in enumerate(
-            zip(actual, expected)
-        ):
+        for idx, (actual_item, expected_item) in enumerate(zip(actual, expected)):
             assert_shape(actual_item, expected_item, key=idx)
     elif isinstance(expected, float):
         assert (
             abs(actual - expected) < 1e-6
         ), "float not within the allowed tolerance of 1e-6"
     else:
-        assert expected == actual, (
-            f"{actual!r} is not equal to {expected!r}" + suffix
-        )
+        assert expected == actual, f"{actual!r} is not equal to {expected!r}" + suffix
 
 
 def Shape(expected):

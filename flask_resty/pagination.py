@@ -1,6 +1,6 @@
 import base64
 from dataclasses import dataclass
-from typing import Any, Union
+from typing import Any
 
 import flask
 import sqlalchemy as sa
@@ -256,11 +256,11 @@ Cursor = tuple[Any, ...]
 class CursorInfo:
     reversed: bool
 
-    cursor: Union[str, None]
-    cursor_arg: Union[str, None]
+    cursor: str | None
+    cursor_arg: str | None
 
-    limit: Union[str, None]
-    limit_arg: Union[str, None]
+    limit: str | None
+    limit_arg: str | None
 
 
 class CursorPaginationBase(LimitPagination):
@@ -353,9 +353,7 @@ class CursorPaginationBase(LimitPagination):
     def reversed(self):
         return self.get_cursor_info().reversed
 
-    def adjust_sort_ordering(
-        self, view: ModelView, field_orderings
-    ) -> FieldOrderings:
+    def adjust_sort_ordering(self, view: ModelView, field_orderings) -> FieldOrderings:
         """Ensure the query is sorted correctly and get the field orderings.
 
         The implementation of cursor-based pagination in Flask-RESTy requires
@@ -456,8 +454,7 @@ class CursorPaginationBase(LimitPagination):
 
         deserializer = view.deserializer
         column_fields = (
-            deserializer.fields[field_name]
-            for field_name, _ in field_orderings
+            deserializer.fields[field_name] for field_name, _ in field_orderings
         )
 
         try:
@@ -503,9 +500,7 @@ class CursorPaginationBase(LimitPagination):
     def format_validation_error(self, message, path):
         return {"code": "invalid_cursor", "detail": message}
 
-    def get_filter(
-        self, view, field_orderings: FieldOrderings, cursor: Cursor
-    ):
+    def get_filter(self, view, field_orderings: FieldOrderings, cursor: Cursor):
         """Build the filter clause corresponding to a cursor.
 
         Given the field orderings and the cursor as above, this will construct
@@ -539,8 +534,7 @@ class CursorPaginationBase(LimitPagination):
         if not column_cursors:
             return None
         clauses = [
-            column.isnot_distinct_from(value)
-            for column, _, value in column_cursors
+            column.isnot_distinct_from(value) for column, _, value in column_cursors
         ]
 
         return sa.and_(*clauses)
@@ -565,9 +559,7 @@ class CursorPaginationBase(LimitPagination):
             if value is None:
                 return None
             elif value is not None:
-                current_clause = self._handle_nullable(
-                    column, value, is_nullable
-                )
+                current_clause = self._handle_nullable(column, value, is_nullable)
             else:
                 current_clause = column > value
         else:
@@ -626,9 +618,7 @@ class CursorPaginationBase(LimitPagination):
 
     def get_column_fields(self, view, field_orderings):
         serializer = view.serializer
-        return tuple(
-            serializer.fields[field_name] for field_name, _ in field_orderings
-        )
+        return tuple(serializer.fields[field_name] for field_name, _ in field_orderings)
 
     def render_cursor(self, item, column_fields):
         cursor = tuple(
@@ -728,9 +718,7 @@ class RelayCursorPagination(CursorPaginationBase):
         # Relay expects a cursor for each item.
         cursors_out = self.make_cursors(items, view, field_orderings)
 
-        page_info = self.get_page_info(
-            query, view, field_orderings, cursor_in, items
-        )
+        page_info = self.get_page_info(query, view, field_orderings, cursor_in, items)
 
         meta.update_response_meta({"cursors": cursors_out, **page_info})
 

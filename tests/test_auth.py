@@ -54,9 +54,7 @@ def auth():
         def get_request_credentials(self):
             return flask.request.args.get("user_id")
 
-    class UserAuthorization(
-        AuthorizeModifyMixin, HasCredentialsAuthorizationBase
-    ):
+    class UserAuthorization(AuthorizeModifyMixin, HasCredentialsAuthorizationBase):
         def filter_query(self, query, view):
             return query.filter(
                 (view.model.owner_id == self.get_request_credentials())
@@ -84,9 +82,7 @@ def auth():
     return {
         "authentication": FakeAuthentication(),
         "authorization": authorization,
-        "bearer_with_fallback_authentication": (
-            BearerWithFallbackAuthentication()
-        ),
+        "bearer_with_fallback_authentication": (BearerWithFallbackAuthentication()),
     }
 
 
@@ -161,12 +157,8 @@ def routes(app, models, schemas, auth):
             return self.retrieve(id)
 
     api = Api(app)
-    api.add_resource(
-        "/widgets", WidgetListView, WidgetView, id_rule="<int:id>"
-    )
-    api.add_resource(
-        "/widgets_any_credentials/<int:id>", WidgetAnyCredentialsView
-    )
+    api.add_resource("/widgets", WidgetListView, WidgetView, id_rule="<int:id>")
+    api.add_resource("/widgets_any_credentials/<int:id>", WidgetAnyCredentialsView)
     api.add_resource(
         "/widgets_create_transient_stub/<int:id>",
         WidgetCreateTransientStubView,
@@ -251,9 +243,7 @@ def test_retrieve_any_credentials(client):
 
 
 def test_retrieve_bearer(client):
-    response = client.get(
-        "/widgets_bearer/1", headers={"Authorization": "Bearer XXX"}
-    )
+    response = client.get("/widgets_bearer/1", headers={"Authorization": "Bearer XXX"})
     assert response.status_code == 200
 
 
@@ -263,12 +253,8 @@ def test_retrieve_bearer_with_fallback(client):
 
 
 def test_retrieve_create_transient_stub(client, auth):
-    response = client.get(
-        "/widgets_create_transient_stub/4?user_id=foo&owner_id=foo"
-    )
-    assert_response(
-        response, 200, {"id": "4", "owner_id": "foo", "name": None}
-    )
+    response = client.get("/widgets_create_transient_stub/4?user_id=foo&owner_id=foo")
+    assert_response(response, 200, {"id": "4", "owner_id": "foo", "name": None})
 
     assert auth["authorization"].authorize_modify_item.mock_calls == [
         call(ANY, "create")
@@ -390,9 +376,7 @@ def test_error_any_credentials_unauthenticated(client):
 
 
 def test_error_retrieve_create_transient_stub_unauthorized(client, auth):
-    response = client.get(
-        "/widgets_create_transient_stub/4?user_id=bar&owner_id=foo"
-    )
+    response = client.get("/widgets_create_transient_stub/4?user_id=bar&owner_id=foo")
     assert_response(response, 404)
 
     assert auth["authorization"].authorize_modify_item.mock_calls == [
@@ -435,16 +419,12 @@ def test_error_retrieve_bearer_no_fallback(client):
 
 
 def test_error_retrieve_bearer_malformed_header(client):
-    response = client.get(
-        "/widgets_bearer/1", headers={"Authorization": "BearerXXX"}
-    )
+    response = client.get("/widgets_bearer/1", headers={"Authorization": "BearerXXX"})
     assert_response(response, 401, [{"code": "invalid_authorization"}])
 
 
 def test_error_retrieve_bearer_wrong_scheme(client):
-    response = client.get(
-        "/widgets_bearer/1", headers={"Authorization": "Bear XXX"}
-    )
+    response = client.get("/widgets_bearer/1", headers={"Authorization": "Bear XXX"})
     assert_response(response, 401, [{"code": "invalid_authorization.scheme"}])
 
 

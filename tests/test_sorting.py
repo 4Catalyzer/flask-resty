@@ -50,9 +50,7 @@ def routes(app, models, schemas):
             "name",
             "size",
             content_length=sql.func.length(Widget.content),
-            content_length2=lambda model, field_name: sql.func.length(
-                model.content
-            ),
+            content_length2=lambda model, field_name: sql.func.length(model.content),
         )
 
         def get(self):
@@ -76,9 +74,7 @@ def data(app, db, models):
             (
                 models["widget"](name="Foo", size=1, content="Some bold text"),
                 models["widget"](name="Foo", size=5, content="Short"),
-                models["widget"](
-                    name="Baz", size=3, content="LorumLorumLorumLorum"
-                ),
+                models["widget"](name="Baz", size=3, content="LorumLorumLorumLorum"),
             )
         )
         db.session.commit()

@@ -64,24 +64,16 @@ def routes(app, models, schemas, filter_fields):
 
         filtering = Filtering(
             color=operator.eq,
-            color_allow_empty=ColumnFilter(
-                "color", operator.eq, allow_empty=True
-            ),
+            color_allow_empty=ColumnFilter("color", operator.eq, allow_empty=True),
             size=ColumnFilter(operator.eq, separator="|"),
             size_min=ColumnFilter("size", operator.ge),
-            size_divides=ColumnFilter(
-                "size", lambda size, value: size % value == 0
-            ),
+            size_divides=ColumnFilter("size", lambda size, value: size % value == 0),
             size_is_odd=ModelFilter(
                 fields.Boolean(),
                 lambda model, value: model.size % 2 == int(value),
             ),
-            size_min_unvalidated=ColumnFilter(
-                "size", operator.ge, validate=False
-            ),
-            size_skip_invalid=ColumnFilter(
-                "size", operator.eq, skip_invalid=True
-            ),
+            size_min_unvalidated=ColumnFilter("size", operator.ge, validate=False),
+            size_skip_invalid=ColumnFilter("size", operator.eq, skip_invalid=True),
         )
 
     class WidgetListView(WidgetViewBase):
@@ -220,9 +212,7 @@ def test_combine(client):
 
 def test_column_filter_unvalidated(client):
     response = client.get("/widgets?size_min_unvalidated=-1")
-    assert_response(
-        response, 200, [{"id": "1"}, {"id": "2"}, {"id": "3"}, {"id": "4"}]
-    )
+    assert_response(response, 200, [{"id": "1"}, {"id": "2"}, {"id": "3"}, {"id": "4"}])
 
 
 def test_column_filter_skip_invalid(client):
