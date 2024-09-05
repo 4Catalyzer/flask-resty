@@ -256,11 +256,11 @@ Cursor = tuple[Any, ...]
 class CursorInfo:
     reversed: bool
 
-    cursor: Union[str, None]
-    cursor_arg: Union[str, None]
+    cursor: str | None
+    cursor_arg: str | None
 
-    limit: Union[str, None]
-    limit_arg: Union[str, None]
+    limit: str | None
+    limit_arg: str | None
 
 
 class CursorPaginationBase(LimitPagination):
