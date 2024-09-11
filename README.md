@@ -1,4 +1,4 @@
-# Flask-RESTy [![Travis][build-badge]][build] [![Codecov][codecov-badge]][codecov] [![PyPI][pypi-badge]][pypi] [![marshmallow 3 compatible][marshmallow-badge]][marshmallow-upgrading]
+# Flask-RESTy [![GitHub Actions][build-badge]][build] [![Codecov][codecov-badge]][codecov] [![PyPI][pypi-badge]][pypi] [![marshmallow 3 compatible][marshmallow-badge]][marshmallow-upgrading]
 
 Flask-RESTy provides building blocks for creating REST APIs with [Flask](http://flask.pocoo.org/), [SQLAlchemy](https://www.sqlalchemy.org/), and [marshmallow](https://marshmallow.readthedocs.io/).
 
@@ -44,8 +44,8 @@ Documentation is available at https://flask-resty.readthedocs.io/.
 
 MIT Licensed. See the bundled [LICENSE](https://github.com/4Catalyzer/flask-resty/blob/master/LICENSE) file for more details.
 
-[build-badge]: https://img.shields.io/travis/4Catalyzer/flask-resty/master.svg
-[build]: https://travis-ci.org/4Catalyzer/flask-resty
+[build-badge]: https://github.com/4Catalyzer/flask-resty/actions/workflows/main.yml/badge.svg
+[build]: https://github.com/4Catalyzer/flask-resty/actions
 [pypi-badge]: https://img.shields.io/pypi/v/Flask-RESTy.svg
 [pypi]: https://pypi.python.org/pypi/Flask-RESTy
 [codecov-badge]: https://img.shields.io/codecov/c/github/4Catalyzer/flask-resty/master.svg
