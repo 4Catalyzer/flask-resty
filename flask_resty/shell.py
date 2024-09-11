@@ -1,4 +1,5 @@
 """Entry point for the ``shell`` Flask-RESTy CLI commmand."""
+
 # Code adapted from flask-konch
 from functools import partial
 from pathlib import Path
