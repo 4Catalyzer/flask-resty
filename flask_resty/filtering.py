@@ -64,9 +64,7 @@ class FieldFilterBase(ArgFilterBase):
         throwing an API error.
     """
 
-    def __init__(
-        self, *, separator=",", allow_empty=False, skip_invalid=False
-    ):
+    def __init__(self, *, separator=",", allow_empty=False, skip_invalid=False):
         self._separator = separator
         self._allow_empty = allow_empty
         self._skip_invalid = skip_invalid
@@ -101,9 +99,7 @@ class FieldFilterBase(ArgFilterBase):
         if field.required:
             raise ApiError(400, {"code": "invalid_filter.missing"})
 
-        load_default = (
-            field.load_default if _USE_LOAD_DEFAULT else field.missing
-        )
+        load_default = field.load_default if _USE_LOAD_DEFAULT else field.missing
         value = load_default() if callable(load_default) else load_default
         if value is marshmallow.missing:
             return None

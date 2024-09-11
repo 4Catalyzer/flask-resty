@@ -16,9 +16,7 @@ LOGO = r"""
  |  _| | | (_| \__ \   <_____|  _ <| |___ ___) || || |_| |
  |_|   |_|\__,_|___/_|\_\    |_| \_\_____|____/ |_| \__, |
                                                     |___/
-""".strip(
-    "\n"
-)
+""".strip("\n")
 
 DEFAULTS = dict(
     RESTY_SHELL_CONTEXT={},
@@ -116,9 +114,7 @@ def context_formatter(
         - schema_context.keys()
         - model_context.keys()
     )
-    additional_context = {
-        key: full_context[key] for key in additional_context_keys
-    }
+    additional_context = {key: full_context[key] for key in additional_context_keys}
     if additional_context:
         sections.append(("Additional", additional_context))
     return "\n".join([format_section(*section) for section in sections])
@@ -136,9 +132,7 @@ def cli(shell: str, sqlalchemy_echo: bool):
     """An improved Flask shell command."""
     from flask.globals import current_app
 
-    options = {
-        key: current_app.config.get(key, DEFAULTS[key]) for key in DEFAULTS
-    }
+    options = {key: current_app.config.get(key, DEFAULTS[key]) for key in DEFAULTS}
     current_app.config["SQLALCHEMY_ECHO"] = sqlalchemy_echo
     base_context = {"app": current_app}
     flask_context = current_app.make_shell_context()
@@ -180,9 +174,7 @@ def cli(shell: str, sqlalchemy_echo: bool):
             ipy_extensions=options["RESTY_SHELL_IPY_EXTENSIONS"],
             ipy_autoreload=options["RESTY_SHELL_IPY_AUTORELOAD"],
             ipy_colors=options["RESTY_SHELL_IPY_COLORS"],
-            ipy_highlighting_style=options[
-                "RESTY_SHELL_IPY_HIGHLIGHTING_STYLE"
-            ],
+            ipy_highlighting_style=options["RESTY_SHELL_IPY_HIGHLIGHTING_STYLE"],
         )
     )
     if Path(".konchrc.local").exists():  # pragma: no cover

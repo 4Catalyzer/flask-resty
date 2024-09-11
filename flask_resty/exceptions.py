@@ -49,9 +49,7 @@ class ApiError(Exception):
         }
 
     @classmethod
-    def from_validation_error(
-        cls, status_code, error, format_validation_error
-    ):
+    def from_validation_error(cls, status_code, error, format_validation_error):
         return cls(
             status_code,
             *(

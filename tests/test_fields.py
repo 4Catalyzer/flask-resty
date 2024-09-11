@@ -99,9 +99,7 @@ def test_error_load_single_field_type(single_schema):
         single_schema.load({"child": {"id": "foo"}})
 
     errors = excinfo.value.messages
-    assert errors == {
-        "child": {"id": [fields.Integer().error_messages["invalid"]]}
-    }
+    assert errors == {"child": {"id": [fields.Integer().error_messages["invalid"]]}}
 
 
 def test_error_load_many_missing(many_schema, error_messages):

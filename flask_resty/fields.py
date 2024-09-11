@@ -19,9 +19,7 @@ class RelatedItem(fields.Nested):
 
     def _deserialize(self, value, *args, **kwargs):
         if self.many and not marshmallow.utils.is_collection(value):
-            raise self.make_error(
-                "type", input=value, type=value.__class__.__name__
-            )
+            raise self.make_error("type", input=value, type=value.__class__.__name__)
 
         # Do partial load of related item, as we only need the id.
         return self.schema.load(value, partial=True)
@@ -46,9 +44,7 @@ class DelimitedList(fields.List):
 
     delimiter = ","
 
-    def __init__(
-        self, cls_or_instance, delimiter=None, as_string=False, **kwargs
-    ):
+    def __init__(self, cls_or_instance, delimiter=None, as_string=False, **kwargs):
         super().__init__(cls_or_instance, **kwargs)
 
         self.delimiter = delimiter or self.delimiter

@@ -101,9 +101,7 @@ def test_retrieve(client):
 
 
 def test_create(client):
-    response = client.post(
-        "/widgets", data={"id_1": "4", "id_2": "6", "name": "Qux"}
-    )
+    response = client.post("/widgets", data={"id_1": "4", "id_2": "6", "name": "Qux"})
     assert response.headers["Location"] == "/widgets/4/6"
 
     assert_response(response, 201, {"id_1": "4", "id_2": "6", "name": "Qux"})

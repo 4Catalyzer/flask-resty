@@ -14,9 +14,7 @@ class Author(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.Text, nullable=False)
-    created_at = db.Column(
-        db.DateTime, default=dt.datetime.utcnow, nullable=False
-    )
+    created_at = db.Column(db.DateTime, default=dt.datetime.utcnow, nullable=False)
 
 
 class Book(db.Model):
@@ -27,6 +25,4 @@ class Book(db.Model):
     author_id = db.Column(db.Integer, db.ForeignKey(Author.id), nullable=False)
     author = db.relationship(Author, backref=db.backref("books"))
     published_at = db.Column(db.DateTime, nullable=False)
-    created_at = db.Column(
-        db.DateTime, default=dt.datetime.utcnow, nullable=False
-    )
+    created_at = db.Column(db.DateTime, default=dt.datetime.utcnow, nullable=False)

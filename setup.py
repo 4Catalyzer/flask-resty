@@ -7,9 +7,7 @@ EXTRAS_REQUIRE = {
     "jwt": ("PyJWT>=2.0.0", "cryptography>=2.0.0"),
     "tests": ("coverage", "psycopg2-binary", "pytest"),
 }
-EXTRAS_REQUIRE["dev"] = (
-    EXTRAS_REQUIRE["docs"] + EXTRAS_REQUIRE["tests"] + ("tox",)
-)
+EXTRAS_REQUIRE["dev"] = EXTRAS_REQUIRE["docs"] + EXTRAS_REQUIRE["tests"] + ("tox",)
 
 
 def find_version(fname):
