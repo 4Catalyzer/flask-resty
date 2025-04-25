@@ -15,7 +15,7 @@ from .exceptions import ApiError
 try:
     _USE_LOAD_DEFAULT = marshmallow.__version_info__ >= (3, 13)
 except AttributeError:
-    _USE_LOAD_DEFAULT = False
+    _USE_LOAD_DEFAULT = True
 
 
 class ArgFilterBase:
