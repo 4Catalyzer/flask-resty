@@ -1,5 +1,6 @@
 import copy
 import functools
+import importlib.metadata
 
 import flask
 import marshmallow
@@ -12,10 +13,7 @@ from .exceptions import ApiError
 # -----------------------------------------------------------------------------
 
 # Field.missing is deprecated in favor of Field.load_default in marshmallow 3.13.0
-try:
-    _USE_LOAD_DEFAULT = marshmallow.__version_info__ >= (3, 13)
-except AttributeError:
-    _USE_LOAD_DEFAULT = True
+_USE_LOAD_DEFAULT = importlib.metadata.version("marshmallow")
 
 
 class ArgFilterBase:
