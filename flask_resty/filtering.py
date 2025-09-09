@@ -4,6 +4,7 @@ import importlib.metadata
 
 import flask
 import marshmallow
+import packaging.version
 import sqlalchemy as sa
 from marshmallow import ValidationError
 from sqlalchemy import sql
@@ -13,7 +14,10 @@ from .exceptions import ApiError
 # -----------------------------------------------------------------------------
 
 # Field.missing is deprecated in favor of Field.load_default in marshmallow 3.13.0
-_USE_LOAD_DEFAULT = importlib.metadata.version("marshmallow")
+_MARSHMALLOW_VERSION = importlib.metadata.version("marshmallow")
+_USE_LOAD_DEFAULT = packaging.version.parse(
+    _MARSHMALLOW_VERSION
+) > packaging.version.parse("3.13")
 
 
 class ArgFilterBase:
