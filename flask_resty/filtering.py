@@ -11,6 +11,7 @@ from .exceptions import ApiError
 
 # -----------------------------------------------------------------------------
 
+
 class ArgFilterBase:
     """An abstract specification of a filter from a query argument.
 
