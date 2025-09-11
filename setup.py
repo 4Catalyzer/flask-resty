@@ -63,7 +63,7 @@ setup(
         "flask-sqlalchemy~=3.0",
         "sqlalchemy~=2.0.0",
         # misc
-        "marshmallow>=3.0.0",
+        "marshmallow>=3.20.0",
         "werkzeug>=3.0",
         "konch>=4.0",
     ),
