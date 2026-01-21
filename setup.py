@@ -59,7 +59,7 @@ setup(
     ],
     install_requires=(
         # core deps
-        "flask~=3.0.0",
+        "flask>=3.0,<3.2",
         "flask-sqlalchemy~=3.0",
         "sqlalchemy~=2.0.0",
         # misc
