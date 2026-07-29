@@ -82,21 +82,15 @@ class JwkSetPyJwt(PyJWT):
 
         # jwt.decode will also check this, but this is more defensive.
         if alg not in kwargs["algorithms"]:
-            raise InvalidAlgorithmError(
-                "The specified alg value is not allowed"
-            )
+            raise InvalidAlgorithmError("The specified alg value is not allowed")
 
-        return super().decode(
-            jwt, key=self.get_key_from_jwk(jwk, alg), **kwargs
-        )
+        return super().decode(jwt, key=self.get_key_from_jwk(jwk, alg), **kwargs)
 
     def get_jwk_for_jwt(self, unverified_header):
         try:
             token_kid = unverified_header["kid"]
         except KeyError as e:
-            raise InvalidTokenError(
-                "Key ID header parameter is missing"
-            ) from e
+            raise InvalidTokenError("Key ID header parameter is missing") from e
 
         for jwk in self.jwk_set["keys"]:
             if jwk["kid"] == token_kid:
@@ -128,7 +122,4 @@ class JwkSetAuthentication(JwtAuthentication):
 
     @property
     def jwk_set(self):
-        return (
-            self._jwk_set
-            or flask.current_app.config[self.get_config_key("jwk_set")]
-        )
+        return self._jwk_set or flask.current_app.config[self.get_config_key("jwk_set")]

@@ -63,9 +63,7 @@ def routes(app, models, schemas):
             return self.destroy(id)
 
     api = Api(app)
-    api.add_resource(
-        "/widgets", WidgetListView, WidgetView, id_rule="<int:id>"
-    )
+    api.add_resource("/widgets", WidgetListView, WidgetView, id_rule="<int:id>")
 
 
 @pytest.fixture(autouse=True)

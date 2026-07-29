@@ -215,9 +215,7 @@ class ApiView(MethodView):
         :return: The canonical URL for `item`.
         :rtype: str
         """
-        id_dict = {
-            id_field: getattr(item, id_field) for id_field in self.id_fields
-        }
+        id_dict = {id_field: getattr(item, id_field) for id_field in self.id_fields}
         return flask.url_for(flask.request.endpoint, _method="GET", **id_dict)
 
     def get_request_data(self, **kwargs):
@@ -304,9 +302,7 @@ class ApiView(MethodView):
         :return: The formatted validation error.
         :rtype: dict
         """
-        pointer = "/data/{}".format(
-            "/".join(str(field_key) for field_key in path)
-        )
+        pointer = "/data/{}".format("/".join(str(field_key) for field_key in path))
 
         return {
             "code": "invalid_data",
@@ -383,9 +379,7 @@ class ApiView(MethodView):
                 # KeyError for args that aren't present.
                 continue
 
-            if isinstance(field, fields.List) and not isinstance(
-                field, DelimitedList
-            ):
+            if isinstance(field, fields.List) and not isinstance(field, DelimitedList):
                 value = args.getlist(field_name)
             else:
                 value = args.get(field_name)
@@ -960,9 +954,7 @@ class ModelView(ApiView):
             # a schema bug, so we emit an interal server error instead.
             return error
 
-        flask.current_app.logger.warning(
-            "handled integrity error", exc_info=error
-        )
+        flask.current_app.logger.warning("handled integrity error", exc_info=error)
         return ApiError(409, {"code": "invalid_data.conflict"})
 
     def set_item_response_meta(self, item):
@@ -1049,9 +1041,7 @@ class GenericModelView(ModelView):
         :return: An HTTP 200 response.
         :rtype: :py:class:`flask.Response`
         """
-        item = self.get_item_or_404(
-            id, create_transient_stub=create_transient_stub
-        )
+        item = self.get_item_or_404(id, create_transient_stub=create_transient_stub)
         return self.make_item_response(item)
 
     def create(self, *, allow_client_id=False):

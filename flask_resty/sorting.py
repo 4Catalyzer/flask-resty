@@ -94,9 +94,7 @@ class FieldSortingBase(SortingBase):
         :return: A sequence of field orderings. See :py:meth:`get_criterion`.
         :rtype: tuple
         """
-        return tuple(
-            self.get_field_ordering(field) for field in fields.split(",")
-        )
+        return tuple(self.get_field_ordering(field) for field in fields.split(","))
 
     def get_field_ordering(self, field: str) -> FieldOrdering:
         if field and field[0] == "-":

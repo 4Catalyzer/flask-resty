@@ -126,9 +126,7 @@ def test_invalid_body(client):
 
 
 def test_data_missing(base_client):
-    response = base_client.post(
-        "/widgets", content_type="application/json", data="{}"
-    )
+    response = base_client.post("/widgets", content_type="application/json", data="{}")
     assert_response(response, 400, [{"code": "invalid_data.missing"}])
 
 
@@ -186,9 +184,7 @@ def test_integrity_error_conflict(client, path):
 def test_integrity_error_uncaught(db, app, client, path):
     with app.app_context():
         if db.engine.driver != "psycopg2":
-            pytest.xfail(
-                "IntegrityError cause detection only works with psycopg2"
-            )
+            pytest.xfail("IntegrityError cause detection only works with psycopg2")
 
     app.testing = False
 
@@ -231,9 +227,7 @@ def test_debug(app, client):
     app.debug = False
     app.testing = False
 
-    production_response = client.post(
-        "/widgets", content_type="text", data="foo"
-    )
+    production_response = client.post("/widgets", content_type="text", data="foo")
     assert_response(production_response, 400)
     assert "debug" not in get_body(production_response)
 

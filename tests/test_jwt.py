@@ -90,9 +90,7 @@ class AbstractTestJwt:
 
     def test_error_unauthenticated(self, client):
         response = client.get("/widgets")
-        assert_response(
-            response, 401, [{"code": "invalid_credentials.missing"}]
-        )
+        assert_response(response, 401, [{"code": "invalid_credentials.missing"}])
 
     def test_error_invalid_authorization(self, client):
         response = client.get("/widgets", headers={"Authorization": "foo"})
@@ -100,9 +98,7 @@ class AbstractTestJwt:
 
     def test_error_invalid_authorization_scheme(self, client):
         response = client.get("/widgets", headers={"Authorization": "foo bar"})
-        assert_response(
-            response, 401, [{"code": "invalid_authorization.scheme"}]
-        )
+        assert_response(response, 401, [{"code": "invalid_authorization.scheme"}])
 
     def test_error_invalid_token(self, client, invalid_token):
         response = client.get(
@@ -127,9 +123,7 @@ class TestJwt(AbstractTestJwt):
 
         class UserAuthorization(HasAnyCredentialsAuthorization):
             def filter_query(self, query, view):
-                return query.filter_by(
-                    owner_id=self.get_request_credentials()["sub"]
-                )
+                return query.filter_by(owner_id=self.get_request_credentials()["sub"])
 
         return {
             "authentication": authentication,
@@ -160,9 +154,7 @@ class TestJwt(AbstractTestJwt):
 class TestJwkSet(AbstractTestJwt):
     @pytest.fixture(
         params=(
-            pytest.param(
-                "tests/fixtures/testkey_rsa_pub.json", id="public_key"
-            ),
+            pytest.param("tests/fixtures/testkey_rsa_pub.json", id="public_key"),
             pytest.param("tests/fixtures/testkey_rsa_cert.json", id="cert"),
         ),
     )
@@ -183,9 +175,7 @@ class TestJwkSet(AbstractTestJwt):
 
         class UserAuthorization(HasAnyCredentialsAuthorization):
             def filter_query(self, query, view):
-                return query.filter_by(
-                    owner_id=self.get_request_credentials()["sub"]
-                )
+                return query.filter_by(owner_id=self.get_request_credentials()["sub"])
 
         return {
             "authentication": authentication,

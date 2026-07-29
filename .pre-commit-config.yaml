@@ -4,11 +4,13 @@ repos:
   hooks:
     - id: pyupgrade
       args: [--py310-plus]
-- repo: https://github.com/4Catalyzer/fourmat
-  rev: v1.0.0
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  # Ruff version.
+  rev: v0.6.3
   hooks:
-    - id: fourmat
-      additional_dependencies: [setuptools>74]
+    - id: ruff
+      args: [ --fix ]
+    - id: ruff-format
 - repo: https://github.com/asottile/blacken-docs
   rev: 1.18.0
   hooks:

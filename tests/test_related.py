@@ -24,9 +24,7 @@ def models(app, db):
         name = Column(String)
 
         parent_id = Column(ForeignKey(Parent.id))
-        parent = relationship(
-            Parent, foreign_keys=parent_id, backref="children"
-        )
+        parent = relationship(Parent, foreign_keys=parent_id, backref="children")
 
         other_parent_id = Column(ForeignKey(Parent.id))
         other_parent = relationship(Parent, foreign_keys=other_parent_id)
@@ -62,12 +60,8 @@ def schemas(models):
         id = fields.Integer(as_string=True)
         name = fields.String(required=True)
 
-        parent = RelatedItem(
-            ParentSchema, exclude=("children",), allow_none=True
-        )
-        parent_id = fields.Integer(
-            as_string=True, allow_none=True, load_only=True
-        )
+        parent = RelatedItem(ParentSchema, exclude=("children",), allow_none=True)
+        parent_id = fields.Integer(as_string=True, allow_none=True, load_only=True)
 
         other_parent = fields.Nested(
             ParentSchema, exclude=("children",), allow_none=True
@@ -126,9 +120,7 @@ def routes(app, models, schemas):
             return self.update(id)
 
     class ChildWithOtherParentView(ChildView):
-        related = ChildView.related | Related(
-            other_parent=Related(models["parent"])
-        )
+        related = ChildView.related | Related(other_parent=Related(models["parent"]))
 
     api = Api(app)
     api.add_resource("/parents/<int:id>", ParentView)
@@ -136,9 +128,7 @@ def routes(app, models, schemas):
     api.add_resource("/parents_with_create/<int:id>", ParentWithCreateView)
     api.add_resource("/children/<int:id>", ChildView)
     api.add_resource("/nested_children/<int:id>", NestedChildView)
-    api.add_resource(
-        "/children_with_other_parent/<int:id>", ChildWithOtherParentView
-    )
+    api.add_resource("/children_with_other_parent/<int:id>", ChildWithOtherParentView)
 
 
 @pytest.fixture(autouse=True)
@@ -159,9 +149,7 @@ def data(app, db, models):
 
 def test_baseline(client):
     parent_response = client.get("/parents/1")
-    assert_response(
-        parent_response, 200, {"id": "1", "name": "Parent", "children": []}
-    )
+    assert_response(parent_response, 200, {"id": "1", "name": "Parent", "children": []})
 
     child_1_response = client.get("/children/1")
     assert_response(

@@ -88,9 +88,7 @@ def test_no_args(run_command):
 
 def test_additional_context(run_command):
     result = run_command(
-        config={
-            "RESTY_SHELL_CONTEXT": {"foo": "foo-value", "bar": "bar-value"}
-        },
+        config={"RESTY_SHELL_CONTEXT": {"foo": "foo-value", "bar": "bar-value"}},
         input="bar",
     )
     assert "Additional:" in result.output
