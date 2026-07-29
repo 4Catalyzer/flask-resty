@@ -11,9 +11,6 @@ from .exceptions import ApiError
 
 # -----------------------------------------------------------------------------
 
-# Field.missing is deprecated in favor of Field.load_default in marshmallow 3.13.0
-_USE_LOAD_DEFAULT = marshmallow.__version_info__ >= (3, 13)
-
 
 class ArgFilterBase:
     """An abstract specification of a filter from a query argument.
@@ -99,7 +96,7 @@ class FieldFilterBase(ArgFilterBase):
         if field.required:
             raise ApiError(400, {"code": "invalid_filter.missing"})
 
-        load_default = field.load_default if _USE_LOAD_DEFAULT else field.missing
+        load_default = field.load_default
         value = load_default() if callable(load_default) else load_default
         if value is marshmallow.missing:
             return None
@@ -236,10 +233,7 @@ class ColumnFilter(FieldFilterBase):
             # as that's only relevant for object deserialization.
             field = copy.deepcopy(base_field)
             field.required = self._required
-            if _USE_LOAD_DEFAULT:
-                field.load_default = self._missing
-            else:
-                field.missing = self._missing
+            field.load_default = self._missing
 
             self._fields[base_field] = field
 
